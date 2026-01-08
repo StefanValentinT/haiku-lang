@@ -3,14 +3,22 @@ pub trait IsQueue<T: Clone> {
     fn remove(&mut self) -> Result<T, &str>;
     fn peek(&self) -> Result<T, &str>;
     fn size(&self) -> usize;
-    fn is_empty(&self) -> bool{
+    fn is_empty(&self) -> bool {
         self.size() <= 0
+    }
+    fn consume(&mut self) {
+        let _ = self.remove();
     }
 }
 
 #[derive(Debug)]
 pub struct Queue<T: Clone> {
     queue: Vec<T>,
+}
+impl<T: Clone + PartialEq> Queue<T> {
+    pub fn is_there(&self, offset: usize, val: T) -> bool {
+        self.queue.get(offset).map(|c| *c == val).unwrap_or(false)
+    }
 }
 
 impl<T: Clone> Queue<T> {

@@ -1,7 +1,7 @@
 use crate::queue::*;
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Token{
+pub enum Token {
     Identifier(String),
     IntLiteral(i32),
     Keyword(String),
@@ -11,22 +11,56 @@ pub enum Token{
     OpenBrace,
     CloseBrace,
     Semicolon,
+
+    //unary operators
+    Tilde,
+    Neg,
+    Decrement,
+
+    EOF,
 }
 use crate::queue::*;
 
+const KEYWORDS: [&str; 32] = [
+    "auto", "break", "case", "char", "const", "continue", "default", "do", "double", "else",
+    "enum", "extern", "float", "for", "goto", "if", "inline", "int", "long", "restrict", "return",
+    "short", "signed", "sizeof", "static", "struct", "switch", "typedef", "union", "unsigned",
+    "void", "while",
+];
+
 fn is_boundary(c: char) -> bool {
-    matches!(c,
-        ' ' | '\t' | '\n' |
-        '(' | ')' | '{' | '}' | ';' | ',' |
-        '+' | '-' | '*' | '/' | '%' | '=' | '<' | '>'
+    matches!(
+        c,
+        ' ' | '\t'
+            | '\n'
+            | '('
+            | ')'
+            | '{'
+            | '}'
+            | ';'
+            | ','
+            | '+'
+            | '-'
+            | '*'
+            | '/'
+            | '%'
+            | '='
+            | '<'
+            | '>'
     )
 }
 
-pub fn lex_string(input: String) -> Vec<Token> {
+pub fn lex_string(input: String) -> Queue<Token> {
     let mut input = str_to_queue(input);
-    let mut tokens = Vec::new();
+    let mut tokens: Queue<Token> = Queue::new();
 
     while !input.is_empty() {
+        consume_while(&mut input, |c| matches!(c, ' ' | '\t' | '\n'));
+
+        if input.is_empty() {
+            break;
+        }
+
         let c = match input.peek() {
             Ok(c) => c,
             Err(_) => break,
@@ -34,63 +68,47 @@ pub fn lex_string(input: String) -> Vec<Token> {
 
         match c {
             '/' => {
-                input.remove().unwrap();
-                match input.peek() {
-                    Ok('/') => { 
-                        input.remove().unwrap(); 
-                        while let Ok(ch) = input.remove() {
-                            if ch == '\n' {
-                                break;
-                            }
-                        }
-                    }
-                    Ok('*') => { 
-                        input.remove().unwrap();
-                        let mut prev = '\0';
-                        while let Ok(ch) = input.remove() {
-                            if prev == '*' && ch == '/' {
-                                break;
-                            }
-                            prev = ch;
-                        }
-                    }
-                    _ => {
-                        panic!("Unexpected '/' character");
-                    }
+                input.consume();
+                if !skip_if_comment(&mut input) {
+                    //implemnte division
                 }
             }
 
-            ' ' | '\t' | '\n' => {
-                input.remove().unwrap();
-            }
-
             'a'..='z' | 'A'..='Z' | '_' => {
-                tokens.push(lex_identifier(&mut input));
+                tokens.add(lex_identifier(&mut input));
             }
 
             '0'..='9' => {
-                tokens.push(lex_int(&mut input));
+                tokens.add(lex_int(&mut input));
             }
 
             '(' => {
-                input.remove().unwrap();
-                tokens.push(Token::OpenParen);
+                st(Token::OpenParen, &mut input, &mut tokens);
             }
             ')' => {
-                input.remove().unwrap();
-                tokens.push(Token::CloseParen);
+                st(Token::CloseParen, &mut input, &mut tokens);
             }
             '{' => {
-                input.remove().unwrap();
-                tokens.push(Token::OpenBrace);
+                st(Token::OpenBrace, &mut input, &mut tokens);
             }
             '}' => {
-                input.remove().unwrap();
-                tokens.push(Token::CloseBrace);
+                st(Token::CloseBrace, &mut input, &mut tokens);
             }
             ';' => {
-                input.remove().unwrap();
-                tokens.push(Token::Semicolon);
+                st(Token::Semicolon, &mut input, &mut tokens);
+            }
+            '~' => {
+                st(Token::Tilde, &mut input, &mut tokens);
+            }
+            '-' => {
+                if input.is_there(1, '-') {
+                    input.consume();
+                    input.consume();
+                    tokens.add(Token::Decrement);
+                } else {
+                    input.consume();
+                    tokens.add(Token::Neg);
+                }
             }
 
             _ => {
@@ -99,18 +117,43 @@ pub fn lex_string(input: String) -> Vec<Token> {
         }
     }
 
+    tokens.add(Token::EOF);
+
     tokens
+}
+
+fn st(t: Token, input: &mut Queue<char>, tokens: &mut Queue<Token>) {
+    input.consume();
+    tokens.add(t);
+}
+
+fn consume_while<F>(input: &mut Queue<char>, mut pred: F)
+where
+    F: FnMut(char) -> bool,
+{
+    while let Ok(c) = input.peek() {
+        if pred(c) {
+            input.consume();
+        } else {
+            break;
+        }
+    }
 }
 
 fn next_needs_to_be_boundary(input: &Queue<char>) {
     if let Ok(c) = input.peek() {
         if !is_boundary(c) {
-            panic!("Invalid token: next character '{}' must be a token boundary", c);
+            panic!(
+                "Invalid token: next character '{}' must be a token boundary",
+                c
+            );
         }
     }
-
 }
 
+fn is_keyword(s: &str) -> bool {
+    KEYWORDS.contains(&s)
+}
 
 fn lex_identifier(input: &mut Queue<char>) -> Token {
     let mut ident = String::new();
@@ -125,9 +168,10 @@ fn lex_identifier(input: &mut Queue<char>) -> Token {
 
     next_needs_to_be_boundary(input);
 
-    match ident.as_str() {
-        "if" | "else" | "let" | "fn" => Token::Keyword(ident),
-        _ => Token::Identifier(ident),
+    if is_keyword(&ident) {
+        Token::Keyword(ident)
+    } else {
+        Token::Identifier(ident)
     }
 }
 
@@ -141,8 +185,30 @@ fn lex_int(input: &mut Queue<char>) -> Token {
             break;
         }
     }
-    
+
     next_needs_to_be_boundary(input);
 
     Token::IntLiteral(value)
+}
+
+fn skip_if_comment(input: &mut Queue<char>) -> bool {
+    match input.peek() {
+        Ok('/') => {
+            input.consume();
+            consume_while(input, |c| c != '\n');
+            true
+        }
+        Ok('*') => {
+            input.consume();
+            let mut prev = '\0';
+            while let Ok(c) = input.remove() {
+                if prev == '*' && c == '/' {
+                    break;
+                }
+                prev = c;
+            }
+            true
+        }
+        _ => false,
+    }
 }
