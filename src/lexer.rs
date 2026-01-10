@@ -14,12 +14,17 @@ pub enum Token {
 
     //unary operators
     Tilde,
-    Neg,
+    Minus, //this is both -a and a-b
     Decrement,
+
+    //binary operators
+    Plus,
+    Multiply,
+    Divide,
+    Remainder,
 
     EOF,
 }
-use crate::queue::*;
 
 const KEYWORDS: [&str; 32] = [
     "auto", "break", "case", "char", "const", "continue", "default", "do", "double", "else",
@@ -70,7 +75,7 @@ pub fn lex_string(input: String) -> Queue<Token> {
             '/' => {
                 input.consume();
                 if !skip_if_comment(&mut input) {
-                    //implemnte division
+                    tokens.add(Token::Divide);
                 }
             }
 
@@ -107,8 +112,18 @@ pub fn lex_string(input: String) -> Queue<Token> {
                     tokens.add(Token::Decrement);
                 } else {
                     input.consume();
-                    tokens.add(Token::Neg);
+                    tokens.add(Token::Minus);
                 }
+            }
+
+            '+' => {
+                st(Token::Plus, &mut input, &mut tokens);
+            }
+            '*' => {
+                st(Token::Multiply, &mut input, &mut tokens);
+            }
+            '%' => {
+                st(Token::Remainder, &mut input, &mut tokens);
             }
 
             _ => {

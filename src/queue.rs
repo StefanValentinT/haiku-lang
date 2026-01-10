@@ -1,5 +1,5 @@
 pub trait IsQueue<T: Clone> {
-    fn add(&mut self, val: T) -> Result<Option<T>, &str>;
+    fn add(&mut self, val: T);
     fn remove(&mut self) -> Result<T, &str>;
     fn peek(&self) -> Result<T, &str>;
     fn size(&self) -> usize;
@@ -34,9 +34,8 @@ impl<T: Clone> Default for Queue<T> {
 }
 
 impl<T: Clone> IsQueue<T> for Queue<T> {
-    fn add(&mut self, val: T) -> Result<Option<T>, &str> {
+    fn add(&mut self, val: T) {
         self.queue.push(val);
-        Ok(None)
     }
 
     fn remove(&mut self) -> Result<T, &str> {
