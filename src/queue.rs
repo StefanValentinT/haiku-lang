@@ -22,6 +22,17 @@ impl<T: Clone + PartialEq> Queue<T> {
 }
 
 impl<T: Clone> Queue<T> {
+    /// Peek n-th element ahead in the queue without consuming it.
+    pub fn peek_n(&self, n: usize) -> Result<T, &str> {
+        if n < self.queue.len() {
+            Ok(self.queue[n].clone())
+        } else {
+            Err("The queue does not have that many elements")
+        }
+    }
+}
+
+impl<T: Clone> Queue<T> {
     pub fn new() -> Queue<T> {
         Queue { queue: vec![] }
     }

@@ -1,8 +1,6 @@
-use std::sync::atomic::{AtomicI32, Ordering};
-
-use crate::parser::Decl::Declaration;
 use crate::parser::{
-    BinaryOp, BlockItem, Decl, Expr, FuncDef, Program, Stmt, UnaryOp, make_temporary, next_number,
+    BinaryOp, Block, BlockItem, Decl, Expr, FuncDef, Program, Stmt, UnaryOp, make_temporary,
+    next_number,
 };
 
 #[derive(Debug)]
@@ -70,8 +68,6 @@ pub enum TacBinaryOp {
     Multiply,
     Divide,
     Remainder,
-    And,
-    Or,
     Equal,
     NotEqual,
     LessThan,
@@ -93,7 +89,9 @@ fn funcdef_to_tac(func: FuncDef) -> TacFuncDef {
         FuncDef::Function { name, body } => {
             let mut instructions = Vec::new();
 
-            for block_item in body {
+            let Block::Block(items) = body;
+
+            for block_item in items {
                 match block_item {
                     BlockItem::S(stmt) => stmt_to_tac(stmt, &mut instructions),
 
@@ -109,7 +107,10 @@ fn funcdef_to_tac(func: FuncDef) -> TacFuncDef {
                             });
                         }
 
-                        Decl::Declaration { name, expr: None } => (),
+                        Decl::Declaration {
+                            name: _,
+                            expr: None,
+                        } => (),
                     },
                 }
             }
@@ -168,6 +169,141 @@ fn stmt_to_tac(stmt: Stmt, instructions: &mut Vec<TacInstruction>) {
                     instructions.push(TacInstruction::Label(end_label));
                 }
             }
+        }
+        Stmt::Compound(block) => {
+            let crate::parser::Block::Block(items) = block;
+
+            for item in items {
+                match item {
+                    BlockItem::S(stmt) => {
+                        stmt_to_tac(stmt, instructions);
+                    }
+
+                    BlockItem::D(decl) => match decl {
+                        Decl::Declaration {
+                            name,
+                            expr: Some(init),
+                        } => {
+                            let rhs = expr_to_tac(init, instructions);
+                            instructions.push(TacInstruction::Copy {
+                                src: rhs,
+                                dest: TacVal::Var(name),
+                            });
+                        }
+
+                        Decl::Declaration { expr: None, .. } => (),
+                    },
+                }
+            }
+        }
+        Stmt::Break { label } => {
+            instructions.push(TacInstruction::Jump {
+                target: format!("break_{}", label),
+            });
+        }
+
+        Stmt::Continue { label } => {
+            instructions.push(TacInstruction::Jump {
+                target: format!("continue_{}", label),
+            });
+        }
+
+        Stmt::While {
+            condition,
+            body,
+            label,
+        } => {
+            let continue_label = format!("continue_{}", label);
+            let break_label = format!("break_{}", label);
+
+            instructions.push(TacInstruction::Label(continue_label.clone()));
+            let cond_val = expr_to_tac(condition, instructions);
+            instructions.push(TacInstruction::JumpIfZero {
+                condition: cond_val,
+                target: break_label.clone(),
+            });
+
+            stmt_to_tac(*body, instructions);
+            instructions.push(TacInstruction::Jump {
+                target: continue_label.clone(),
+            });
+            instructions.push(TacInstruction::Label(break_label));
+        }
+
+        Stmt::DoWhile {
+            body,
+            condition,
+            label,
+        } => {
+            let start_label = format!("start_{}", label);
+            let continue_label = format!("continue_{}", label);
+            let break_label = format!("break_{}", label);
+
+            instructions.push(TacInstruction::Label(start_label.clone()));
+            stmt_to_tac(*body, instructions);
+            instructions.push(TacInstruction::Label(continue_label.clone()));
+
+            let cond_val = expr_to_tac(condition, instructions);
+            instructions.push(TacInstruction::JumpIfNotZero {
+                condition: cond_val,
+                target: start_label,
+            });
+            instructions.push(TacInstruction::Label(break_label));
+        }
+
+        Stmt::For {
+            init,
+            condition,
+            post,
+            body,
+            label,
+        } => {
+            let break_label = format!("break_{}", label);
+            let continue_label = format!("continue_{}", label);
+            let start_label = format!("start_{}", label);
+
+            match init {
+                crate::parser::ForInit::InitDecl(d) => {
+                    if let Decl::Declaration {
+                        name,
+                        expr: Some(e),
+                    } = d
+                    {
+                        let rhs = expr_to_tac(e, instructions);
+                        instructions.push(TacInstruction::Copy {
+                            src: rhs,
+                            dest: TacVal::Var(name),
+                        });
+                    }
+                }
+                crate::parser::ForInit::InitExpr(e) => {
+                    if let Some(e) = e {
+                        expr_to_tac(e, instructions);
+                    }
+                }
+            }
+
+            instructions.push(TacInstruction::Label(start_label.clone()));
+
+            if let Some(cond) = condition {
+                let cond_val = expr_to_tac(cond, instructions);
+                instructions.push(TacInstruction::JumpIfZero {
+                    condition: cond_val,
+                    target: break_label.clone(),
+                });
+            }
+
+            stmt_to_tac(*body, instructions);
+
+            instructions.push(TacInstruction::Label(continue_label.clone()));
+            if let Some(post_expr) = post {
+                expr_to_tac(post_expr, instructions);
+            }
+
+            instructions.push(TacInstruction::Jump {
+                target: start_label.clone(),
+            });
+            instructions.push(TacInstruction::Label(break_label));
         }
     }
 }

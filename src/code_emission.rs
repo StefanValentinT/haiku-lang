@@ -2,10 +2,9 @@ use crate::asm_gen::*;
 use std::fmt::Write;
 use std::process::{Command, exit};
 
-
 pub fn emit_assembly(program: &AsmProgram) -> String {
     let mut out = String::new();
-    let AsmProgram::Program(func) = program; 
+    let AsmProgram::Program(func) = program;
     emit_function(func, &mut out);
     out
 }

@@ -1,9 +1,4 @@
-use clap::Id;
-
-use crate::{
-    parser::{Expr, FuncDef, Program, Stmt},
-    tac::{TacBinaryOp, TacFuncDef, TacInstruction, TacProgram, TacUnaryOp, TacVal},
-};
+use crate::tac::{TacBinaryOp, TacFuncDef, TacInstruction, TacProgram, TacUnaryOp, TacVal};
 use std::{collections::HashMap, fmt::Write};
 
 #[derive(Debug)]

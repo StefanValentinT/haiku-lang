@@ -40,10 +40,15 @@ pub enum Token {
     QuestionMark,
     Colon,
 
+    Comma,
+
     EOF,
 }
 
-const KEYWORDS: [&str; 5] = ["int", "void", "return", "if", "else"];
+const KEYWORDS: [&str; 12] = [
+    "int", "void", "return", "if", "else", "do", "while", "for", "break", "continue", "switch",
+    "default",
+];
 
 fn is_boundary(c: char) -> bool {
     matches!(
@@ -105,6 +110,9 @@ pub fn lex_string(input: String) -> Queue<Token> {
             }
             ';' => {
                 st(Token::Semicolon, &mut input, &mut tokens);
+            }
+            ',' => {
+                st(Token::Comma, &mut input, &mut tokens);
             }
             '~' => {
                 st(Token::Tilde, &mut input, &mut tokens);

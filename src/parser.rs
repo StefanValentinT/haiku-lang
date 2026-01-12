@@ -1,7 +1,4 @@
-use std::{
-    collections::HashMap,
-    sync::atomic::{AtomicI32, Ordering},
-};
+use std::sync::atomic::{AtomicI32, Ordering};
 
 use crate::{
     lexer::Token,
@@ -15,7 +12,12 @@ pub enum Program {
 
 #[derive(Debug)]
 pub enum FuncDef {
-    Function { name: String, body: Vec<BlockItem> },
+    Function { name: String, body: Block },
+}
+
+#[derive(Debug)]
+pub enum Block {
+    Block(Vec<BlockItem>),
 }
 
 #[derive(Debug)]
@@ -38,7 +40,40 @@ pub enum Stmt {
         then_case: Box<Stmt>,
         else_case: Option<Box<Stmt>>,
     },
-    Null, //lone semicolon
+    Compound(Block),
+
+    Break {
+        label: String,
+    },
+    Continue {
+        label: String,
+    },
+
+    While {
+        condition: Expr,
+        body: Box<Stmt>,
+        label: String,
+    },
+    DoWhile {
+        body: Box<Stmt>,
+        condition: Expr,
+        label: String,
+    },
+    For {
+        init: ForInit,
+        condition: Option<Expr>,
+        post: Option<Expr>,
+        body: Box<Stmt>,
+        label: String,
+    },
+
+    Null,
+}
+
+#[derive(Debug)]
+pub enum ForInit {
+    InitDecl(Decl),
+    InitExpr(Option<Expr>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -89,6 +124,10 @@ pub fn make_temporary() -> String {
     format!("tmp.{c}")
 }
 
+pub fn make_loop_label() -> String {
+    format!("Label{}", make_temporary())
+}
+
 pub fn parse(tokens: Queue<Token>) -> Program {
     let mut tokens = tokens;
     let main_func = parse_func_def(&mut tokens);
@@ -122,7 +161,26 @@ fn parse_func_def(tokens: &mut Queue<Token>) -> FuncDef {
     expect(Token::CloseBrace, tokens);
     expect(Token::EOF, tokens);
 
+    let body = Block::Block(body);
+
     FuncDef::Function { name, body }
+}
+
+fn parse_block(tokens: &mut Queue<Token>) -> Block {
+    expect(Token::OpenBrace, tokens);
+
+    let mut items = Vec::new();
+
+    while let Ok(tok) = tokens.peek() {
+        if tok == Token::CloseBrace {
+            break;
+        }
+        items.push(parse_block_item(tokens));
+    }
+
+    expect(Token::CloseBrace, tokens);
+
+    Block::Block(items)
 }
 
 fn parse_block_item(tokens: &mut Queue<Token>) -> BlockItem {
@@ -160,29 +218,104 @@ fn parse_statement(tokens: &mut Queue<Token>) -> Stmt {
                 expect(Token::Semicolon, tokens);
                 Stmt::Return(expr)
             }
+
             "if" => {
                 tokens.consume();
                 expect(Token::OpenParen, tokens);
                 let condition = parse_expr(tokens, 0);
                 expect(Token::CloseParen, tokens);
                 let then_case = Box::new(parse_statement(tokens));
-                let mut else_case = None;
-                if tokens.peek().unwrap() == Token::Keyword("else".to_string()) {
+                let else_case = if tokens.peek().unwrap() == Token::Keyword("else".to_string()) {
                     tokens.consume();
-                    else_case = Some(Box::new(parse_statement(tokens)));
-                }
+                    Some(Box::new(parse_statement(tokens)))
+                } else {
+                    None
+                };
                 Stmt::If {
                     condition,
                     then_case,
                     else_case,
                 }
             }
-            _ => panic!("Expected keyword, got {}", s),
+
+            "break" => {
+                tokens.consume();
+                expect(Token::Semicolon, tokens);
+                Stmt::Break {
+                    label: String::new(),
+                }
+            }
+
+            "continue" => {
+                tokens.consume();
+                expect(Token::Semicolon, tokens);
+                Stmt::Continue {
+                    label: String::new(),
+                }
+            }
+
+            "while" => {
+                tokens.consume();
+                expect(Token::OpenParen, tokens);
+                let condition = parse_expr(tokens, 0);
+                expect(Token::CloseParen, tokens);
+                let body = Box::new(parse_statement(tokens));
+                Stmt::While {
+                    condition,
+                    body,
+                    label: String::new(),
+                }
+            }
+
+            "do" => {
+                tokens.consume();
+                let body = Box::new(parse_statement(tokens));
+                expect(Token::Keyword("while".to_string()), tokens);
+                expect(Token::OpenParen, tokens);
+                let condition = parse_expr(tokens, 0);
+                expect(Token::CloseParen, tokens);
+                expect(Token::Semicolon, tokens);
+                Stmt::DoWhile {
+                    body,
+                    condition,
+                    label: String::new(),
+                }
+            }
+
+            "for" => {
+                tokens.consume();
+                expect(Token::OpenParen, tokens);
+
+                let init = parse_for_init(tokens);
+                let condition = parse_optional_expr(tokens, Token::Semicolon);
+                expect(Token::Semicolon, tokens);
+                let post = parse_optional_expr(tokens, Token::CloseParen);
+
+                expect(Token::CloseParen, tokens);
+                let body = Box::new(parse_statement(tokens));
+
+                Stmt::For {
+                    init,
+                    condition,
+                    post,
+                    body,
+                    label: String::new(),
+                }
+            }
+
+            _ => panic!("Unexpected keyword {:?}", s),
         },
+
+        Token::OpenBrace => {
+            let block = parse_block(tokens);
+            Stmt::Compound(block)
+        }
+
         Token::Semicolon => {
             tokens.consume();
             Stmt::Null
         }
+
         _ => {
             let expr = parse_expr(tokens, 0);
             expect(Token::Semicolon, tokens);
@@ -249,6 +382,28 @@ fn parse_expr(tokens: &mut Queue<Token>, min_prec: i32) -> Expr {
     }
 
     left
+}
+
+fn parse_for_init(tokens: &mut Queue<Token>) -> ForInit {
+    match tokens.peek().unwrap() {
+        Token::Keyword(ref s) if s == "int" => {
+            let decl = parse_declaration(tokens);
+            ForInit::InitDecl(decl)
+        }
+        _ => {
+            let expr = parse_optional_expr(tokens, Token::Semicolon);
+            expect(Token::Semicolon, tokens);
+            ForInit::InitExpr(expr)
+        }
+    }
+}
+
+fn parse_optional_expr(tokens: &mut Queue<Token>, end: Token) -> Option<Expr> {
+    if tokens.peek().unwrap() == end {
+        None
+    } else {
+        Some(parse_expr(tokens, 0))
+    }
 }
 
 fn parse_conditional_middle(tokens: &mut Queue<Token>) -> Expr {

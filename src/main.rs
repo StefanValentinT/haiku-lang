@@ -10,12 +10,12 @@ mod parser;
 mod queue;
 mod semantic_analysis;
 mod tac;
-
+mod utils;
 use clap::Parser;
 
 use crate::{
     asm_gen::gen_asm, code_emission::*, lexer::lex_string, parser::parse,
-    semantic_analysis::variable_resolution_pass, tac::gen_tac,
+    semantic_analysis::semantic_analysis, tac::gen_tac,
 };
 
 #[derive(Parser, Debug)]
@@ -70,7 +70,7 @@ fn main() {
         return;
     }
 
-    let transformed_ast = variable_resolution_pass(ast);
+    let transformed_ast = semantic_analysis(ast);
     println!("AST after Semantic Analysis:\n{:#?}", transformed_ast);
     if args.validate {
         return;

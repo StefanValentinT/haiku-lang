@@ -1,6 +1,13 @@
 int main(void) {
-    int a = 2;
-    int b = 3;
-    int c =  a+b > 4 ? 2 : 3;
-    return c+ b;
+    int a = 4;
+    int pow = 3;
+
+    int count = 0;
+    int result = 1;
+
+    while (count < pow) {
+        result = result * a;
+        count = count + 1;
+    }
+    return result;
 }
