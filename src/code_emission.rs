@@ -1,6 +1,5 @@
 use crate::asm_gen::*;
 use std::fmt::Write;
-use std::process::{Command, exit};
 
 pub fn emit_assembly(program: &AsmProgram) -> String {
     let mut out = String::new();
@@ -268,19 +267,5 @@ fn cond_code_name(cc: &AsmCondCode) -> &'static str {
         AsmCondCode::GE => "ge",
         AsmCondCode::L => "lt",
         AsmCondCode::LE => "le",
-    }
-}
-
-pub fn assemble_and_link(asm_file: &str, exe_file: &str) {
-    let status = Command::new("cc")
-        .arg(asm_file)
-        .arg("-o")
-        .arg(exe_file)
-        .status()
-        .expect("Failed to invoke system compiler");
-
-    if !status.success() {
-        eprintln!("Assembler/linker failed");
-        exit(1);
     }
 }

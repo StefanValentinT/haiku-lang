@@ -1,13 +1,11 @@
+int f(void);
+int f(void);          // redeclaration – OK
+
 int main(void) {
-    int a = 4;
-    int pow = 3;
+    int f(void);      // redeclaration in inner scope – OK
+    return f();
+}
 
-    int count = 0;
-    int result = 1;
-
-    while (count < pow) {
-        result = result * a;
-        count = count + 1;
-    }
-    return result;
+int f(void) {         // single definition – OK
+    return 3;
 }

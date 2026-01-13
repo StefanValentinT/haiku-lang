@@ -65,6 +65,8 @@ pub enum AsmReg {
 
 pub fn gen_asm(program: TacProgram) -> AsmProgram {
     match program {
+        TacProgram::Program(_tac_func_defs) => todo!(),
+        /*
         TacProgram::Program { main_func } => {
             let asm_func = convert_func(main_func);
 
@@ -73,7 +75,7 @@ pub fn gen_asm(program: TacProgram) -> AsmProgram {
             let asm_func = fixup_instructions(asm_func, stack_size);
 
             AsmProgram::Program(asm_func)
-        }
+        }*/
     }
 }
 

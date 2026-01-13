@@ -1,11 +1,11 @@
 use crate::parser::{
-    BinaryOp, Block, BlockItem, Decl, Expr, FuncDef, Program, Stmt, UnaryOp, make_temporary,
-    next_number,
+    BinaryOp, Block, BlockItem, Decl, Expr, FunDecl, Program, Stmt, UnaryOp, VarDecl,
+    make_temporary, next_number,
 };
 
 #[derive(Debug)]
 pub enum TacProgram {
-    Program { main_func: TacFuncDef },
+    Program(Vec<TacFuncDef>),
 }
 
 #[derive(Debug)]
@@ -78,50 +78,58 @@ pub enum TacBinaryOp {
 
 pub fn gen_tac(program: Program) -> TacProgram {
     match program {
-        Program::Program { main_func } => TacProgram::Program {
-            main_func: funcdef_to_tac(main_func),
-        },
+        Program::Program(funcs) => {
+            let tac_funcs = funcs.into_iter().map(funcdecl_to_tac).collect();
+
+            TacProgram::Program(tac_funcs)
+        }
     }
 }
 
-fn funcdef_to_tac(func: FuncDef) -> TacFuncDef {
-    match func {
-        FuncDef::Function { name, body } => {
-            let mut instructions = Vec::new();
+fn funcdecl_to_tac(func: FunDecl) -> TacFuncDef {
+    let FunDecl {
+        name,
+        params: _,
+        body,
+    } = func;
 
-            let Block::Block(items) = body;
+    let mut instructions = Vec::new();
 
-            for block_item in items {
-                match block_item {
-                    BlockItem::S(stmt) => stmt_to_tac(stmt, &mut instructions),
+    if let Some(Block::Block(items)) = body {
+        for block_item in items {
+            match block_item {
+                BlockItem::S(stmt) => stmt_to_tac(stmt, &mut instructions),
 
-                    BlockItem::D(decl) => match decl {
-                        Decl::Declaration {
-                            name,
-                            expr: Some(initial_value),
-                        } => {
-                            let rhs = expr_to_tac(initial_value, &mut instructions);
-                            instructions.push(TacInstruction::Copy {
-                                src: rhs,
-                                dest: TacVal::Var(name),
-                            });
-                        }
+                BlockItem::D(decl) => match decl {
+                    Decl::Variable(VarDecl {
+                        name,
+                        expr: Some(initial_value),
+                    }) => {
+                        let rhs = expr_to_tac(initial_value, &mut instructions);
+                        instructions.push(TacInstruction::Copy {
+                            src: rhs,
+                            dest: TacVal::Var(name),
+                        });
+                    }
 
-                        Decl::Declaration {
-                            name: _,
-                            expr: None,
-                        } => (),
-                    },
-                }
-            }
+                    Decl::Variable(VarDecl {
+                        name: _,
+                        expr: None,
+                    }) => {}
 
-            instructions.push(TacInstruction::Return(TacVal::Constant(0)));
-
-            TacFuncDef::Function {
-                name,
-                body: instructions,
+                    Decl::Function(_fun_decl) => {
+                        todo!()
+                    }
+                },
             }
         }
+    }
+
+    instructions.push(TacInstruction::Return(TacVal::Constant(0)));
+
+    TacFuncDef::Function {
+        name,
+        body: instructions,
     }
 }
 
@@ -180,18 +188,18 @@ fn stmt_to_tac(stmt: Stmt, instructions: &mut Vec<TacInstruction>) {
                     }
 
                     BlockItem::D(decl) => match decl {
-                        Decl::Declaration {
+                        Decl::Variable(VarDecl {
                             name,
                             expr: Some(init),
-                        } => {
+                        }) => {
                             let rhs = expr_to_tac(init, instructions);
                             instructions.push(TacInstruction::Copy {
                                 src: rhs,
                                 dest: TacVal::Var(name),
                             });
                         }
-
-                        Decl::Declaration { expr: None, .. } => (),
+                        Decl::Variable(VarDecl { expr: None, .. }) => (),
+                        Decl::Function(_fun_decl) => todo!(),
                     },
                 }
             }
@@ -264,7 +272,7 @@ fn stmt_to_tac(stmt: Stmt, instructions: &mut Vec<TacInstruction>) {
 
             match init {
                 crate::parser::ForInit::InitDecl(d) => {
-                    if let Decl::Declaration {
+                    if let VarDecl {
                         name,
                         expr: Some(e),
                     } = d
@@ -383,6 +391,7 @@ fn expr_to_tac(e: Expr, instructions: &mut Vec<TacInstruction>) -> TacVal {
 
             result
         }
+        Expr::FunctionCall(_, _exprs) => todo!(),
     }
 }
 

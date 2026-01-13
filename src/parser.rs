@@ -11,19 +11,22 @@ pub enum Program {
 }
 
 #[derive(Debug)]
-pub enum Decl{
+pub enum Decl {
     Function(FunDecl),
-    Variable(VarDecl)
+    Variable(VarDecl),
 }
 
 #[derive(Debug)]
 pub struct VarDecl {
-     name: String, expr: Option<Expr>
+    pub name: String,
+    pub expr: Option<Expr>,
 }
 
 #[derive(Debug)]
-pub struct FuncDecl{
-     name: String, params: Vec<String>, body: Option<Block>
+pub struct FunDecl {
+    pub name: String,
+    pub params: Vec<String>,
+    pub body: Option<Block>,
 }
 
 #[derive(Debug)]
@@ -90,7 +93,7 @@ pub enum Expr {
     Binary(BinaryOp, Box<Expr>, Box<Expr>),
     Assignment(Box<Expr>, Box<Expr>),
     Conditional(Box<Expr>, Box<Expr>, Box<Expr>),
-    FunctionCall(String, Vec<Expr>)
+    FunctionCall(String, Vec<Expr>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -137,40 +140,68 @@ pub fn make_loop_label() -> String {
 
 pub fn parse(tokens: Queue<Token>) -> Program {
     let mut tokens = tokens;
-    let main_func = parse_func_def(&mut tokens);
-    Program::Program { main_func }
+    let mut funcs = Vec::new();
+
+    while tokens.peek().unwrap() != Token::EOF {
+        funcs.push(parse_func_decl(&mut tokens));
+    }
+
+    Program::Program(funcs)
 }
 
-fn parse_func_def(tokens: &mut Queue<Token>) -> FuncDef {
-    expect(Token::Keyword("int".to_string()), tokens);
+fn parse_func_decl(tokens: &mut Queue<Token>) -> FunDecl {
+    expect(Token::Keyword("int".into()), tokens);
+
     let name = match tokens.remove().unwrap() {
-        Token::Identifier(name) => name,
-        other => panic!("Syntax Error: Expected function name, got {:?}", other),
+        Token::Identifier(n) => n,
+        t => panic!("Expected function name, got {:?}", t),
     };
+
     expect(Token::OpenParen, tokens);
-
-    match tokens.remove().unwrap() {
-        Token::Keyword(ref s) if s == "void" => {}
-        other => panic!("Syntax Error: Expected 'void', got {:?}", other),
-    }
-
+    let params = parse_param_list(tokens);
     expect(Token::CloseParen, tokens);
-    expect(Token::OpenBrace, tokens);
 
-    let mut body = Vec::new();
-    while let Ok(next) = tokens.peek() {
-        if next == Token::CloseBrace {
-            break;
+    let body = match tokens.peek().unwrap() {
+        Token::OpenBrace => Some(parse_block(tokens)),
+        Token::Semicolon => {
+            tokens.consume();
+            None
         }
-        body.push(parse_block_item(tokens));
+        t => panic!("Expected {{ or ; after function declaration, got {:?}", t),
+    };
+
+    FunDecl { name, params, body }
+}
+
+fn parse_param_list(tokens: &mut Queue<Token>) -> Vec<String> {
+    match tokens.peek().unwrap() {
+        Token::Keyword(s) if s == "void" => {
+            tokens.consume();
+            Vec::new()
+        }
+        _ => {
+            let mut params = Vec::new();
+
+            loop {
+                expect(Token::Keyword("int".into()), tokens);
+
+                let name = match tokens.remove().unwrap() {
+                    Token::Identifier(n) => n,
+                    t => panic!("Expected parameter name, got {:?}", t),
+                };
+
+                params.push(name);
+
+                if tokens.peek().unwrap() == Token::Comma {
+                    tokens.consume();
+                } else {
+                    break;
+                }
+            }
+
+            params
+        }
     }
-
-    expect(Token::CloseBrace, tokens);
-    expect(Token::EOF, tokens);
-
-    let body = Block::Block(body);
-
-    FuncDef::Function { name, body }
 }
 
 fn parse_block(tokens: &mut Queue<Token>) -> Block {
@@ -198,22 +229,40 @@ fn parse_block_item(tokens: &mut Queue<Token>) -> BlockItem {
 }
 
 fn parse_declaration(tokens: &mut Queue<Token>) -> Decl {
-    expect(Token::Keyword("int".to_string()), tokens);
+    expect(Token::Keyword("int".into()), tokens);
 
     let name = match tokens.remove().unwrap() {
-        Token::Identifier(name) => name,
-        other => panic!("Syntax Error: Expected identifier, got {:?}", other),
+        Token::Identifier(n) => n,
+        t => panic!("Expected identifier, got {:?}", t),
     };
 
-    let exp = if let Ok(Token::Assign) = tokens.peek() {
-        tokens.remove().unwrap();
-        Some(parse_expr(tokens, 0))
-    } else {
-        None
-    };
+    match tokens.peek().unwrap() {
+        Token::OpenParen => {
+            expect(Token::OpenParen, tokens);
+            let params = parse_param_list(tokens);
+            expect(Token::CloseParen, tokens);
+            expect(Token::Semicolon, tokens);
 
-    expect(Token::Semicolon, tokens);
-    Decl::Declaration { name, expr: exp }
+            Decl::Function(FunDecl {
+                name,
+                params,
+                body: None,
+            })
+        }
+
+        _ => {
+            let expr = if tokens.peek().unwrap() == Token::Assign {
+                tokens.consume();
+                Some(parse_expr(tokens, 0))
+            } else {
+                None
+            };
+
+            expect(Token::Semicolon, tokens);
+
+            Decl::Variable(VarDecl { name, expr })
+        }
+    }
 }
 
 fn parse_statement(tokens: &mut Queue<Token>) -> Stmt {
@@ -332,22 +381,54 @@ fn parse_statement(tokens: &mut Queue<Token>) -> Stmt {
 }
 
 fn parse_factor(tokens: &mut Queue<Token>) -> Expr {
-    let next_token = tokens.remove().unwrap();
-    match next_token {
-        Token::IntLiteral(val) => Expr::Constant(val),
-        Token::Identifier(name) => Expr::Var(name),
-        Token::Tilde | Token::Minus | Token::Not => {
-            let op = parse_unop(&next_token);
-            let inner_expr = parse_factor(tokens);
-            Expr::Unary(op, Box::new(inner_expr))
+    match tokens.remove().unwrap() {
+        Token::IntLiteral(v) => Expr::Constant(v),
+
+        Token::Identifier(name) => {
+            if tokens.peek().unwrap() == Token::OpenParen {
+                tokens.consume();
+                let args = parse_argument_list(tokens);
+                expect(Token::CloseParen, tokens);
+                Expr::FunctionCall(name, args)
+            } else {
+                Expr::Var(name)
+            }
         }
+
+        tok @ (Token::Minus | Token::Tilde | Token::Not) => {
+            let op = parse_unop(&tok);
+            let inner = parse_factor(tokens);
+            Expr::Unary(op, Box::new(inner))
+        }
+
         Token::OpenParen => {
-            let inner_exp = parse_expr(tokens, 0);
+            let e = parse_expr(tokens, 0);
             expect(Token::CloseParen, tokens);
-            inner_exp
+            e
         }
-        _ => panic!("Malformed factor: {:?}", next_token),
+
+        t => panic!("Invalid factor {:?}", t),
     }
+}
+
+fn parse_argument_list(tokens: &mut Queue<Token>) -> Vec<Expr> {
+    let mut args = Vec::new();
+
+    if tokens.peek().unwrap() == Token::CloseParen {
+        return args;
+    }
+
+    loop {
+        args.push(parse_expr(tokens, 0));
+
+        if tokens.peek().unwrap() == Token::Comma {
+            tokens.consume();
+        } else {
+            break;
+        }
+    }
+
+    args
 }
 
 fn parse_expr(tokens: &mut Queue<Token>, min_prec: i32) -> Expr {
@@ -394,8 +475,8 @@ fn parse_expr(tokens: &mut Queue<Token>, min_prec: i32) -> Expr {
 fn parse_for_init(tokens: &mut Queue<Token>) -> ForInit {
     match tokens.peek().unwrap() {
         Token::Keyword(ref s) if s == "int" => {
-            let decl = parse_declaration(tokens);
-            ForInit::InitDecl(decl)
+            let var = parse_var_decl(tokens);
+            ForInit::InitDecl(var)
         }
         _ => {
             let expr = parse_optional_expr(tokens, Token::Semicolon);
@@ -403,6 +484,30 @@ fn parse_for_init(tokens: &mut Queue<Token>) -> ForInit {
             ForInit::InitExpr(expr)
         }
     }
+}
+
+fn parse_var_decl(tokens: &mut Queue<Token>) -> VarDecl {
+    expect(Token::Keyword("int".into()), tokens);
+
+    let name = match tokens.remove().unwrap() {
+        Token::Identifier(n) => n,
+        t => panic!("Expected variable name, got {:?}", t),
+    };
+
+    if tokens.peek().unwrap() == Token::OpenParen {
+        panic!("Function declaration not allowed in for-loop initializer");
+    }
+
+    let expr = if tokens.peek().unwrap() == Token::Assign {
+        tokens.consume();
+        Some(parse_expr(tokens, 0))
+    } else {
+        None
+    };
+
+    expect(Token::Semicolon, tokens);
+
+    VarDecl { name, expr }
 }
 
 fn parse_optional_expr(tokens: &mut Queue<Token>, end: Token) -> Option<Expr> {
