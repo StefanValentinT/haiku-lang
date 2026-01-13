@@ -7,12 +7,23 @@ use crate::{
 
 #[derive(Debug)]
 pub enum Program {
-    Program { main_func: FuncDef },
+    Program(Vec<FunDecl>),
 }
 
 #[derive(Debug)]
-pub enum FuncDef {
-    Function { name: String, body: Block },
+pub enum Decl{
+    Function(FunDecl),
+    Variable(VarDecl)
+}
+
+#[derive(Debug)]
+pub struct VarDecl {
+     name: String, expr: Option<Expr>
+}
+
+#[derive(Debug)]
+pub struct FuncDecl{
+     name: String, params: Vec<String>, body: Option<Block>
 }
 
 #[derive(Debug)]
@@ -24,11 +35,6 @@ pub enum Block {
 pub enum BlockItem {
     S(Stmt),
     D(Decl),
-}
-
-#[derive(Debug)]
-pub enum Decl {
-    Declaration { name: String, expr: Option<Expr> },
 }
 
 #[derive(Debug)]
@@ -72,7 +78,7 @@ pub enum Stmt {
 
 #[derive(Debug)]
 pub enum ForInit {
-    InitDecl(Decl),
+    InitDecl(VarDecl),
     InitExpr(Option<Expr>),
 }
 
@@ -84,6 +90,7 @@ pub enum Expr {
     Binary(BinaryOp, Box<Expr>, Box<Expr>),
     Assignment(Box<Expr>, Box<Expr>),
     Conditional(Box<Expr>, Box<Expr>, Box<Expr>),
+    FunctionCall(String, Vec<Expr>)
 }
 
 #[derive(Debug, Clone, PartialEq)]
