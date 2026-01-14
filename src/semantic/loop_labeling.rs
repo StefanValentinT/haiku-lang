@@ -1,4 +1,7 @@
-use crate::parser::{Block, BlockItem, FunDecl, Program, Stmt, make_loop_label};
+use crate::{
+    gen_names::make_loop_label,
+    parser::{Block, BlockItem, FunDecl, Program, Stmt},
+};
 
 pub fn loop_labeling_pass(program: Program) -> Program {
     match program {

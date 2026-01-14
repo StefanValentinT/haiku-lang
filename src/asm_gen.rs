@@ -3,7 +3,7 @@ use std::{collections::HashMap, fmt::Write};
 
 #[derive(Debug)]
 pub enum AsmProgram {
-    Program(AsmFuncDef),
+    Program(Vec<AsmFuncDef>),
 }
 #[derive(Debug)]
 pub enum AsmFuncDef {
@@ -25,6 +25,9 @@ pub enum AsmInstruction {
     SetCC(AsmCondCode, AsmOperand),
     Label(String),
     AllocateStack(i32),
+    DeallocateStack(i32),
+    Push(AsmOperand),
+    Call(String),
     Ret,
 }
 
@@ -58,7 +61,12 @@ pub enum AsmOperand {
 #[derive(Debug, Clone)]
 pub enum AsmReg {
     Ax,
+    Cx,
     Dx,
+    Di,
+    Si,
+    R8,
+    R9,
     R10,
     R11,
 }
@@ -66,8 +74,8 @@ pub enum AsmReg {
 pub fn gen_asm(program: TacProgram) -> AsmProgram {
     match program {
         TacProgram::Program(_tac_func_defs) => todo!(),
-        /*
-        TacProgram::Program { main_func } => {
+        
+        TacProgram::Programmain_func } => {
             let asm_func = convert_func(main_func);
 
             let (asm_func, stack_size) = replace_pseudoregisters(asm_func);
@@ -75,7 +83,7 @@ pub fn gen_asm(program: TacProgram) -> AsmProgram {
             let asm_func = fixup_instructions(asm_func, stack_size);
 
             AsmProgram::Program(asm_func)
-        }*/
+        }
     }
 }
 
@@ -209,7 +217,7 @@ fn replace_pseudoregisters(func: AsmFuncDef) -> (AsmFuncDef, i32) {
 
 fn convert_func(func: TacFuncDef) -> AsmFuncDef {
     match func {
-        TacFuncDef::Function { name, body } => {
+        TacFuncDef::Function { name, params, body } => {
             let mut instructions = Vec::new();
 
             convert_instr(body, &mut instructions);
@@ -233,7 +241,6 @@ fn convert_instr(tac_instructions: Vec<TacInstruction>, instructions: &mut Vec<A
                 },
                 Jmp("__func_exit".to_string()),
             ],
-
             TacInstruction::Unary { op, src, dest } => {
                 let asm_src = tac_op_to_asm(src);
                 let asm_dest = tac_op_to_asm(dest);
@@ -256,7 +263,6 @@ fn convert_instr(tac_instructions: Vec<TacInstruction>, instructions: &mut Vec<A
                     ],
                 }
             }
-
             TacInstruction::Binary {
                 op,
                 src1,
@@ -322,7 +328,6 @@ fn convert_instr(tac_instructions: Vec<TacInstruction>, instructions: &mut Vec<A
                     _ => unimplemented!(),
                 }
             }
-
             TacInstruction::Copy { src, dest } => vec![Mov {
                 src: tac_op_to_asm(src),
                 dest: tac_op_to_asm(dest),
@@ -337,6 +342,11 @@ fn convert_instr(tac_instructions: Vec<TacInstruction>, instructions: &mut Vec<A
                 vec![Cmp(AsmOperand::Imm(0), val), JmpCC(AsmCondCode::NE, target)]
             }
             TacInstruction::Label(ident) => vec![Label(ident)],
+            TacInstruction::FunCall {
+                fun_name,
+                args,
+                dest,
+            } => todo!(),
         };
         instructions.append(&mut new_instr);
     }

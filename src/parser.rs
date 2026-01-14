@@ -10,37 +10,37 @@ pub enum Program {
     Program(Vec<FunDecl>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Decl {
     Function(FunDecl),
     Variable(VarDecl),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct VarDecl {
     pub name: String,
-    pub expr: Option<Expr>,
+    pub init_expr: Option<Expr>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FunDecl {
     pub name: String,
     pub params: Vec<String>,
     pub body: Option<Block>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Block {
     Block(Vec<BlockItem>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum BlockItem {
     S(Stmt),
     D(Decl),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Stmt {
     Return(Expr),
     Expression(Expr),
@@ -79,7 +79,7 @@ pub enum Stmt {
     Null,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ForInit {
     InitDecl(VarDecl),
     InitExpr(Option<Expr>),
@@ -119,23 +119,6 @@ pub enum BinaryOp {
     LessOrEqual,
     GreaterThan,
     GreaterOrEqual,
-}
-
-static TEMP_VAR_COUNTER: AtomicI32 = AtomicI32::new(0);
-
-pub fn next_number() -> i32 {
-    let c = TEMP_VAR_COUNTER.load(Ordering::SeqCst);
-    TEMP_VAR_COUNTER.fetch_add(1, Ordering::SeqCst);
-    c
-}
-
-pub fn make_temporary() -> String {
-    let c = next_number();
-    format!("tmp.{c}")
-}
-
-pub fn make_loop_label() -> String {
-    format!("Label{}", make_temporary())
 }
 
 pub fn parse(tokens: Queue<Token>) -> Program {
@@ -260,7 +243,10 @@ fn parse_declaration(tokens: &mut Queue<Token>) -> Decl {
 
             expect(Token::Semicolon, tokens);
 
-            Decl::Variable(VarDecl { name, expr })
+            Decl::Variable(VarDecl {
+                name,
+                init_expr: expr,
+            })
         }
     }
 }
@@ -507,7 +493,10 @@ fn parse_var_decl(tokens: &mut Queue<Token>) -> VarDecl {
 
     expect(Token::Semicolon, tokens);
 
-    VarDecl { name, expr }
+    VarDecl {
+        name,
+        init_expr: expr,
+    }
 }
 
 fn parse_optional_expr(tokens: &mut Queue<Token>, end: Token) -> Option<Expr> {

@@ -5,12 +5,14 @@ use std::{
 
 mod asm_gen;
 mod code_emission;
+mod gen_names;
 mod lexer;
 mod parser;
 mod queue;
 mod semantic;
 mod tac;
 mod utils;
+
 use clap::Parser;
 
 use crate::{

@@ -1,6 +1,6 @@
-use crate::parser::{
-    BinaryOp, Block, BlockItem, Decl, Expr, FunDecl, Program, Stmt, UnaryOp, VarDecl,
-    make_temporary, next_number,
+use crate::{
+    gen_names::*,
+    parser::{BinaryOp, Block, BlockItem, Decl, Expr, FunDecl, Program, Stmt, UnaryOp, VarDecl},
 };
 
 #[derive(Debug)]
@@ -12,6 +12,7 @@ pub enum TacProgram {
 pub enum TacFuncDef {
     Function {
         name: String,
+        params: Vec<String>,
         body: Vec<TacInstruction>,
     },
 }
@@ -46,6 +47,11 @@ pub enum TacInstruction {
         target: String,
     },
     Label(String),
+    FunCall {
+        fun_name: String,
+        args: Vec<TacVal>,
+        dest: TacVal,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -89,7 +95,7 @@ pub fn gen_tac(program: Program) -> TacProgram {
 fn funcdecl_to_tac(func: FunDecl) -> TacFuncDef {
     let FunDecl {
         name,
-        params: _,
+        params: params,
         body,
     } = func;
 
@@ -103,7 +109,7 @@ fn funcdecl_to_tac(func: FunDecl) -> TacFuncDef {
                 BlockItem::D(decl) => match decl {
                     Decl::Variable(VarDecl {
                         name,
-                        expr: Some(initial_value),
+                        init_expr: Some(initial_value),
                     }) => {
                         let rhs = expr_to_tac(initial_value, &mut instructions);
                         instructions.push(TacInstruction::Copy {
@@ -114,12 +120,10 @@ fn funcdecl_to_tac(func: FunDecl) -> TacFuncDef {
 
                     Decl::Variable(VarDecl {
                         name: _,
-                        expr: None,
-                    }) => {}
+                        init_expr: None,
+                    }) => (),
 
-                    Decl::Function(_fun_decl) => {
-                        todo!()
-                    }
+                    Decl::Function(_) => (),
                 },
             }
         }
@@ -129,6 +133,7 @@ fn funcdecl_to_tac(func: FunDecl) -> TacFuncDef {
 
     TacFuncDef::Function {
         name,
+        params,
         body: instructions,
     }
 }
@@ -149,11 +154,11 @@ fn stmt_to_tac(stmt: Stmt, instructions: &mut Vec<TacInstruction>) {
             else_case,
         } => {
             let cond_val = expr_to_tac(condition, instructions);
-            let end_label = format!("if_end{}", next_number());
+            let end_label = make_if_end();
 
             match else_case {
                 Some(else_stmt) => {
-                    let else_label = format!("if_else{}", next_number());
+                    let else_label = make_if_else();
                     instructions.push(TacInstruction::JumpIfZero {
                         condition: cond_val,
                         target: else_label.clone(),
@@ -190,7 +195,7 @@ fn stmt_to_tac(stmt: Stmt, instructions: &mut Vec<TacInstruction>) {
                     BlockItem::D(decl) => match decl {
                         Decl::Variable(VarDecl {
                             name,
-                            expr: Some(init),
+                            init_expr: Some(init),
                         }) => {
                             let rhs = expr_to_tac(init, instructions);
                             instructions.push(TacInstruction::Copy {
@@ -198,8 +203,12 @@ fn stmt_to_tac(stmt: Stmt, instructions: &mut Vec<TacInstruction>) {
                                 dest: TacVal::Var(name),
                             });
                         }
-                        Decl::Variable(VarDecl { expr: None, .. }) => (),
-                        Decl::Function(_fun_decl) => todo!(),
+                        Decl::Variable(VarDecl {
+                            init_expr: None, ..
+                        }) => (),
+                        Decl::Function(fun_decl) => {
+                            funcdecl_to_tac(fun_decl);
+                        }
                     },
                 }
             }
@@ -274,7 +283,7 @@ fn stmt_to_tac(stmt: Stmt, instructions: &mut Vec<TacInstruction>) {
                 crate::parser::ForInit::InitDecl(d) => {
                     if let VarDecl {
                         name,
-                        expr: Some(e),
+                        init_expr: Some(e),
                     } = d
                     {
                         let rhs = expr_to_tac(e, instructions);
@@ -363,8 +372,8 @@ fn expr_to_tac(e: Expr, instructions: &mut Vec<TacInstruction>) -> TacVal {
             let result = TacVal::Var(result_name.clone());
 
             let cond_val = expr_to_tac(*condition, instructions);
-            let else_label = format!("cond_else{}", next_number());
-            let end_label = format!("cond_end{}", next_number());
+            let else_label = make_cond_else();
+            let end_label = make_cond_end();
 
             instructions.push(TacInstruction::JumpIfZero {
                 condition: cond_val,
@@ -391,7 +400,25 @@ fn expr_to_tac(e: Expr, instructions: &mut Vec<TacInstruction>) -> TacVal {
 
             result
         }
-        Expr::FunctionCall(_, _exprs) => todo!(),
+        Expr::FunctionCall(name, args) => {
+            let mut arg_vals = Vec::new();
+
+            for arg_expr in args {
+                let val = expr_to_tac(arg_expr, instructions);
+                arg_vals.push(val);
+            }
+
+            let ret_temp_name = make_temporary();
+            let ret_val = TacVal::Var(ret_temp_name.clone());
+
+            instructions.push(TacInstruction::FunCall {
+                fun_name: name,
+                args: arg_vals,
+                dest: ret_val.clone(),
+            });
+
+            ret_val
+        }
     }
 }
 
@@ -404,8 +431,8 @@ fn short_circuit_logic(
     let result_name = make_temporary();
     let result = TacVal::Var(result_name.clone());
 
-    let false_label = format!("and_false{}", next_number());
-    let end_label = format!("and_end{}", next_number());
+    let false_label = make_and_false();
+    let end_label = make_and_end();
 
     match op {
         BinaryOp::And => {
@@ -439,8 +466,8 @@ fn short_circuit_logic(
         }
 
         BinaryOp::Or => {
-            let true_label = format!("or_true{}", next_number());
-            let end_label = format!("or_end{}", next_number());
+            let true_label = make_or_true();
+            let end_label = make_or_end();
 
             let v1 = expr_to_tac(expr1, instructions);
             instructions.push(TacInstruction::JumpIfNotZero {

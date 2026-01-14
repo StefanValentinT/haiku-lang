@@ -1,5 +1,6 @@
-use crate::parser::{
-    Block, BlockItem, Decl, Expr, ForInit, FunDecl, Program, Stmt, VarDecl, make_temporary,
+use crate::{
+    gen_names::make_temporary,
+    parser::{Block, BlockItem, Decl, Expr, ForInit, FunDecl, Program, Stmt, VarDecl},
 };
 use std::collections::HashMap;
 
@@ -77,11 +78,17 @@ fn resolve_var_decl_inner(
 }
 
 fn resolve_var_decl(decl: VarDecl, identifier_map: &mut HashMap<String, MapEntry>) -> VarDecl {
-    let VarDecl { name, expr } = decl;
+    let VarDecl {
+        name,
+        init_expr: expr,
+    } = decl;
 
     let (name, expr) = resolve_var_decl_inner(name, expr, identifier_map);
 
-    VarDecl { name, expr }
+    VarDecl {
+        name,
+        init_expr: expr,
+    }
 }
 
 fn resolve_decl(decl: Decl, identifier_map: &mut HashMap<String, MapEntry>) -> Decl {
