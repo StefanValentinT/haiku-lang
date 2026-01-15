@@ -3,7 +3,7 @@
 
 int main(void) {
 
-    // pass global variables of each size
+    
     if (!fun0(globvar_1, globvar_2, globvar_3, globvar_4, globvar_5, globvar_6,
              globvar_7, globvar_8, globvar_9, globvar_10, globvar_11,
              globvar_12, globvar_13, globvar_14, globvar_15, globvar_16,
@@ -36,7 +36,7 @@ int main(void) {
         return 4;
     }
 
-    // define local variables of each size
+    
     struct bytesize1 locvar_1 = {{0}};
 
     struct bytesize2 locvar_2 = {{1, 2}};
@@ -106,7 +106,7 @@ int main(void) {
                                     28, 29, 30, 31, 32, 33, 34, 35,
                                     36, 37, 38, 39, 40, 41, 42, 43}};
 
-    // pass local variables of each size
+    
     if (!fun0(locvar_1, locvar_2, locvar_3, locvar_4, locvar_5, locvar_6,
              locvar_7, locvar_8, locvar_9, locvar_10, locvar_11, locvar_12,
              locvar_13, locvar_14, locvar_15, locvar_16, locvar_17, locvar_18,

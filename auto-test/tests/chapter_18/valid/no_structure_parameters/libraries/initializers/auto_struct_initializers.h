@@ -14,13 +14,13 @@
 #endif
 #endif
 
-// library functions
+
 int strcmp(char *s1, char *s2);
 
 void *malloc(unsigned long size);
 void *calloc(unsigned long nmemb, unsigned long size);
 
-// struct type def
+
 struct s {
     char *one_msg;
     unsigned char two_arr[3];
@@ -29,7 +29,7 @@ struct s {
     double *five_d_ptr;
 };
 
-// validation functions defined in library
+
 int validate_full_initialization(struct s *ptr);
 int validate_partial_initialization(struct s *ptr, char *expected_msg);
 int validate_converted(struct s *ptr);

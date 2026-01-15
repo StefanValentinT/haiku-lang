@@ -10,5 +10,5 @@ struct t {
 
 int main(void) {
     struct s foo = {1, 2};
-    return foo.blah; // "struct s" has no member "blah"
+    return foo.blah; 
 }

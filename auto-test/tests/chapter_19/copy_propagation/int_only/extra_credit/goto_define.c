@@ -5,7 +5,7 @@ int target(int flag) {
     def_x:
         x = 20;
     }
-    return x; // return 20
+    return x; 
 }
 
 int main(void) {

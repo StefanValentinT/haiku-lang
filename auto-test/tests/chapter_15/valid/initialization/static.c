@@ -1,6 +1,6 @@
 /* Test initializing one-dimensional arrays with static storage duration */
 
-// fully initialized
+
 double double_arr[3] = {1.0, 2.0, 3.0};
 
 int check_double_arr(double *arr) {
@@ -19,7 +19,7 @@ int check_double_arr(double *arr) {
     return 0;
 }
 
-// partly initialized
+
 unsigned uint_arr[5] = {
     1u,
     0u,
@@ -45,7 +45,7 @@ int check_uint_arr(unsigned *arr) {
     return 0;
 }
 
-// uninitialized; should be all zeros
+
 long long_arr[1000];
 
 int check_long_arr(long *arr) {
@@ -57,7 +57,7 @@ int check_long_arr(long *arr) {
     return 0;
 }
 
-// initialized w/ values of different types
+
 unsigned long ulong_arr[4] = {
     100.0, 11, 12345l, 4294967295U
 };
@@ -102,27 +102,27 @@ int test_global(void) {
     return 0;
 }
 
-// equivalent static local arrays
+
 int test_local(void) {
 
-    // fully initialized
+    
     double local_double_arr[3] = {1.0, 2.0, 3.0};
-    // partly initialized
+    
     static unsigned local_uint_arr[5] = {
         1u,
-        0u, // truncated to 0
+        0u, 
         2147497230u,
     };
 
-    // uninitialized
+    
     static long local_long_arr[1000];
 
-    // initialized w/ values of different types
+    
     static unsigned long local_ulong_arr[4] = {
         100.0, 11, 12345l, 4294967295U
     };
 
-    // validate
+    
     int check = check_double_arr(local_double_arr);
     if (check) {
         return 100 + check;

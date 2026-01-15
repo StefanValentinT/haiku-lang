@@ -10,7 +10,7 @@ int test_sum(long a, long b, int c, int d, int e, int f, int g, int h, long i) {
 }
 
 int main(void) {
-    // passing a constant larger than INT_MAX as our last argument
-    // exercises the rewrite rule for pushq $large_constant
+    
+    
     return test_sum(34359738368l, 34359738368l, 0, 0, 0, 0, 0, 0, 34359738368l);
 }

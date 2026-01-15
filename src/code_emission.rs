@@ -3,8 +3,13 @@ use std::fmt::Write;
 
 pub fn emit_assembly(program: &AsmProgram) -> String {
     let mut out = String::new();
-    let AsmProgram::Program(func) = program;
-    emit_function(func, &mut out);
+    let AsmProgram::Program(funcs) = program;
+
+    for func in funcs {
+        emit_function(func, &mut out);
+        writeln!(out).unwrap();
+    }
+
     out
 }
 
@@ -30,8 +35,26 @@ fn emit_function(func: &AsmFuncDef, out: &mut String) {
         writeln!(out, "    sub sp, sp, #{}", stack_size).unwrap();
     }
 
+    let exit_label = instructions.iter().find_map(|instr| {
+        if let AsmInstruction::Label(label) = instr {
+            Some(label)
+        } else {
+            None
+        }
+    });
+
     for instr in instructions {
-        emit_instruction(instr, out);
+        match instr {
+            
+            AsmInstruction::Jmp(label) if label == "__func_exit" => {
+                if let Some(exit) = exit_label {
+                    writeln!(out, "    b {}", exit).unwrap();
+                } else {
+                    panic!("Function {} has no exit label!", name);
+                }
+            }
+            _ => emit_instruction(instr, out),
+        }
     }
 
     if stack_size > 0 {
@@ -43,8 +66,7 @@ fn emit_function(func: &AsmFuncDef, out: &mut String) {
 
 fn emit_instruction(instr: &AsmInstruction, out: &mut String) {
     match instr {
-        AsmInstruction::AllocateStack(_) => {} // handled in emit_function
-
+        AsmInstruction::AllocateStack(_) => {}
         AsmInstruction::Mov { src, dest } => match (src, dest) {
             (AsmOperand::Imm(val), AsmOperand::Reg(r)) => emit_load_imm32(out, reg_name(r), *val),
             (AsmOperand::Imm(val), AsmOperand::Stack(off)) => {
@@ -66,7 +88,6 @@ fn emit_instruction(instr: &AsmInstruction, out: &mut String) {
             }
             _ => panic!("Unsupported mov {:?} -> {:?}", src, dest),
         },
-
         AsmInstruction::Unary(op, operand) => {
             let instr_str = match op {
                 AsmUnaryOp::Neg => "neg",
@@ -84,7 +105,6 @@ fn emit_instruction(instr: &AsmInstruction, out: &mut String) {
                 _ => panic!("Invalid unary operand"),
             }
         }
-
         AsmInstruction::Binary(op, src, dest) => {
             let instr_str = match op {
                 AsmBinaryOp::Add => "add",
@@ -149,12 +169,10 @@ fn emit_instruction(instr: &AsmInstruction, out: &mut String) {
                 _ => panic!("Invalid binary dest"),
             }
         }
-
         AsmInstruction::Cmp(lhs, rhs) => {
             let (lhs_reg, rhs_reg) = load_cmp_operands(lhs, rhs, out);
             writeln!(out, "    cmp {}, {}", lhs_reg, rhs_reg).unwrap();
         }
-
         AsmInstruction::SetCC(cc, op) => match op {
             AsmOperand::Reg(r) => {
                 writeln!(out, "    cset {}, {}", reg_name(r), cond_code_name(cc)).unwrap()
@@ -165,36 +183,63 @@ fn emit_instruction(instr: &AsmInstruction, out: &mut String) {
             }
             _ => panic!("Invalid setcc operand"),
         },
-
         AsmInstruction::Idiv(op) => {
             match op {
                 AsmOperand::Reg(divisor) => {
-                    writeln!(out, "    mov w11, w0").unwrap(); // copy dividend
-                    writeln!(out, "    sdiv w0, w11, {}", reg_name(divisor)).unwrap(); // quotient
-                    writeln!(out, "    mul w1, w0, {}", reg_name(divisor)).unwrap(); // q*divisor
-                    writeln!(out, "    sub w1, w11, w1").unwrap(); // remainder
+                    writeln!(out, "    mov w11, w0").unwrap(); 
+                    writeln!(out, "    sdiv w0, w11, {}", reg_name(divisor)).unwrap(); 
+                    writeln!(out, "    mul w1, w0, {}", reg_name(divisor)).unwrap(); 
+                    writeln!(out, "    sub w1, w11, w1").unwrap(); 
                 }
                 AsmOperand::Stack(off) => {
-                    writeln!(out, "    ldr w10, [x29, #{}]", off).unwrap(); // load divisor
-                    writeln!(out, "    mov w11, w0").unwrap(); // copy dividend
-                    writeln!(out, "    sdiv w0, w11, w10").unwrap(); // quotient
-                    writeln!(out, "    mul w1, w0, w10").unwrap(); // q*divisor
-                    writeln!(out, "    sub w1, w11, w1").unwrap(); // remainder
+                    writeln!(out, "    ldr w10, [x29, #{}]", off).unwrap(); 
+                    writeln!(out, "    mov w11, w0").unwrap(); 
+                    writeln!(out, "    sdiv w0, w11, w10").unwrap(); 
+                    writeln!(out, "    mul w1, w0, w10").unwrap(); 
+                    writeln!(out, "    sub w1, w11, w1").unwrap(); 
                 }
                 _ => panic!("Invalid Idiv operand"),
             }
         }
-
         AsmInstruction::Cdq => {
-            writeln!(out, "    sxtw x1, w0").unwrap(); // extend w0 -> x1:w0
+            writeln!(out, "    sxtw x1, w0").unwrap(); 
         }
-
         AsmInstruction::Jmp(label) => writeln!(out, "    b {}", label).unwrap(),
         AsmInstruction::JmpCC(cc, label) => {
             writeln!(out, "    b.{} {}", cond_code_name(cc), label).unwrap()
         }
         AsmInstruction::Label(label) => writeln!(out, "{}:", label).unwrap(),
         AsmInstruction::Ret => {}
+        AsmInstruction::DeallocateStack(bytes) => {
+            writeln!(out, "    add sp, sp, #{}", bytes).unwrap();
+        }
+
+        AsmInstruction::Push(op) => match op {
+            AsmOperand::Reg(r) => writeln!(out, "    str {}, [sp, #-16]!", reg_name(r)).unwrap(),
+            AsmOperand::Stack(off) => {
+                writeln!(out, "    ldr w10, [x29, #{}]", off).unwrap();
+                writeln!(out, "    str w10, [sp, #-16]!",).unwrap();
+            }
+            _ => panic!("Invalid push operand"),
+        },
+
+        AsmInstruction::Call(func_name) => {
+            
+            
+            writeln!(out, "    mov w0, w3").unwrap();
+
+            let call_name = if cfg!(target_os = "macos") {
+                if func_name.starts_with("_") {
+                    func_name.clone()
+                } else {
+                    format!("_{}", func_name)
+                }
+            } else {
+                func_name.clone()
+            };
+
+            writeln!(out, "    bl {}", call_name).unwrap();
+        }
     }
 }
 
@@ -250,10 +295,25 @@ fn emit_load_imm32(out: &mut String, reg: &str, val: i32) {
     }
 }
 
+fn abi_arg_reg(idx: usize) -> &'static str {
+    match idx {
+        0 => "w0",
+        1 => "w1",
+        2 => "w2",
+        3 => "w3",
+        _ => panic!("Too many args for now"),
+    }
+}
+
 fn reg_name(r: &AsmReg) -> &'static str {
     match r {
         AsmReg::Ax => "w0",
         AsmReg::Dx => "w1",
+        AsmReg::Cx => "w2",
+        AsmReg::Di => "w3",
+        AsmReg::Si => "w4",
+        AsmReg::R8 => "w8",
+        AsmReg::R9 => "w9",
         AsmReg::R10 => "w10",
         AsmReg::R11 => "w11",
     }

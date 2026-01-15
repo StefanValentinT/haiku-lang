@@ -5,7 +5,7 @@ void *malloc(unsigned long size);
 void free(void *ptr);
 
 int main(void) {
-    // size of variables
+    
 
     double d;
 
@@ -21,27 +21,27 @@ int main(void) {
 
     void *buffer = malloc(100);
 
-    // sizeof(buffer) gets the size of the pointer, not the buffer itself
+    
     if (sizeof(buffer) != 8) {
         return 4;
     }
 
     free(buffer);
 
-    // more complex expressions
+    
 
-    // sizeof (int) d is a syntax error,
-    // but applying sizeof to a parenthesized cast expression is ok
+    
+    
     if (sizeof ((int)d) != 4) {
         return 5;
     }
 
-    // result type is long
+    
     if (sizeof (d ? c : 10l) != 8) {
         return 6;
     }
 
-    // result type is char
+    
 
     if (sizeof (c = 10.0) != 1) {
         return 7;

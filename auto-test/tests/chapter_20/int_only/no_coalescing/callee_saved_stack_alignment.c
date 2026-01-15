@@ -6,11 +6,11 @@
  * */
 
 
-// check alignment of RSP and exit with exit_code if it's misaligned
-// defined in tests/chapter_20/helper_libs/alignment_check_<PLATFORM>.s
+
+
 int check_alignment(int exit_code);
 
-// odd number of callee-saved registers, no local vars on stack
+
 int test1(void) {
     int a = id(1);
     int b = id(2);
@@ -22,7 +22,7 @@ int test1(void) {
     return 0;
 }
 
-// even number of callee-saved registers, no local vars on stack
+
 int test2(void) {
     int a = id(4);
     int b = id(5);
@@ -32,11 +32,11 @@ int test2(void) {
     return 0;
 }
 
-// five callee-saved registers and three local vars on stack
+
 int test3(void) {
 
-    // eight callee-saved values; 5 will go in registers
-    // three will need to spill
+    
+    
     int a = id(4);
     int b = id(5);
     int c = id(6);

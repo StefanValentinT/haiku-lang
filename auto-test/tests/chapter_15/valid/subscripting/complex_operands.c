@@ -1,7 +1,7 @@
 /* Test subscript expressions where both operands are complex sub-expressions,
  * not just variables and constants. This test program only includes 1D arrays. */
 
-// use a side-effecting statement as an index
+
 int assign_in_index(int idx) {
     int arr[3] = {1, 2, 3};
     int val = arr[idx = idx + 2];
@@ -16,7 +16,7 @@ int assign_in_index(int idx) {
     return 0;
 }
 
-// helper function for funcall_in_index
+
 int static_index(void) {
     static int index = 0;
     int retval = index;
@@ -24,7 +24,7 @@ int static_index(void) {
     return retval;
 }
 
-// use a side-effecting function call as an index
+
 int funcall_in_index(void) {
     int arr[3] = {1, 2, 3};
     int v1 = arr[static_index()];
@@ -39,7 +39,7 @@ int funcall_in_index(void) {
     return 0;
 }
 
-// use result of another subscript expression as index
+
 int subscript_inception(long *arr, int *a, int b){
     return arr[a[b]];
 }
@@ -58,7 +58,7 @@ int check_subscript_inception(void) {
     return 0;
 }
 
-// use result of function call as pointer
+
 int *get_array(void) {
     static int arr[3];
     return arr;

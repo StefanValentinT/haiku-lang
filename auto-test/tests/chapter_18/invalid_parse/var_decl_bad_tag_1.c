@@ -1,4 +1,4 @@
 int main(void) {
-    struct 4 foo;  // a struct tag must be an identifier (not a constant)
+    struct 4 foo;  
     return 0;
 }

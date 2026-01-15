@@ -15,7 +15,7 @@ int validate_full_initialization(struct s *ptr) {
         return 0;
     }
 
-    return 1;  // success
+    return 1;  
 }
 
 int validate_partial_initialization(struct s *ptr, char *expected_msg) {
@@ -24,47 +24,47 @@ int validate_partial_initialization(struct s *ptr, char *expected_msg) {
         return 0;
     }
 
-    // validate ptr->three_self_ptr by making sure one element in it is 0
+    
     if (ptr->three_self_ptr->one_msg) {
         return 0;
     }
 
-    // validate elements that weren't explicitly initialized are 0
+    
     if (ptr->two_arr[2] || ptr->four_d || ptr->five_d_ptr) {
         return 0;
     }
 
-    return 1;  // success
+    return 1;  
 }
 int validate_converted(struct s *ptr) {
-    if (!ptr->one_msg ||  // just validate that this pointer isn't null
+    if (!ptr->one_msg ||  
         ptr->two_arr[0] != 220 || ptr->two_arr[1] != 232 ||
         ptr->two_arr[2] != 224 || ptr->three_self_ptr ||
         ptr->four_d != 2999.0 || *ptr->five_d_ptr != 0.0) {
         return 0;
     }
 
-    return 1;  // success
+    return 1;  
 }
 
 int validate_two_structs(struct s *ptr1, struct s *ptr2) {
-    // validate elements of ptr2
+    
     if (strcmp(ptr2->one_msg, "Yet another string") ||
-        ptr2->one_msg != ptr1->one_msg ||  // both one_msg members point to same
-                                           // string literal
-        // contents of two_arr copied from s1 to s2
+        ptr2->one_msg != ptr1->one_msg ||  
+                                           
+        
         ptr2->two_arr[0] != 'x' || ptr2->two_arr[1] != 'y' ||
         ptr2->three_self_ptr !=
-            ptr1 ||  // ptr2->three_self_ptr is ptr1, not to itself
+            ptr1 ||  
         ptr2->four_d != 150.0 ||
         *ptr1->five_d_ptr != 123.4) {
         return 0;
     }
 
-    // ptr1->two_arr and ptr2->two_arr are distinct arrays with different
-    // addresses, even though contents are the same
+    
+    
     if (ptr1->two_arr == ptr2->two_arr) {
         return 0;
     }
-    return 1;  // success
+    return 1;  
 }

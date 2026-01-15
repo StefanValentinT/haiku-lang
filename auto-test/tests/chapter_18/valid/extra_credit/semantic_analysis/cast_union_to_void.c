@@ -1,4 +1,4 @@
-// You can cast a union to void
+
 
 union u {
     long l;
@@ -7,6 +7,6 @@ union u {
 
 int main(void) {
     union u x = {1000};
-    (void) x; // just make sure this doesn't cause a type error
+    (void) x; 
     return 0;
 }

@@ -10,7 +10,7 @@ int glob2 = 2;
 int glob3 = 3;
 int glob4 = 4;
 
-// use this to force pseudoregs to be callee-saved
+
 int increment_globals(void) {
     glob0 = glob0 + 1;
     glob1 = glob1 + 1;
@@ -31,8 +31,8 @@ int target(void) {
     int c = glob2;
     int d = glob3;
     int e = glob4;
-    increment_globals();  // to force a-e to be callee saved
-    int x = a;            // now x interferes with b through e, but not a
+    increment_globals();  
+    int x = a;            
 
     /* if cmp updated its second operand, this comparison would make
      * a interfere with x. Then we'd need to spill, because
@@ -40,20 +40,20 @@ int target(void) {
      * and only five callee-saved regs are available
      */
     if (a > b) {
-        return 1;  // fail
+        return 1;  
     }
     if (b) {
-        x = 100;  // so we can't propagate x = a into function call
+        x = 100;  
     }
 
-    increment_globals(); // to force x to be callee-saved
+    increment_globals(); 
     return validate(x, b, c, d, e);
 }
 
 int validate(int hundred, int one, int two, int three, int four) {
-    // validate global and local variables
+    
 
-    // first validate globals - each has been incremented twice
+    
     if (glob0 != 2) {
         return 2;
     }
@@ -74,7 +74,7 @@ int validate(int hundred, int one, int two, int three, int four) {
         return 6;
     }
 
-    // now validate locals
+    
     if (hundred != 100) {
         return 7;
     }
@@ -93,5 +93,5 @@ int validate(int hundred, int one, int two, int three, int four) {
         return 11;
     }
 
-    return 0;  // success
+    return 0;  
 }

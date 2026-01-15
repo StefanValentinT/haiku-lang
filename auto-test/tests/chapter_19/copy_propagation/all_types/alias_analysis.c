@@ -2,25 +2,25 @@
  * from variables whose address has been taken. */
 int callee(int *ptr) {
     if (*ptr != 10) {
-        return 0;  // failure
+        return 0;  
     }
     *ptr = -1;
     return 1;
 }
 
 int target(int *ptr1, int *ptr2) {
-    int i = 10;          // generate i = 10
-    int j = 20;          // generate j = 20
-    *ptr1 = callee(&i);  // record i as a variable whose address is taken
-                         // function call kills i = 10
+    int i = 10;          
+    int j = 20;          
+    *ptr1 = callee(&i);  
+                         
     *ptr2 = i;
 
-    i = 4;  // gen i = 4
+    i = 4;  
 
-    // This should be rewritten as 'return 24'.
-    // We can propagate i b/c there are no stores
-    // or function calls after i = 4.
-    // We can propagate j b/c it's not aliased.
+    
+    
+    
+    
     return i + j;
 }
 

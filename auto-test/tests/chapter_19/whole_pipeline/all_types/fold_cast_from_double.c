@@ -12,8 +12,8 @@ int target_to_int(void) {
 }
 
 long target_to_long(void) {
-    // nearest representable double is -9223372036854774784.0,
-    // which will be converted to long int -9223372036854774784
+    
+    
     return (long)-9223372036854774783.1;
 }
 

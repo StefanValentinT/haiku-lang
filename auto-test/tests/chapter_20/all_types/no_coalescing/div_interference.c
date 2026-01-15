@@ -13,8 +13,8 @@ unsigned int glob = 3;
 int target(void) {
     unsigned int dividend = glob * 16;
 
-    // div makes dividend interfere with EAX; we'll coalesce them unless we
-    // recognize that they interfere
+    
+    
 
     /* mov    %dividend, %eax
      * cdq
@@ -23,12 +23,12 @@ int target(void) {
      */
     unsigned int quotient = dividend / 4;
 
-    // save dividend so we can validate it later, making it live
-    // note that we do this instead of passing it as an argument
-    // to make sure it doesn't get coalesced into anything other than EAX
+    
+    
+    
     glob = dividend;
 
-    // validate quotient
+    
     check_one_int(quotient, 12);
 
     return 0;

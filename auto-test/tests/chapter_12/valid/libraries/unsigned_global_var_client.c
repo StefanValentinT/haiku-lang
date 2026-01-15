@@ -10,7 +10,7 @@ int main(void) {
     if (ui != 4294967200u)
         return 0;
 
-    // should be converted to 2^32 - 1 on assignment
+    
     ui = -1;
 
     /* Make sure that our update to ui is visible in the other translation unit,

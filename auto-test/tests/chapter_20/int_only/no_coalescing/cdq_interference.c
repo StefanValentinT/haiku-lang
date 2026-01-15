@@ -4,24 +4,24 @@
  */
 
 int target(int a, int b, int c) {
-    // we'll coalesce c into RDX register unless we recognize that they interfere
+    
     static int i = 100;
 
-    // validate a and b
+    
     if (a || b) {
-        return 0;  // fail
+        return 0;  
     }
 
     /*  mov   i(%rip), %eax
      *  cdq      # update RDX, causing interference w/ dx
      *  idiv  %c # use c - will cause error if cdq zeroed it out
      */
-    return i / c; // return 100 / 10
+    return i / c; 
 }
 
 int main(void) {
     if (target(0, 0, 10) != 10) {
-        return 1; // fail
+        return 1; 
     }
-    return 0; // success
+    return 0; 
 }

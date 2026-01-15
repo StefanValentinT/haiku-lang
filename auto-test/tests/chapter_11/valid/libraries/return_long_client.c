@@ -10,5 +10,5 @@ int main(void) {
     if (a != 4294967290l) {
         return 1;
     }
-    return 0; // success
+    return 0; 
 }

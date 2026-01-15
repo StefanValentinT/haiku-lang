@@ -48,14 +48,14 @@ int main(void) {
         return 2;
     }
 
-    l = -9223372036854775807l; // LONG_MIN + 1
+    l = -9223372036854775807l; 
     if (l_geq_2_60()) {
         return 3;
     }
     if (uint_max_leq_l()) {
         return 4;
     }
-    l = 1152921504606846976l; // 2^60
+    l = 1152921504606846976l; 
     if (!l_geq_2_60()) {
         return 5;
     }

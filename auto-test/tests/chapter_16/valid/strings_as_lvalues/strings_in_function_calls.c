@@ -4,13 +4,13 @@
 unsigned long strlen(char *s);
 
 char *return_string(void) {
-    // constant strings have static storage duration,
-    // so this will persist after the function call;
+    
+    
     return "I'm a string!";
 }
 
 int pass_string_args(char *s1, char *s2) {
-    // neither should be a null pointer
+    
     if (s1 == 0 || s2 == 0) {
         return 0;
     }
@@ -23,17 +23,17 @@ int pass_string_args(char *s1, char *s2) {
         return 0;
     }
 
-    // s2 is an empty string so first byte should be null
+    
     if (s2[0]) {
         return 0;
     }
 
-    return 1;  // success
+    return 1;  
 }
 
 int main(void) {
     char *ptr = 0;
-    // call return_string and inspect results
+    
     ptr = return_string();
     if (!ptr)
         return 1;
@@ -42,7 +42,7 @@ int main(void) {
         return 2;
     }
 
-    // pass strings as function arguments
+    
     if (!pass_string_args("The quick brown fox jumped over the lazy dog.",
                           "")) {
         return 3;

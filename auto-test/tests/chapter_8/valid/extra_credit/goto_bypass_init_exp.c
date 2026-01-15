@@ -1,5 +1,5 @@
-// if we use goto to jump into the middle of a for loop,
-// the initial expression isn't evaluated
+
+
 
 int main(void) {
     int i = 0;

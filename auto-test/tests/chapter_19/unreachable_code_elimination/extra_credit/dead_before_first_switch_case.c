@@ -8,7 +8,7 @@ int callee(void) {
 
 int target(int x) {
     switch(x) {
-        return callee(); // unreachable
+        return callee(); 
         case 1: return 1;
         default: return 2;
     }

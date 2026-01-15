@@ -35,8 +35,8 @@ int main(void) {
         return 2;
     }
 
-    // test subtracting multi-dimensional pointers;
-    // also make sure we can handle pointers into array with static storage duration
+    
+    
     static double multidim[6][7][3][5];
 
     if (get_multidim_ptr_diff(multidim[2] + 1, multidim[2] + 4) != 3) {

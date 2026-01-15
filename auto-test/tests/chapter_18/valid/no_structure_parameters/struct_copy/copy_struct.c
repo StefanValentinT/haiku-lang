@@ -5,7 +5,7 @@
 
 
 
-// test 1: copy one struct with auto storage duration to another
+
 int test_auto(void) {
     struct s x = {"ab", {-1, 2}};
     struct s y = {"x", {1}};
@@ -14,16 +14,16 @@ int test_auto(void) {
         return 0;
     }
 
-    // update a value in y, make sure it doesn't affect x
+    
     y.inner.a = 20;
     if (y.inner.a != 20 || x.inner.a != -1) {
         return 0;
     }
 
-    return 1;  // success
+    return 1;  
 }
 
-// test 2: copy one struct with static storage duration to another
+
 int test_static(void) {
     static struct s x = {"ab", {1, 2}};
     static struct s y;
@@ -32,10 +32,10 @@ int test_static(void) {
         return 0;
     }
 
-    return 1;  // success
+    return 1;  
 }
 
-// test 3: copy a struct w/ uneven size
+
 struct wonky {
     char arr[7];
 };
@@ -47,10 +47,10 @@ int test_wonky_size(void) {
     if (strcmp(y.arr, "abcdef")) {
         return 0;
     }
-    return 1;  // success
+    return 1;  
 }
 
-// test 4: assign result of conditional expression to struct
+
 int true_flag(void) {
     return 1;
 }
@@ -64,7 +64,7 @@ int test_conditional(void) {
         return 0;
     }
 
-    return 1;  // success
+    return 1;  
 }
 
 int main(void) {

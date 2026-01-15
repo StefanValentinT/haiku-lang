@@ -1,7 +1,7 @@
 /* Dead store elimination should never eliminate Store instructions
  * */
 void f(int *ptr) {
-    *ptr = 4;  // not a dead store!
+    *ptr = 4;  
     return;
 }
 

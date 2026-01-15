@@ -4,8 +4,8 @@
 
 
 int target(int one, int two) {
-    // perform a few calculations that make one, two, three, four, and five
-    // interfere
+    
+    
     int three = one + two;
     int four = two * two;
     int five = three + two;

@@ -8,7 +8,7 @@ int a = 1;
 int b = 2;
 
 int target(void) {
-    // everything except the Return instruction should be optimized away.
+    
     int unused = a * -b;
     return 5;
 }

@@ -8,11 +8,11 @@ int f(void) {
     k *= j;
     l /= 2;
 
-    // expected values after 3 invocations:
-    // i = 3
-    // j = -6
-    // k = -18
-    // l = 6
+    
+    
+    
+    
+    
     if (i != 3) {
         return 1;
     }

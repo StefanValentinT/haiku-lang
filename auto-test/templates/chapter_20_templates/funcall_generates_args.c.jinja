@@ -21,9 +21,9 @@
 
 #include "../util.h"
 
-// defined in tests/chapter_20/helper_libs/funcall_generates_args_lib.c,
-// exits early with return code -1 if a and b don't have
-// the correct values
+
+
+
 int {{callee}}({{typ}} a, {{typ}} b);
 
 {{typ}} glob = {{const(10)}};
@@ -32,19 +32,19 @@ int {{callee}}({{typ}} a, {{typ}} b);
 int target(void) {
     {{typ}} a = glob + {{const(1)}};
     {{typ}} b = glob + {{const(2)}};
-    // We'll coalesce a and b with {{regs}} because they're copied into those
-    // registers. If we don't recognize that {{regs}} are live when we call
-    // {{callee}}, we'll coalesce the temporaries that hold a * glob and b * glob
-    // with {{regs}} too, since we'll generate the following assembly:
-    // {{mov_instr}}  %a, %tmp
-    // {{mul_instr}}  %glob, %tmp
-    // {{mov_instr}}  %tmp, %x
-    // and similar for y/b
+    
+    
+    
+    
+    
+    
+    
+    
     x = a * glob;
     y = b * glob;
-    // validate a and b
+    
     {{callee}}(a, b);
-    // validate x and y
+    
     check_one_{{typ}}(x, {{const(110)}});
     check_one_{{typ}}(y, {{const(120)}});
     return 0;

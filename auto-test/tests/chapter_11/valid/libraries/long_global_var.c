@@ -1,4 +1,4 @@
-long int l = 8589934592l; // 2^33
+long int l = 8589934592l; 
 
 long return_l(void) {
     return l;

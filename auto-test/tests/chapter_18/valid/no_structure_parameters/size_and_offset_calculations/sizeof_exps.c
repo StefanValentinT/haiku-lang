@@ -11,12 +11,12 @@ struct twenty_bytes *get_twentybyte_ptr(void) {
 }
 
 int main(void) {
-    // validate the size of every type in struct_sizes.h
+    
 
     struct contains_struct_array arr_struct;
 
     if (sizeof arr_struct.struct_array[2] !=
-        8) {  // elements of struct_array have type struct eight_bytes
+        8) {  
         return 1;
     }
 
@@ -62,10 +62,10 @@ int main(void) {
         return 11;
     }
 
-    // make sure arr_struct.struct_array doesn't undergo array decay here
+    
     if (sizeof arr_struct.struct_array != 24) {
         return 12;
     }
 
-    return 0;  // success
+    return 0;  
 }

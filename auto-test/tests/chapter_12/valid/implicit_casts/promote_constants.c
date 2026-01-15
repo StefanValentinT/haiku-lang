@@ -4,7 +4,7 @@
 /* make this a global variable so we don't
  * optimize away these comparisons in Part III
  */
-long negative_one = 1l; // can't use negative static initializers; negate this in main
+long negative_one = 1l; 
 long zero = 0l;
 
 int main(void) {

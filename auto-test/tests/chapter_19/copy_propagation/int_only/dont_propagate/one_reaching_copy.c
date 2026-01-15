@@ -12,8 +12,8 @@ int target(int flag) {
         x = 10;
     else
         x = three();
-    // one predecessor contains copy x = 10, other predecessor contains no
-    // copies to x, so no copies reach 'return x'
+    
+    
     return x;
 }
 
@@ -24,5 +24,5 @@ int main(void) {
     if (target(0) != 3) {
         return 2;
     }
-    return 0;  // success
+    return 0;  
 }

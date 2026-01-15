@@ -45,5 +45,5 @@ int main(void) {
         return 8;
     }
 
-    return 0; // success
+    return 0; 
 }

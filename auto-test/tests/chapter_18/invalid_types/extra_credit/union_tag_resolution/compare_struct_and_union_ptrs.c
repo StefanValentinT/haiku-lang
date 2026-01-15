@@ -8,7 +8,7 @@ int main(void) {
     {
         union tag;
         union tag *union_ptr = 0;
-        // ILLEGAL comparison b/t distinct pointer types
+        
         return (struct_ptr == union_ptr);
     }
 }

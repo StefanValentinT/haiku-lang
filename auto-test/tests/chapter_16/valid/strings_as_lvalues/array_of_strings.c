@@ -13,7 +13,7 @@ int main(void) {
     if (strcmp(strings[2], "maybe")) {
         return 3;
     }
-    // last element not initialized, so it's a null pointer
+    
     if (strings[3]) {
         return 4;
     }

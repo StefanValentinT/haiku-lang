@@ -9,10 +9,10 @@ int glob = 0;
 int i = 0;
 int target(void) {
     int *ptr = &i;
-    glob = 30;  // this can be removed once we propagate its value
+    glob = 30;  
 
-    *ptr = glob;  // rewrite as *ptr = 30, letting us remove
-                  // previous write to glob
+    *ptr = glob;  
+                  
 
     glob = 10;
     return *ptr;
@@ -20,10 +20,10 @@ int target(void) {
 
 int main(void) {
     if (target() != 30) {
-        return 1;  // failure
+        return 1;  
     }
     if (glob != 10) {
-        return 2;  // failure
+        return 2;  
     }
-    return 0;  // success
+    return 0;  
 }

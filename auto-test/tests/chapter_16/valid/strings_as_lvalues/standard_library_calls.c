@@ -11,7 +11,7 @@ int main(void) {
         return 1;
     }
 
-    // "ab" should compare less than "xy"
+    
     if (strcmp("ab", "xy") >= 0) {
         return 2;
     }

@@ -1,7 +1,7 @@
 /* Test chaining multiple explicit casts together*/
 
-// start with a global variable so we can't optimize away casts in Part III
-unsigned int ui = 4294967200u;  // 2^32 - 96
+
+unsigned int ui = 4294967200u;  
 
 int main(void) {
     /* 1. convert  ui to an unsigned char with value 256 - 96

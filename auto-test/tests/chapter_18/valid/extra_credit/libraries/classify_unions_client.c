@@ -1,7 +1,7 @@
 
 int main(void) {
 
-    // Ia. passed in one XMM reg
+    
 
     union one_double od = { -2.345e6 };
     if (!test_one_double(od)) {
@@ -18,7 +18,7 @@ int main(void) {
         return 3;
     }
 
-    // IIb. passed in one general-purpose register
+    
     union one_int oi = { -80. };
     if (!test_one_int(oi)) {
         return 4;
@@ -45,7 +45,7 @@ int main(void) {
         return 8;
     }
 
-    // IIa. two XMM regs
+    
     union two_doubles td = { {10.0, 11.0} };
     if (!test_two_doubles(td)) {
         return 9;
@@ -67,7 +67,7 @@ int main(void) {
         return 12;
     }
 
-    // IIb. two general-purpose regs
+    
     union char_arr ca = { "Chars!" };
     if (!test_char_arr(ca)) {
         return 13;
@@ -129,7 +129,7 @@ int main(void) {
         return 22;
     }
 
-    // IIc. general-purpose & XMM
+    
     union gp_and_xmm gax = { {11., 12} };
     if (!test_gp_and_xmm(gax)) {
         return 23;
@@ -158,7 +158,7 @@ int main(void) {
         return 26;
     }
 
-    // IId. XMM & general-purpose
+    
     union xmm_and_gp xag;
     xag.ise.d = -8.;
     xag.ise.i = -8;
@@ -172,7 +172,7 @@ int main(void) {
         return 28;
     }
 
-    // III. passed in memory
+    
     union lotsa_doubles dbls = { {99., 98., 97.} };
     if (!test_lotsa_doubles(dbls)) {
         return 29;
@@ -200,5 +200,5 @@ int main(void) {
         return 32;
     }
 
-    return 0; // success
+    return 0; 
 }

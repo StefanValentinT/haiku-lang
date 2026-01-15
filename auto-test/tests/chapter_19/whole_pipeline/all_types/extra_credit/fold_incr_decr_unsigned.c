@@ -10,14 +10,14 @@ int target(void) {
     unsigned int u6 = ++u4;
 
     if (!(u == 4294967294U && u2 == 4294967295U && u3 == 4294967295U)) {
-        return 1; // fail
+        return 1; 
     }
 
     if (!(u4 == 1 && u5 == 4294967295U && u6 == 1)) {
-        return 2; // fail
+        return 2; 
     }
 
-    return 0; // success
+    return 0; 
 }
 
 int main(void) {

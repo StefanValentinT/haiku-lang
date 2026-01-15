@@ -2,7 +2,7 @@
 
 int check_null_ptr_cast(void) {
     /* You can cast a null pointer to any pointer type and the result is still a null pointer */
-    static long *long_ptr = 0; // make this static so we don't optimize away this function
+    static long *long_ptr = 0; 
     double *dbl_ptr = (double *)long_ptr;
     unsigned int *int_ptr = (unsigned int *)long_ptr;
     int **ptr_ptr = (int **)long_ptr;
@@ -42,7 +42,7 @@ int main(void)
 {
     int result = check_null_ptr_cast();
 
-    // non-zero result indicates a problem
+    
     if (result) {
         return result;
     }

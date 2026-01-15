@@ -35,5 +35,5 @@ int main(void) {
         return 4;
     }
 
-    return 0; // success
+    return 0; 
 }

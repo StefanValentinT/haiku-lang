@@ -32,18 +32,18 @@ mov %rbp, %rsp in the prologue and epilogue).
 {{args|map('format_string', typ ~ " {}")|arg_wrap("int target", " {")}}
 
     {% filter indent(width=4, first=true) %}{% filter comment_wrap %}
-    // Define {{glob_count}} variables that interfere with each other
-    // and with arguments, initializing each one with a complex expression
-    // that requires an intermediate result. The pseudoregister holding each result should
-    // be coalesced into the corresponding variable.
-    // Once these have been coalesced only {{arg_count + glob_count}} pseudos
-    // will be left, and we'll have reduced the number of nodes with significant degree
-    // by enough that we can coalesce all the arguments into parameter-passing registers.
+    
+    
+    
+    
+    
+    
+    
 
-    // This test coalesces temporary values into {{glob_count}} different variables, which
-    // must all be placed in different registers, to validate that we actually performed coalescing
-    // and didn't just happen to assign a variable and the corresponding intermediate result to the same
-    // hard register.
+    
+    
+    
+    
     {% endfilter %}{% endfilter %}
 {% if not dbl %}
     {{typ}} seven = (glob - {{const(2)}}) + four;
@@ -58,12 +58,12 @@ mov %rbp, %rsp in the prologue and epilogue).
     double fourteen = (3. + four) * 2.;
 {% endif %}
 
-    // Save to global variables to validate later
+    
 {% for v in other_vars %}
     {{globs[loop.index0]}} = {{v}};
 {% endfor %}
 
-    // Validate arguments
+    
     {% set validate_args = args %}
     {% for c in range(arg_count+1, arg_count+glob_count+1) %}
         {% do validate_args.append(const(c)) %}
@@ -71,7 +71,7 @@ mov %rbp, %rsp in the prologue and epilogue).
     {% do validate_args.append(const(1)) %}
     {{-validate_args|arg_wrap(validate_fn, ";", indent=4)}}
 
-    // Validate globals
+    
 {% for glob in globs %}
     check_one_{{typ}}({{glob}}, {{const(loop.index + arg_count)}});
 {% endfor %}

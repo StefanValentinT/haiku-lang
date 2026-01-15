@@ -14,6 +14,6 @@ int get_ptr_val(void) {
 int main(void) {
     int x = 1;
     set_ptr(&x);
-    x = 4;  // not dead b/c x is aliased, and funcall generates it
-    return get_ptr_val(); // generates x
+    x = 4;  
+    return get_ptr_val(); 
 }

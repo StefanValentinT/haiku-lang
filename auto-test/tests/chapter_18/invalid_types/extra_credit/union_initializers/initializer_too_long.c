@@ -8,6 +8,6 @@ union u {
 };
 
 int main(void){
-    union u x = {1, 2}; // invalid - multiple initializers
+    union u x = {1, 2}; 
     return 0;
 }

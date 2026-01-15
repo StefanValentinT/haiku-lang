@@ -85,19 +85,16 @@ pub enum TacBinaryOp {
 pub fn gen_tac(program: Program) -> TacProgram {
     match program {
         Program::Program(funcs) => {
-            let tac_funcs = funcs.into_iter().map(funcdecl_to_tac).collect();
+            let tac_funcs: Vec<TacFuncDef> =
+                funcs.into_iter().filter_map(funcdecl_to_tac).collect();
 
             TacProgram::Program(tac_funcs)
         }
     }
 }
 
-fn funcdecl_to_tac(func: FunDecl) -> TacFuncDef {
-    let FunDecl {
-        name,
-        params: params,
-        body,
-    } = func;
+fn funcdecl_to_tac(func: FunDecl) -> Option<TacFuncDef> {
+    let FunDecl { name, params, body } = func;
 
     let mut instructions = Vec::new();
 
@@ -109,33 +106,39 @@ fn funcdecl_to_tac(func: FunDecl) -> TacFuncDef {
                 BlockItem::D(decl) => match decl {
                     Decl::Variable(VarDecl {
                         name,
-                        init_expr: Some(initial_value),
+                        init_expr: Some(expr),
                     }) => {
-                        let rhs = expr_to_tac(initial_value, &mut instructions);
+                        let rhs = expr_to_tac(expr, &mut instructions);
                         instructions.push(TacInstruction::Copy {
                             src: rhs,
                             dest: TacVal::Var(name),
                         });
                     }
 
+                    
                     Decl::Variable(VarDecl {
                         name: _,
                         init_expr: None,
                     }) => (),
 
+                    
                     Decl::Function(_) => (),
                 },
             }
         }
     }
 
+    if instructions.is_empty() {
+        return None;
+    }
+
     instructions.push(TacInstruction::Return(TacVal::Constant(0)));
 
-    TacFuncDef::Function {
+    Some(TacFuncDef::Function {
         name,
         params,
         body: instructions,
-    }
+    })
 }
 
 fn stmt_to_tac(stmt: Stmt, instructions: &mut Vec<TacInstruction>) {

@@ -7,11 +7,11 @@ int switch_on_int(int i) {
     switch(i) {
         case 5:
             return 0;
-        // this is 2^33; it will be truncated to int 0
-        case 8589934592l: // case 0:
+        
+        case 8589934592l: 
             return 1;
-        // this is 2^35 - 1; it will be truncated to -1
-        case 34359738367: // case -1:
+        
+        case 34359738367: 
             return 2;
         default:
             return 3;

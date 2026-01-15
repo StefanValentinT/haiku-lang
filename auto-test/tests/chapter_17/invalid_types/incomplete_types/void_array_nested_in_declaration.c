@@ -1,4 +1,4 @@
-extern void (*ptr)[3][4];  // array of incomplete element type is illegal (including nested array)
+extern void (*ptr)[3][4];  
 
 void *foo(void) {
     return ptr;

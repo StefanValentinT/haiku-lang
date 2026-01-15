@@ -14,8 +14,8 @@ int main(void)
     long *ptr = &x;
     long *null_ptr = get_null_pointer();
 
-    // note that pointers can appear in boolean expressions
-    // with operands of any other type
+    
+    
     if (5.0 && null_ptr) {
         return 1;
     }
@@ -25,17 +25,17 @@ int main(void)
         return 2;
     }
 
-    // make sure the || expression short-circuited
+    
     if (a != 0) {
         return 3;
     }
 
-    // apply ! to pointer
+    
     if (!ptr) {
         return 4;
     }
 
-    // use a pointer in a ternary expression
+    
     int j = ptr ? 1 : 2;
     int k = null_ptr ? 3 : 4;
     if (j != 1) {
@@ -46,7 +46,7 @@ int main(void)
         return 6;
     }
 
-    // use a pointer as the controlling condition in a loop
+    
     int i = 0;
     while (ptr)
     {

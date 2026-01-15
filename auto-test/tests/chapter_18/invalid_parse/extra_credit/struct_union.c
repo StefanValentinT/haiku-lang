@@ -1,4 +1,4 @@
-// Can't use struct and union keywords in same declaration
+
 union struct s {
     int a;
 };

@@ -4,9 +4,9 @@ int stat;
 
 int target(int *stat_ptr) {
     int a = 0;
-    a = stat;       // gen a = stat
-    *stat_ptr = 8;  // kill a = stat
-    return a;       // make sure we don't rewrite as 'return stat'
+    a = stat;       
+    *stat_ptr = 8;  
+    return a;       
 }
 
 int main(void) {
@@ -14,10 +14,10 @@ int main(void) {
     stat = 5;
     int result = target(ptr);
     if (result != 5) {
-        return 1;  // fail
+        return 1;  
     }
     if (stat != 8) {
-        return 2;  // fail
+        return 2;  
     }
-    return 0;  // success
+    return 0;  
 }

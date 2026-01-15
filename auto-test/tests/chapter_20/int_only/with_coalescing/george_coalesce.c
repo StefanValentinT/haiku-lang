@@ -31,8 +31,8 @@ int increment_glob(void) {
  *    Purpose: make sure return value is coalesced into EAX.
  */
 int target(int a, int b, int c, int d, int e, int f) {
-    // Validate parameters a-f (not with check_* functions, to avoid adding
-    // new interference)
+    
+    
     if (a != 1) {
         return 1;
     }
@@ -52,15 +52,15 @@ int target(int a, int b, int c, int d, int e, int f) {
         return 6;
     }
 
-    // Create/validate a bunch of callee-saved pseudos with significant degree.
+    
 
-    // Initialize these using glob, instead of id(), to avoid mov instructions
-    // between registers (e.g. movl %eax, %callee1)
+    
+    
     int one = glob * 1;
     int two = glob * 2;
     int three = glob * 3;
     int four = glob * 4;
-    // validate these to increase their degree more
+    
     if (one != 1) {
         return 7;
     }
@@ -73,9 +73,9 @@ int target(int a, int b, int c, int d, int e, int f) {
     if (four != 4) {
         return 10;
     }
-    // force them to be callee-saved
+    
     increment_glob();
-    // define new vars using the old ones, then validate them
+    
     int five = 4 + one;
     int six = 4 + two;
     int seven = 4 + three;
@@ -93,14 +93,14 @@ int target(int a, int b, int c, int d, int e, int f) {
         return 14;
     }
     increment_glob();
-    // define one last batch
+    
     int nine = 14 - five;
     int ten = 16 - six;
     int eleven = 18 - seven;
     int twelve = 20 - eight;
-    // force them to be callee-saved
+    
     increment_glob();
-    // validate them
+    
     if (nine != 9) {
         return 15;
     }
@@ -113,18 +113,18 @@ int target(int a, int b, int c, int d, int e, int f) {
     if (twelve != 12) {
         return 18;
     }
-    // Now make sure values passed as arguments are coalesced into
-    // parameter-passing registers. Calculate using glob so we can't
-    // copy prop or constant fold them, and don't need to mov values
-    // between registers to calculate them.
-    int s = glob - 3;  // 1
-    int t = glob - 2;  // 2
-    int u = glob - 1;  // 3
-    int v = glob * 2 - 4;  // 4
-    int w = glob + 1;  // 5
+    
+    
+    
+    
+    int s = glob - 3;  
+    int t = glob - 2;  
+    int u = glob - 1;  
+    int v = glob * 2 - 4;  
+    int w = glob + 1;  
     check_5_ints(s, t, u, v, w, 1);
 
 
-    // make sure return value is coalesced into EAX
+    
     return check_one_int(glob, 4);
 }

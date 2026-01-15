@@ -28,18 +28,18 @@ struct big return_in_mem(void) {
 }
 
 int main(void) {
-    // can either explicitly cast result to void or just not use it
+    
     (void)return_in_reg();
     return_in_reg();
     if (globl.x != 2) {
         return 1;
     }
 
-    // do the same for struct return in memory
+    
     return_in_mem();
     (void)return_in_mem();
     if (globl2.d != 5.0 || globl2.x != 18 || globl2.l != 4800) {
         return 2;
     }
-    return 0;  // success
+    return 0;  
 }

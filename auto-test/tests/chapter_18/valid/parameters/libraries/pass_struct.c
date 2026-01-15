@@ -8,5 +8,5 @@ int validate_struct_param(struct pair p) {
         return 0;
     }
 
-    return 1; // success
+    return 1; 
 }

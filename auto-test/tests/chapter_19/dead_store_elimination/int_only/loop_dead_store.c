@@ -1,25 +1,25 @@
 /* Test that we can detect dead stores in a function with a loop */
-int putchar(int c);  // from standard library
+int putchar(int c);  
 
 int target(void) {
-    int x = 5;   // dead store
-    int y = 65;  // not a dead store
+    int x = 5;   
+    int y = 65;  
     do {
-        x = y + 2;  // kill x, gen y
+        x = y + 2;  
         if (y > 70) {
-            // make sure we assign to x on multiple paths
-            // so copy prop doesn't replace it entirely
+            
+            
             x = y + 3;
         }
-        y = putchar(x) + 3;  // gen x and y
+        y = putchar(x) + 3;  
     } while (y < 90);
     if (x != 90) {
-        return 1;  // fail
+        return 1;  
     }
     if (y != 93) {
-        return 2;  // fail
+        return 2;  
     }
-    return 0;  // success
+    return 0;  
 }
 
 int main(void) {

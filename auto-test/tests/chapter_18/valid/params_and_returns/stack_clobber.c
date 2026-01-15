@@ -21,10 +21,10 @@ struct stack_bytes {
     char bytes[16];
 };
 
-// we copy bytes from the stack to here, then validate them
+
 static struct stack_bytes to_validate;
 
-// use this to validate to_validate after copying bytes from stack to it
+
 void validate_stack_bytes(int code) {
     if (strcmp(to_validate.bytes, "efghijklmnopqrs")) {
         exit(code);
@@ -32,7 +32,7 @@ void validate_stack_bytes(int code) {
     return;
 }
 
-// test case 1: return a struct in a general-purpose register
+
 struct one_int_reg {
     char cs[7];
 };
@@ -52,28 +52,28 @@ void validate_one_int_struct(int code) {
 }
 
 int test_int_struct(void) {
-    // write some bytes to the stack
+    
     struct stack_bytes bytes = {"efghijklmnopqrs"};
 
-    // call a function that returns a one-int struct
-    // copy it to a static variable so we can validate it later
-    // without putting more temporary variables on the satck
+    
+    
+    
     one_int_struct = return_int_struct();
 
-    // assigning a variable doesn't produce any temporary values
+    
     to_validate = bytes;
 
-    // this funcall doesn't require temporary values on the stack
-    // b/c its arg is just an int(not a more complex expression)
-    // and its return type
+    
+    
+    
     validate_stack_bytes(1);
 
-    /// validate the static struct we copied the return val into earlier
+    
     validate_one_int_struct(2);
     return 0;
 }
 
-// test case 2: return a struct in two general-purpose registers
+
 struct two_int_regs {
     char cs[15];
 };
@@ -93,23 +93,23 @@ void validate_two_int_struct(int code) {
 }
 
 int test_two_int_struct(void) {
-    // write some bytes to the stack
+    
     struct stack_bytes bytes = {"efghijklmnopqrs"};
 
     two_int_struct = return_two_int_struct();
 
-    // assigning a variable doesn't produce any temporary values
+    
     to_validate = bytes;
 
-    // validate stack
+    
     validate_stack_bytes(3);
 
-    /// validate returned struct
+    
     validate_two_int_struct(4);
     return 0;
 }
 
-// test case 3: return a struct in one XMM register
+
 struct one_xmm_reg {
     double d;
 };
@@ -127,23 +127,23 @@ void validate_one_double_struct(int code) {
 }
 
 int test_one_double_struct(void) {
-    // write some bytes to the stack
+    
     struct stack_bytes bytes = {"efghijklmnopqrs"};
 
     one_double_struct = return_one_xmm_struct();
 
-    // assigning a variable doesn't produce any temporary values
+    
     to_validate = bytes;
 
-    // validate stack
+    
     validate_stack_bytes(5);
 
-    /// validate returned struct
+    
     validate_one_double_struct(6);
     return 0;
 }
 
-// test case 4: return a struct in two XMM registers
+
 struct two_xmm_regs {
     double d1;
     double d2;
@@ -162,23 +162,23 @@ void validate_two_doubles_struct(int code) {
 }
 
 int test_two_doubles_struct(void) {
-    // write some bytes to the stack
+    
     struct stack_bytes bytes = {"efghijklmnopqrs"};
 
     two_doubles_struct = return_two_xmm_struct();
 
-    // assigning a variable doesn't produce any temporary values
+    
     to_validate = bytes;
 
-    // validate stack
+    
     validate_stack_bytes(7);
 
-    /// validate returned struct
+    
     validate_two_doubles_struct(8);
     return 0;
 }
 
-// test case 5: return a stuct in general-purpose and XMM registers
+
 
 struct int_and_xmm {
     char c;
@@ -198,23 +198,23 @@ void validate_mixed_struct(int code) {
 }
 
 int test_mixed_struct(void) {
-    // write some bytes to the stack
+    
     struct stack_bytes bytes = {"efghijklmnopqrs"};
 
     mixed_struct = return_mixed_struct();
 
-    // assigning a variable doesn't produce any temporary values
+    
     to_validate = bytes;
 
-    // validate stack
+    
     validate_stack_bytes(9);
 
-    /// validate returned struct
+    
     validate_mixed_struct(10);
     return 0;
 }
 
-// test case 6: return a struct on the stack
+
 struct stack {
     char cs[28];
 };
@@ -236,23 +236,23 @@ void validate_stack_struct(int code) {
 }
 
 int test_stack_struct(void) {
-    // write some bytes to the stack
+    
     struct stack_bytes bytes = {"efghijklmnopqrs"};
 
     stack_struct = return_stack_struct();
 
-    // assigning a variable doesn't produce any temporary values
+    
     to_validate = bytes;
 
-    // validate stack
+    
     validate_stack_bytes(11);
 
-    /// validate returned struct
+    
     validate_stack_struct(12);
     return 0;
 }
 
-// test case 7: return an irregularly-slized struct on the stack
+
 struct stack_irregular {
     char cs[19];
 };
@@ -273,18 +273,18 @@ void validate_irregular_stack_struct(int code) {
 }
 
 int test_irregular_stack_struct(void) {
-    // write some bytes to the stack
+    
     struct stack_bytes bytes = {"efghijklmnopqrs"};
 
     irregular_stack_struct = return_irregular_stack_struct();
 
-    // assigning a variable doesn't produce any temporary values
+    
     to_validate = bytes;
 
-    // validate stack
+    
     validate_stack_bytes(13);
 
-    /// validate returned struct
+    
     validate_irregular_stack_struct(14);
     return 0;
 }

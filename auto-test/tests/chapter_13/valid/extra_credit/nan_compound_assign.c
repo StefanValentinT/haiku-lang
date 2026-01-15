@@ -1,11 +1,11 @@
-// Test that we handle NaN correctly for compound assignments
-// All compound assignments to NaN are also NaN
 
-int double_isnan(double d); // defined in tests/chapter_13/helper_libs/nan.c
+
+
+int double_isnan(double d); 
 
 int main(void) {
     static double zero = 0.0;
-    double nan = 0.0 / zero; // make this constant-folding proof
+    double nan = 0.0 / zero; 
 
     if (!double_isnan(nan += 99.2)) {
         return 1;

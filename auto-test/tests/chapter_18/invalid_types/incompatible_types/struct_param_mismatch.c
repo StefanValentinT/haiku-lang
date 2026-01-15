@@ -14,5 +14,5 @@ int take_struct_param(struct one param) {
 
 int main(void) {
     struct two arg = {1, 2};
-    return take_struct_param(arg); // can't convert argument of type "struct two" to parameter of type "struct one"
+    return take_struct_param(arg); 
 }

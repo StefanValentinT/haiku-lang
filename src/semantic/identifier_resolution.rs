@@ -112,7 +112,7 @@ fn resolve_fun_decl(decl: FunDecl, identifier_map: &mut HashMap<String, MapEntry
         MapEntry {
             unique_name: decl.name.clone(),
             from_current_scope: true,
-            has_linkage: !has_body, // declaration = linkage, definition = no linkage
+            has_linkage: !has_body,
         },
     );
 

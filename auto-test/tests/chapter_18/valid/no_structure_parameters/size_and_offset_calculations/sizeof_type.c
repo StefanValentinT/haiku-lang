@@ -3,7 +3,7 @@
 
 
 int main(void) {
-    // validate the size of every type in struct_sizes.h
+    
 
     if (sizeof(struct eight_bytes) != 8) {
         return 1;
@@ -53,5 +53,5 @@ int main(void) {
         return 12;
     }
 
-    return 0;  // success
+    return 0;  
 }

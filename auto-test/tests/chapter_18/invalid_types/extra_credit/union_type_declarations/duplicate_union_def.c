@@ -2,6 +2,6 @@
 
 int main(void) {
     union u {int a;};
-    union u {int a;}; // illegal - duplicate declaration
+    union u {int a;}; 
     return 0;
 }

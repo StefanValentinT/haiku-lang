@@ -6,7 +6,7 @@ int callee(void) {
 int target(void) {
     int x = 10;
     goto end;
-    x = callee(); // eliminate this
+    x = callee(); 
     end:
     return x;
 }

@@ -50,7 +50,7 @@ int target_while_loop_false(void) {
 
 int target_while_loop_true(void) {
     int retval = 0;
-    while (1048576) {  // 1048576 == 2^20
+    while (1048576) {  
         retval = 10;
         break;
     }
@@ -107,5 +107,5 @@ int main(void) {
         return 10;
     }
 
-    return 0;  // success
+    return 0;  
 }

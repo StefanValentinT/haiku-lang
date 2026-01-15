@@ -9,8 +9,8 @@ union u get_union(void) {
 }
 
 int main(void) {
-    // invalid - can't get address of get_union().arr b/c it's not an lvalue
-    // even though it has temporary lifetime
+    
+    
     int *ptr[3] = &get_union().arr;
     return 0;
 }

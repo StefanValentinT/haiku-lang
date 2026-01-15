@@ -3,7 +3,7 @@ void exit(int status);
 long sum = 0;
 void lots_of_args(int a, int b, int c, int d, int e, int f, int g, int h, int i,
                   int j, int k, int l, int m, int n, int o) {
-    // validate the arguments
+    
     if (a != 1) {
         exit(1);
     }
@@ -46,7 +46,7 @@ void lots_of_args(int a, int b, int c, int d, int e, int f, int g, int h, int i,
     if (n != 14) {
      exit(14);
     }
-    // add o to sum
+    
     sum = sum + o;
     return;
 }

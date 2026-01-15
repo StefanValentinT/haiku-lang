@@ -10,22 +10,22 @@ int glob = 0;
 int target(void) {
     struct s my_struct = {1, 2};
 
-    glob = 30;  // this can be removed once we propagate its value
+    glob = 30;  
 
-    my_struct.b = glob;  // rewrite as my_struct.b = 30, letting us remove
-                         // previous write to glob
+    my_struct.b = glob;  
+                         
 
     glob =
-        10;  // glob is dead since we update it before returning from function
+        10;  
     return my_struct.b;
 }
 
 int main(void) {
     if (target() != 30) {
-        return 1;  // failure
+        return 1;  
     }
     if (glob != 10) {
-        return 2;  // failure
+        return 2;  
     }
-    return 0;  // success
+    return 0;  
 }

@@ -1,4 +1,4 @@
-// Labels, structure tags, and member names are all different namespaces
+
 
 int main(void) {
     struct x {
@@ -8,5 +8,5 @@ int main(void) {
     goto x;
     return 0;
 x:
-    return x.x; // expected result in 10
+    return x.x; 
 }

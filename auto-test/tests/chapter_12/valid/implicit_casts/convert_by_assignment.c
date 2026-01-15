@@ -31,12 +31,12 @@ int return_truncated_ulong(unsigned long ul) {
 }
 
 int extend_on_assignment(unsigned int ui, long expected) {
-    long result = ui; // implicit conversion causes zero-extension
+    long result = ui; 
     return result == expected;
 }
 
 int main(void) {
-    // function arguments
+    
 
     /* truncate 2^63 + 5 to 5 */
     if (!check_int(9223372036854775813ul, 5)) {
@@ -53,7 +53,7 @@ int main(void) {
         return 3;
     }
 
-    // return values
+    
 
     /* zero-extend 2^31+10, preserve its value */
     if (return_extended_uint(2147483658u) != 2147483658l) {
@@ -73,13 +73,13 @@ int main(void) {
         return 6;
     }
 
-    // assignment expressions
+    
     if (!extend_on_assignment(2147483658u, 2147483658l)){
         return 7;
     }
 
-    // local initializers
-    int i = 4294967196u; // unsigned int 2^32 - 100, will be converted to -100
+    
+    int i = 4294967196u; 
     if (i != -100) {
         return 8;
     }

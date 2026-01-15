@@ -5,7 +5,7 @@ struct s {
     long l;
 };
 
-// defined in tests/chapter_20/all_types/no_coalescing/return_all_int_struct.c
+
 struct s return_struct(void);
 
 int target(void) {

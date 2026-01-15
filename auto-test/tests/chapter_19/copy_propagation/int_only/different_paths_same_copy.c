@@ -8,7 +8,7 @@ int target(int flag) {
     } else {
         x = 3;
     }
-    return x;  // this should become 'return 3'
+    return x;  
 }
 
 int main(void) {
@@ -20,5 +20,5 @@ int main(void) {
         return 2;
     }
 
-    return 0;  // success
+    return 0;  
 }

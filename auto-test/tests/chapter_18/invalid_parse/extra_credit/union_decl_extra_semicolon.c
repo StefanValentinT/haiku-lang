@@ -1,4 +1,4 @@
-// Stray semicolon in union declaration
+
 union u {
     int a;
     ;

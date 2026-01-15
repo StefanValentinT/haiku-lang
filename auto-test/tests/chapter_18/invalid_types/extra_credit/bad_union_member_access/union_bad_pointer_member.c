@@ -12,6 +12,6 @@ union b {
 
 int main(void) {
   union a *ptr = malloc(sizeof(union a));
-  ptr->m = 10; // "union a" has no member "m"
+  ptr->m = 10; 
   return 0;
 }

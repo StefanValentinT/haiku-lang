@@ -3,7 +3,7 @@
  * */
 void *malloc(unsigned long size);
 
-// linked_list_node type from Listing 18-6
+
 struct linked_list_node {
     int val;
     struct linked_list_node *next;
@@ -32,10 +32,10 @@ int main(void) {
     for (int i = 0; i < 4; i = i + 1) {
         int expected = arr[i];
         if (elem->val != expected) {
-            return i + 1;  // return 1 if 0th element is wrong, 2 if 1st elem is
-                           // wrong, etc.
+            return i + 1;  
+                           
         }
         elem = elem->next;
     }
-    return 0;  // success
+    return 0;  
 }

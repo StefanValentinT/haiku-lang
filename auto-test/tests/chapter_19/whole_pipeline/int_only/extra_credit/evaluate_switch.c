@@ -18,7 +18,7 @@ int target(void) {
         case 2:
             retval = -2;
             break;
-        case 10: // case we'll actually take
+        case 10: 
             retval = 0;
             break;
         default:

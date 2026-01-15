@@ -13,8 +13,8 @@ int main(void) {
     unsigned char retval_uc = return_uchar();
     char char_array4[2] = {-5, -6};
 
-    // make sure we got the right return values and didn't overwrite
-    // other arrays on the stack
+    
+    
     if (char_array[0] != 121 || char_array[1] != -122 || char_array[2] != -3) {
         return 1;
     }

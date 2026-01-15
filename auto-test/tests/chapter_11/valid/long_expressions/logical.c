@@ -20,8 +20,8 @@ int or(int l1, long l2) {
 }
 
 int main(void) {
-    // this would be equal to zero if we only considered lower 32 bits
-    long l = 1152921504606846976l; // 2^60
+    
+    long l = 1152921504606846976l; 
     long zero = 0l;
     if (not(l)) {
         return 1;

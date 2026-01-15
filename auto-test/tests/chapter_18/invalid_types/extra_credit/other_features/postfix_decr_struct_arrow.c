@@ -1,4 +1,4 @@
-// Can't apply ++/-- to any structures, including nested ones accessed thru ->
+
 struct inner {int i;};
 struct outer{struct inner s;};
 

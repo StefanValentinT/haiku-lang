@@ -14,7 +14,7 @@ struct outer return_struct(void) {
 }
 
 int main(void) {
-  // can't assign to non-lvalue
+  
   return_struct().b.x = 10;
   return 0;
 }

@@ -11,61 +11,61 @@ void update_ptr(void) {
     *globl_ptr = 4.0;
 }
 
-// here, function call doesn't kill copy
-int target(void) {
-    int x = 10;    // gen x = 10
-    update_ptr();  // doesn't kill x = 10
 
-    return x;  // rewrite as 'return 10'
+int target(void) {
+    int x = 10;    
+    update_ptr();  
+
+    return x;  
 }
 
-// here, function call does kill copy
+
 int kill_aliased(void) {
     double d = 1.0;
     double *ptr = &d;
     save_ptr(ptr);
 
     if (*globl_ptr != 1.0) {
-        return 0;  // fail
+        return 0;  
     }
 
-    d = 2.0;  // gen d = 2.0
+    d = 2.0;  
 
     if (*globl_ptr != 2.0) {
-        return 0;  // fail
+        return 0;  
     }
 
-    update_ptr();  // kill d = 2.0
-    return d;      // make sure we don't rewrite this as 'return 2.0'
+    update_ptr();  
+    return d;      
 }
 
 int main(void) {
     double d = 0.0;
     globl_ptr = &d;
 
-    // call target, validate results
+    
     if (target() != 10) {
-        return 1;  // fail
+        return 1;  
     }
 
-    // make sure target actually called update_ptr
+    
     if (d != 4.0) {
-        return 2;  // fail
+        return 2;  
     }
 
-    // reset d
+    
     d = 0.0;
 
-    // call kill_aliased
+    
     if (kill_aliased() != 4.0) {
-        return 3;  // fail
+        return 3;  
     }
 
-    // make sure that didn't change d (since kill_aliased
-    // made globl_ptr point to a different value before updating through it)
+    
+    
     if (d != 0.0) {
-        return 4;  // fail
+        return 4;  
     }
 
-    return 0;  // success
+    return 0;  
 }

@@ -9,8 +9,8 @@ int fib(int count) {
     int i = 0;
     do {
         int n2 = n0 + n1;
-        n0 = n1;  // not a dead store b/c n0 is used again in the next loop
-                  // iteration, in n2 = n0 + n1
+        n0 = n1;  
+                  
         n1 = n2;
         i = i + 1;
     } while (i < count);

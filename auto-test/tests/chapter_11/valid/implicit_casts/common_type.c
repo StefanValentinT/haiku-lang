@@ -4,8 +4,8 @@ long l;
 int i;
 
 int addition(void) {
-    // l = 2147483653
-    // i = 10
+    
+    
 
     /* The common type of i and l is long, so we should
      * promote i to a long, then perform addition.
@@ -17,8 +17,8 @@ int addition(void) {
 }
 
 int division(void) {
-    // l = 2147483649l
-    // i = 10l
+    
+    
 
     /* The common type of i and l is long.
      * Therefore, we should promote i to a long,
@@ -35,8 +35,8 @@ int division(void) {
 }
 
 int comparison(void) {
-    // i = -100
-    // l = 2147483648, i.e. 2^31
+    
+    
 
     /* Make sure we convert i to a long instead of converting l to an int.
      * If we convert l to an int its value will be -2147483648,
@@ -46,8 +46,8 @@ int comparison(void) {
 }
 
 int conditional(void) {
-    // l = 8589934592l, i.e. 2^33
-    // i = 10;
+    
+    
 
     /* When a conditional expression includes both int and long branches,
      * make sure the int type is promoted to a long, rather than the long being
@@ -58,28 +58,28 @@ int conditional(void) {
 }
 
 int main(void) {
-    // Addition
+    
     l = 2147483653;
     i = 10;
     if (!addition()) {
         return 1;
     }
 
-    // Division
+    
     l = 2147483649l;
     if (!division()) {
         return 2;
     }
 
-    // Comparison
+    
     i = -100;
-    l = 2147483648; // 2^31
+    l = 2147483648; 
     if (!comparison()) {
         return 3;
     }
 
-    // Conditional
-    l = 8589934592l; // 2^33
+    
+    l = 8589934592l; 
     i = 10;
     if (!conditional()) {
         return 4;

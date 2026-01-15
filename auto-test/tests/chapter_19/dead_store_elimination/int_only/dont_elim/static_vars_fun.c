@@ -6,7 +6,7 @@ int get_x(void) {
 }
 
 int main(void) {
-    x = 5;  // don't eliminate this!
+    x = 5;  
     int result = get_x();
     x = 10;
     return result;

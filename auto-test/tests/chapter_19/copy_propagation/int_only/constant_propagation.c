@@ -4,7 +4,7 @@
 int target(void) {
     int x = 3;
     int y = x;
-    return x + y;  // should become return 6
+    return x + y;  
 }
 
 int main(void) {

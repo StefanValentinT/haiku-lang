@@ -5,7 +5,7 @@ static long private_long = 100l;
 
 int main(void) {
     long *initial_ptr = get_pointer();
-    if (initial_ptr) { // should be null for now
+    if (initial_ptr) { 
         return 1;
     }
 
@@ -24,14 +24,14 @@ int main(void) {
         return 4;
     }
 
-    // set it back to null
+    
     set_pointer(0);
 
     if (get_pointer()) {
         return 5;
     }
 
-    // new_ptr still pointers to private_long
+    
     if (new_ptr != &private_long) {
         return 6;
     }

@@ -1,4 +1,4 @@
-// Can't combine union specifier with other type specifier
+
 
 union a { int a; };
 

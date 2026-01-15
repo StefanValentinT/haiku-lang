@@ -314,7 +314,7 @@ def check_setup() -> bool:
             # we're on an ARM64 machine
             # if Python reports that machine is arm64 but processor is i386,
             # that means we're running under Rosetta2
-            # (see https://github.com/python/cpython/issues/96993)
+            # (see https:
             if platform.processor().lower() != "i386":
                 issues.append(
                     """You're running macOS on ARM. You need to use Rosetta to emulate x86-64.
@@ -342,7 +342,7 @@ Then try running this script again from that shell.
         # the architecture is right but they need to use WSL
         print(
             """You're running Windows. You need to use WSL to emulate Linux.
-Follow these instructions to install WSL and set up a Linux distribution on your machine: https://learn.microsoft.com/en-us/windows/wsl/install.
+Follow these instructions to install WSL and set up a Linux distribution on your machine: https:
 Then clone the test suite in your Linux distribution and try this command again from there.
             """
         )
@@ -472,7 +472,7 @@ def main() -> int:
     # create a subclass of TestChapter for each chapter,
     # dynamically adding a test case for each source program
     # technique adapted from
-    # https://eli.thegreenplace.net/2014/04/02/dynamically-generating-python-test-cases
+    # https:
     test_suite = unittest.TestSuite()
 
     for chapter in chapters:

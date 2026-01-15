@@ -16,6 +16,6 @@ int main(void) {
         return 2;
     }
 
-    // subnormal is non-zero, so !subnormal should be zero
+    
     return non_zero(subnormal);
 }

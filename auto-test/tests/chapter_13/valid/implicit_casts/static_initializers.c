@@ -1,9 +1,9 @@
 /* Test initializing static doubles with integer constants and vice versa */
 
 
-// double variables
 
-// can convert from int/uint without rounding
+
+
 double d1 = 2147483647;
 double d2 = 4294967295u;
 
@@ -17,7 +17,7 @@ double d4 = 4611686018427389955l;
 
 /* Using round-to-nearest, this rounds to 9223372036854775808 */
 double d5 = 9223372036854775810ul;
-double d6 = 4611686018427389955ul; // this as the same value as d4 and should round to the same double
+double d6 = 4611686018427389955ul; 
 
 /* This is exactly halfway between 9223372036854775808.0 and
  * 9223372036854777856.0 We round ties to even, so this
@@ -25,16 +25,16 @@ double d6 = 4611686018427389955ul; // this as the same value as d4 and should ro
  */
 double d7 = 9223372036854776832ul;
 
-double uninitialized; // should be initialized to 0.0
+double uninitialized; 
 
-// integer variables
 
-static int i = 4.9; // truncated to 4
 
-int unsigned u = 42949.672923E5; // truncated to 4294967292u
+static int i = 4.9; 
 
-// this token is first converted to a double w/ value 4611686018427389952.0,
-// then truncated down to long 4611686018427389952
+int unsigned u = 42949.672923E5; 
+
+
+
 long l = 4611686018427389440.;
 
 unsigned long ul = 18446744073709549568.;

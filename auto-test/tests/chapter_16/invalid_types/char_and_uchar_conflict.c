@@ -8,5 +8,5 @@ int main(void) {
     return foo(0);
 }
 
-// This redeclares foo with a different type than before
+
 int foo(char c);

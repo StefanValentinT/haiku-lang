@@ -8,7 +8,7 @@ struct inner return_small_struct(void) {
 struct outer return_nested_struct(void) {
     static struct outer ret = {2.0, 0, {10, 11}};
 
-    // on first call to this function, initializer ret.ptr
+    
     if (!ret.ptr) {
         ret.ptr = calloc(1, sizeof(struct inner));
         ret.ptr->x = 12;

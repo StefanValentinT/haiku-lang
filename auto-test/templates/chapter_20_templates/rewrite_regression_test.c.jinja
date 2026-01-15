@@ -18,12 +18,12 @@ int glob_three = 3;
 int glob_four = 4;
 
 int target(void) {
-    // We'll force the results of imul, add, and sub instructions to spill
-    // to memory (by making them conflict with more registers and have fewer
-    // uses then any other pseudo) to verify that we rewrite them correctly
+    
+    
+    
 
-    // These results will conflict with all other pseudos and only be used once
-    // each, so they'll all spill
+    
+    
     int imul_result = glob_three * glob_four;
     int add_result = glob_three + glob_four;
     int sub_result = glob_four - glob_three;
@@ -43,5 +43,5 @@ int target(void) {
         return 102;
     }
 
-    return 0;  // success
+    return 0;  
 }

@@ -1,13 +1,13 @@
 /* Test comparisons of unsigned integers */
 
 unsigned int one_hundred = 100u;
-unsigned int large_uint = 4294967294u; // interpreted as a signed int, this would be -2
+unsigned int large_uint = 4294967294u; 
 
 unsigned long one_hundred_ulong = 100ul;
-unsigned long large_ulong = 4294967294ul; // this would have the same value as a signed long
+unsigned long large_ulong = 4294967294ul; 
 
 int main(void) {
-    // compare unsigned ints (result would be different if interpreted as signed)
+    
 
     /* False comparisons */
     if (large_uint < one_hundred)
@@ -28,7 +28,7 @@ int main(void) {
     if (!(large_uint >= one_hundred))
         return 8;
 
-    // compare unsigned longs (result would be the same if interpreted as signed)
+    
     /* False comparisons: */
     if (large_ulong < one_hundred_ulong)
         return 9;

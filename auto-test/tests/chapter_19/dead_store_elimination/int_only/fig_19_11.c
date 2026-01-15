@@ -13,22 +13,22 @@ int callee2(void) {
 }
 
 int target(int flag) {
-    int x = 10;  // this is a dead store; make sure its eliminated
+    int x = 10;  
     if (flag) {
-        x = callee(); // this kills x; it's dead at earlier points
+        x = callee(); 
     } else {
-        x = callee2(); // this kills x; it's dead at earlier points
+        x = callee2(); 
     }
-    return x; // this generates x; it's live at earlier points
+    return x; 
 }
 
 int main(void) {
     if (target(1) != 4) {
-        return 1; // fail
+        return 1; 
     }
     if (target(0) != 5) {
-        return 2; // fail
+        return 2; 
     }
 
-    return 0; // success
+    return 0; 
 }

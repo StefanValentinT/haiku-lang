@@ -3,44 +3,44 @@
  * Tests do not involve any overflow, since that's undefined behavior.
  */
 long target_add(void) {
-    // we can add longs when the result exceeds INT_MAX
+    
     return 2147483647l + 1000l;
 }
 
 long target_sub(void) {
-    // we can subtract longs when the result is smaller than INT_MIN
+    
     return 1000l - 9223372036854773807l;
 }
 
 long target_mult(void) {
-    // can multiply longs when the result exceeds INT_MAX
+    
     return 35184372088832l * 4l;
 }
 
 long target_div(void) {
-    // both operands are larger than INT_MAX
+    
     return 9223372036854775807l / 3147483647l;
 }
 
 long target_rem(void) {
-    // both operands are larger than INT_MAX
+    
     return 9223372036854775807l % 3147483647l;
 }
 
 long target_complement(void) {
-    // alternating 1s and 0s
+    
     return ~6148914691236517206l;
 }
 
 long target_neg(void) {
-    // except for most significant bit, upper 32 bits of negated value are all
-    // zeros
+    
+    
     return -(9223372036854775716l);
 }
 
 int target_not(void) {
-    // 2^56 + 2^45 + 2^44
-    // lower 32 bits are all zeros
+    
+    
     return !72110370596061184l;
 }
 
@@ -49,14 +49,14 @@ int target_eq(void) {
 }
 
 int target_neq(void) {
-    // lower 32 bits of 72110370596061184l are all zeros
+    
     return 72110370596061184l != 0l;
 }
 
 int target_gt(void) {
-    // second operand is greater, but if we only looked at lower
-    // 32 bits we'd think the first was greater
-    return 549755813889l > 17592186044416l ;  // 2^39 + 1 > 2^44
+    
+    
+    return 549755813889l > 17592186044416l ;  
 }
 
 int target_ge(void) {
@@ -64,12 +64,12 @@ int target_ge(void) {
 }
 
 int target_lt(void) {
-    // compare two values whose lower 32 bits are identical
-    return 17592186044416l < 549755813888l;  // 2^44 < 2^39
+    
+    return 17592186044416l < 549755813888l;  
 }
 
 int target_le(void) {
-    // if we interpreted this as a signed int it would be negative
+    
     return 2147483648l <= 0l;
 }
 
@@ -78,7 +78,7 @@ long complement_result = 6148914691236517207l;
 long neg_result = 9223372036854775716l;
 
 int main(void) {
-    // binary arithmetic
+    
     if (target_add() != 2147484647l) {
         return 1;
     }
@@ -95,7 +95,7 @@ int main(void) {
         return 5;
     }
 
-    // unary operators
+    
     if (target_complement() != -complement_result) {
         return 6;
     }
@@ -108,7 +108,7 @@ int main(void) {
         return 8;
     }
 
-    // comparisons
+    
     if (!target_eq()) {
         return 9;
     }

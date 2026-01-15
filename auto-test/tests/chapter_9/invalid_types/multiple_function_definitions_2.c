@@ -4,8 +4,8 @@ int foo(void){
 }
 
 int main(void) {
-    // after seeing this declaration, we should still remember that
-    // foo was defined earlier
+    
+    
     int foo(void);
     return foo();
 }

@@ -6,21 +6,21 @@
 
 
 
-// case 1: struct with no explicit initializer should be all zeros
+
 struct s uninitialized;
 
-// case 2: partially initialized struct
+
 struct s partial = {1.0, "Hello"};
 
-// case 3: partially initialized array w/in struct
+
 struct s partial_with_array = {3.0, "!", {1}, 2};
 
-// case 4: implicit conversion of scalar elements
+
 struct s converted = {
-    1152921504606846977l,  // 1152921504606846976.0
-    0l,                    // null ptr
-    "abc",                 // {'a', 'b', 'c'}
-    17179869189l           // 5
+    1152921504606846977l,  
+    0l,                    
+    "abc",                 
+    17179869189l           
 };
 
 int main(void) {
@@ -40,5 +40,5 @@ int main(void) {
         return 4;
     }
 
-    return 0;  // success
+    return 0;  
 }

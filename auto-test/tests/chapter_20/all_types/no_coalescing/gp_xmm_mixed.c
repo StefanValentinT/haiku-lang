@@ -6,7 +6,7 @@
 
 int target(int one, int two, double one_d, double two_d, int three,
            double three_d) {
-    // Define ints 4-8 (all callee-saved) and doubles 10-23 and validate them
+    
     long four = two * two;
     long five = three + two_d;
 

@@ -12,18 +12,18 @@ pub enum Token {
     CloseBrace,
     Semicolon,
 
-    //unary operators
+    
     Tilde,
-    Minus, //this is both -a and a-b
+    Minus, 
     Decrement,
 
-    //binary operators
+    
     Plus,
     Multiply,
     Divide,
     Remainder,
 
-    //logical operators
+    
     Not,
     And,
     Or,
@@ -34,7 +34,7 @@ pub enum Token {
     LessOrEqual,
     GreaterOrEqual,
 
-    // =
+    
     Assign,
 
     QuestionMark,

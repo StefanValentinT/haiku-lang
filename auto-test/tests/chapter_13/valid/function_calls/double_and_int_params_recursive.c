@@ -26,9 +26,9 @@ int fun(int i1, double d1, int i2, double d2, int i3, double d3,
 
     }
 
-    // make sure all arguments have expected value; value of each arg relative to i1 (for ints)
-    // or d9 (for doubles) should stay the same. this ensures that we preserve value of function parameters
-    // even across other function calls
+    
+    
+    
     if (i2 != i1 + 2) {
         return 2;
     }

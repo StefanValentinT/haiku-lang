@@ -1,15 +1,17 @@
-int foo(int a) {
-    return a + 1;
+int fib(int n){
+    if (n<2){
+        return n;
+    } else{
+        return fib(n-1) + fib(n-2);
+    }
 }
-
 int main(void) {
-    /* foo is called with too many arguments */
-    return foo(1, 2);
+    int ex = fib(10);
+    return ex;
 }
 
 /*
 $EXPECTED_OUTPUT_START$
-3
-
+55
 $EXPECTED_OUTPUT_END$
 */

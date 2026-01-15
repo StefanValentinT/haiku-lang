@@ -10,7 +10,7 @@ int((return_3))(void)
 }
 
 
-long l = 100; // used below
+long l = 100; 
 /* Multiple equivalent declarations of the function 'two_pointers' */
 long *two_pointers(double val, double *ptr)
 {
@@ -51,17 +51,17 @@ int main(void)
     unsigned *(*(ptr_to_uptr));
 
     /* Use functions and variables we just declared */
-    i = return_3(); // assign 3 to i
-    if (i != 3) // this also updates ptr_to_iptr
+    i = return_3(); 
+    if (i != 3) 
         return 1;
 
     if (*i_ptr != 3) {
         return 2;
     }
 
-    // call two_pointers and validate the results
+    
     l_ptr = two_pointers(d2, d_ptr);
-    // l_ptr is a pointer to static variable l declared above
+    
     if (l_ptr != &l) {
         return 3;
     }
@@ -70,8 +70,8 @@ int main(void)
         return 4;
     }
 
-    // two_pointers also assigned value of d2 (10.0) to
-    // object referenced by d_ptr, which is d1
+    
+    
     if (*d_ptr != 10.0) {
         return 5;
     }
@@ -81,7 +81,7 @@ int main(void)
     }
 
 
-    // call pointers_to_pointers and validate the results
+    
     ptr_to_uptr = pointers_to_pointers(ptr_to_iptr);
 
     if (**ptr_to_uptr != 3) {

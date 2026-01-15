@@ -18,15 +18,15 @@ int glob7;
 int glob8;
 int glob9;
 
-// defined in tests/chapter_20/helper_libs/track_arg_registers_lib.c,
-// exits early if a, b, c don't have expected values
+
+
 int callee(int a, int b, int c);
 
-// Note: we deliberately give target the same number of params as callee;
-// if liveness incorrectly thought that some reg was used by callee and
-// therefore live, it still wouldn't interfere with the parameter passed to
-// target in that reg, so the error wouldn't necessarily force a spill. (I think
-// having _fewer_ params in target than in callee would be be fine.)
+
+
+
+
+
 int target(int one, int two, int three) {
     /* Create a clique of 12 pseudos, and pass
      * three of them to callee.
@@ -42,8 +42,8 @@ int target(int one, int two, int three) {
     int eleven = six * two - one;
     int twelve = six * two;
 
-    // to make sure they all interfere without forcing them to be callee-saved,
-    // copy all of them to global variables
+    
+    
     glob1 = one;
     glob2 = two;
     glob3 = three;
@@ -53,12 +53,12 @@ int target(int one, int two, int three) {
     glob7 = seven;
     glob8 = eight;
     glob9 = nine;
-    // don't need to copy in ten through twelve b/c we use them below
+    
 
-    // use ten through twelve
+    
     callee(ten, eleven, twelve);
 
-    // validate globals
+    
     check_12_ints(glob1, glob2, glob3, glob4, glob5, glob6, glob7, glob8, glob9,
                   ten, eleven, twelve, 1);
 

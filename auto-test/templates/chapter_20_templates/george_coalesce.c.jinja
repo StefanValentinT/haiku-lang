@@ -56,8 +56,8 @@ int increment_glob(void) {
  *    Purpose: make sure return value is coalesced into {{ret_reg}}.
  */
 {{params|map('format_string', typ ~ " {}")|arg_wrap(typ ~ " " ~ target_name, " {")}}
-    // Validate parameters a-{{params[-1]}} (not with check_* functions, to avoid adding
-    // new interference)
+    
+    
 {% for p in params %}
 {% set expected=const(loop.index) %}
     if ({{p}} != {{expected}}) {
@@ -66,15 +66,15 @@ int increment_glob(void) {
 {% endfor %}
 
 {% if not dbl %}
-    // Create/validate a bunch of callee-saved pseudos with significant degree.
+    
 
-    // Initialize these using glob, instead of id(), to avoid mov instructions
-    // between registers (e.g. movl %eax, %callee1)
+    
+    
     int one = glob * 1;
     int two = glob * 2;
     int three = glob * 3;
     int four = glob * 4;
-    // validate these to increase their degree more
+    
     if (one != 1) {
         return 7;
     }
@@ -87,9 +87,9 @@ int increment_glob(void) {
     if (four != 4) {
         return 10;
     }
-    // force them to be callee-saved
+    
     increment_glob();
-    // define new vars using the old ones, then validate them
+    
     int five = 4 + one;
     int six = 4 + two;
     int seven = 4 + three;
@@ -107,14 +107,14 @@ int increment_glob(void) {
         return 14;
     }
     increment_glob();
-    // define one last batch
+    
     int nine = 14 - five;
     int ten = 16 - six;
     int eleven = 18 - seven;
     int twelve = 20 - eight;
-    // force them to be callee-saved
+    
     increment_glob();
-    // validate them
+    
     if (nine != 9) {
         return 15;
     }
@@ -128,23 +128,23 @@ int increment_glob(void) {
         return 18;
     }
 {% endif %}
-    // Now make sure values passed as arguments are coalesced into
-    // parameter-passing registers. Calculate using glob so we can't
-    // copy prop or constant fold them, and don't need to mov values
-    // between registers to calculate them.
-    {{typ}} s = glob - {{const(3)}};  // {{const(1)}}
-    {{typ}} t = glob - {{const(2)}};  // {{const(2)}}
-    {{typ}} u = glob - {{const(1)}};  // {{const(3)}}
-    {{typ}} v = glob * {{const(2)}} - {{const(4)}};  // {{const(4)}}
-    {{typ}} w = glob + {{const(1)}};  // {{const(5)}}
+    
+    
+    
+    
+    {{typ}} s = glob - {{const(3)}};  
+    {{typ}} t = glob - {{const(2)}};  
+    {{typ}} u = glob - {{const(1)}};  
+    {{typ}} v = glob * {{const(2)}} - {{const(4)}};  
+    {{typ}} w = glob + {{const(1)}};  
 {% if dbl %}
-    {{typ}} x = glob + {{const(2)}};  // {{const(6)}}
-    {{typ}} y = glob + {{const(3)}};  // {{const(7)}}
-    {{typ}} z = glob * {{const(2)}};  // {{const(8)}}
-    double spill = w * 10.0;  // {{const(50)}}
+    {{typ}} x = glob + {{const(2)}};  
+    {{typ}} y = glob + {{const(3)}};  
+    {{typ}} z = glob * {{const(2)}};  
+    double spill = w * 10.0;  
     check_14_doubles(s, t, u, v, w, x, y, z, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 1.0);
 
-    // validate spill
+    
     if (spill != 50.0) {
         return 9.0;
     }
@@ -153,6 +153,6 @@ int increment_glob(void) {
 {% endif %}
 
 
-    // make sure return value is coalesced into {{ret_reg}}
+    
     return check_one_{{typ}}(glob, {{const(4)}});
 }

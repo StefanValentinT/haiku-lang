@@ -4,7 +4,7 @@
  */
 
 
-int i = 8589934592l; // 2^33, truncated to 0
+int i = 8589934592l; 
 long j = 123456;
 
 int main(void) {

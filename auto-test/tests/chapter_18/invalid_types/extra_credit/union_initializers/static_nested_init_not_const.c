@@ -1,5 +1,5 @@
-// Validate that all static union initializers, including nested ones,
-// are constant
+
+
 
 union u {
     long l;
@@ -14,5 +14,5 @@ struct has_union {
 long some_var = 10l;
 
 struct has_union some_struct = {1,
-                                {some_var},  // INVALID - not constant
+                                {some_var},  
                                 'a'};

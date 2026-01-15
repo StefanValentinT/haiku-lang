@@ -1,4 +1,4 @@
-// Can't have two default statements in same enclosing switch, even in different scopes
+
 int main(void) {
     int a = 10;
     switch (a) {

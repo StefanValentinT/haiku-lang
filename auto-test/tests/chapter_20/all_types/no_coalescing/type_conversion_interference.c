@@ -11,8 +11,8 @@ int glob;
 
 /* Test that we recognize movsx a, b uses a */
 int test_movsx_src(int i) {
-    // we'll coalesce i into EDI
-    // if we don't think it's live after check_one_int
+    
+    
     check_one_int(i - 10, -5);
     long l = 0;
     l = (long)i;
@@ -23,11 +23,11 @@ int test_movsx_src(int i) {
 /* Test that we recognize movsx a, b updates b */
 signed char glob_char = 10;
 int test_movsx_dst(void) {
-    // Create six callee-saved pseudos that are defined via movsx;
-    // if we don't recognize that movsx updates its destination,
-    // we won't recognize that they conflict, and we'll put at least
-    // two of them in the same pseudoregister.
-    // Use a mix of sign-extension from char and from int.
+    
+    
+    
+    
+    
     unsigned long a = id(-1);
     unsigned long b = id(2);
     char neg_char = -glob_char;
@@ -54,8 +54,8 @@ int test_movsx_dst(void) {
  */
 unsigned int glob_uint;
 int test_movzx_src(unsigned int u) {
-    // we'll coalesce u into EDI if we don't think it's
-    // live after check_one_uint
+    
+    
     check_one_uint(u + 10u, 30u);
     long l = (long)u;
     check_one_long(l, 20l);
@@ -66,10 +66,10 @@ int test_movzx_src(unsigned int u) {
  * (This test focuses on MovZeroExtend with Longword source type, which
  * eventually gets rewritten as a regular mov) */
 int test_movzx_dst(void) {
-    // Create six callee-saved pseudos defined via MovZeroExtend;
-    // if we don't recognize that MovZeroExtend updates its destination,
-    // we won't recognize that they conflict, and we'll put at least
-    // two of them in the same pseudoregister.
+    
+    
+    
+    
     long a = (long)unsigned_id(2000u);
     unsigned long b = (unsigned long)unsigned_id(1000u);
     unsigned long c = (unsigned long)unsigned_id(255u);
@@ -88,8 +88,8 @@ int test_movzx_dst(void) {
 
 /* Test that we recognize that movzbq a, b uses a */
 int test_movzbq_src(unsigned char c) {
-    // we'll coalesce c into EDI if we don't
-    // think it's live after check_one_uchar
+    
+    
     unsigned char d = c + 1;
     check_one_uchar(d, 13);
     long l = (long)c;
@@ -99,10 +99,10 @@ int test_movzbq_src(unsigned char c) {
 
 /* Test that we recognize that movzb a, b updates b */
 int test_movzb_dst(void) {
-    // Create six callee-saved pseudos defined via movzb;
-    // if we don't recognize that movzb updates its destination,
-    // we won't recognize that they conflict, and we'll put at least
-    // two of them in the same pseudoregister.
+    
+    
+    
+    
     int a = (int)uchar_id(200);
     unsigned int b = (unsigned int)uchar_id(100);
     unsigned long c = (unsigned long)uchar_id(255);
@@ -123,8 +123,8 @@ int test_movzb_dst(void) {
 
 /* Test that we recognize cvtsi2sd uses its source */
 int test_cvtsi2sd_src(int i) {
-    // we'll coalesce i into EDI
-    // if we don't think it's live after check_one_int
+    
+    
     check_one_int(i + 10, 16);
     double d = (double)i;
     check_one_double(d, 6.0);
@@ -135,12 +135,12 @@ int test_cvtsi2sd_src(int i) {
 int global_int = 5000;
 long global_long = 5005;
 int test_cvtsi2sd_dst(void) {
-    // Create 15 floating-point pseudos defined via cvtsi2sd;
-    // if we don't recognize that this instruction updates its destination
-    // we won't recognize that they conflict and we'll put at least two of them
-    // in the same register. (A correct register allocator
-    // will spill one of them.)
-    // Use a mix of cvtsi2sdl and cvtsi2sdq.
+    
+    
+    
+    
+    
+    
     double d0 = (double)global_int;
     double d1 = (double)(global_long - 4l);
     double d2 = (double)(global_int + 2);
@@ -169,8 +169,8 @@ int test_cvtsi2sd_dst(void) {
 /* Test that we recognize cvttsd2si a, b uses a */
 double glob_dbl;
 int test_cvttsd2si_src(double d) {
-    // We'll coalesce d into the tmp that holds d + 10.0
-    // if we don't realize it's still live
+    
+    
     glob_dbl = d + 10.0;
     int i = (int)d;
     check_one_int(i, 7);
@@ -180,11 +180,11 @@ int test_cvttsd2si_src(double d) {
 
 /* Test that we recognize that cvttsd2si a, b updates b */
 int test_cvttsd2si_dst(void) {
-    // Define six callee-saved pseudos defined by cvttsd2si;
-    // if we don't realize this instruction updates its destination,
-    // we won't recognize that they conflict and we'll put at least two
-    // in the same register instead of spilling one of them.
-    // Use a mix of cvttsd2sil and cvttsd2siq
+    
+    
+    
+    
+    
     int a = (int)dbl_id(-200.0);
     long b = (long)dbl_id(-300.0);
     int c = (int)dbl_id(-400.0);
@@ -201,21 +201,21 @@ int test_cvttsd2si_dst(void) {
 }
 
 int main(void) {
-    // movsx
+    
     test_movsx_src(5);
     test_movsx_dst();
 
-    // movzx
+    
     test_movzx_src(20u);
     test_movzx_dst();
     test_movzbq_src(12);
     test_movzb_dst();
 
-    // cvtsi2sd
+    
     test_cvtsi2sd_src(6);
     test_cvtsi2sd_dst();
 
-    // cvttsd2si
+    
     test_cvttsd2si_src(7.0);
     test_cvttsd2si_dst();
     return 0;

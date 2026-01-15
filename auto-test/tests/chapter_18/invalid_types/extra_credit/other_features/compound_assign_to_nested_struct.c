@@ -1,5 +1,5 @@
-// Can't perform compound assignment with lval of struct type, including
-// nested structs
+
+
 
 struct inner {
     int i;

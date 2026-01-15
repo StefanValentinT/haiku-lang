@@ -1,6 +1,6 @@
 int foo(void) {
-  // function with non-void return type
-  // must return a value
+  
+  
   return;
 }
 

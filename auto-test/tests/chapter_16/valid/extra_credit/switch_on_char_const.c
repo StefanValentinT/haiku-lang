@@ -1,13 +1,13 @@
-// Test that we can use character constant in switch statement
+
 int main(void) {
     switch ('x') {
         case 1:
-            return 1;  // fail
+            return 1;  
         case 2:
-            return 2;  // fail
+            return 2;  
         case 120:
-            return 0;  // success
+            return 0;  
         default:
-            return -1;  // fail
+            return -1;  
     }
 }

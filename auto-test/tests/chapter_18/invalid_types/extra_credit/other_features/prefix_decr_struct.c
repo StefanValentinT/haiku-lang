@@ -1,4 +1,4 @@
-// Can't apply prefix or postfix ++/-- to structures
+
 struct s {
     int i;
 };

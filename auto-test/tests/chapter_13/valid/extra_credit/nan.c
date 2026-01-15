@@ -1,11 +1,11 @@
-// Test that we handle NaN correctly
 
-int double_isnan(double d); // defined in tests/chapter_13/helper_libs/nan.c
 
-// This should return zero, because all comparisons with NaN are false
+int double_isnan(double d); 
+
+
 int main(void) {
     static double zero = 0.0;
-    double nan = 0.0 / zero; // make this constant-folding proof
+    double nan = 0.0 / zero; 
     if (nan < 0.0 || nan == 0.0 || nan > 0.0 || nan <= 0.0 || nan >= 0.0)
         return 1;
 
@@ -15,7 +15,7 @@ int main(void) {
     if (nan == nan)
         return 3;
 
-    if (!(nan != nan)) { // != should evaluate to true
+    if (!(nan != nan)) { 
         return 4;
     }
 
@@ -35,7 +35,7 @@ int main(void) {
         return 8;
     }
 
-    // NaN should always evaluate to nonzero
+    
 
     if (!nan) {
         return 9;

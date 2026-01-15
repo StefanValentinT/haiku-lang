@@ -49,3 +49,7 @@ pub fn make_or_true() -> String {
 pub fn make_or_end() -> String {
     format!("or_end{}", next_number())
 }
+
+pub fn make_fun_exit() -> String {
+    format!("__fun_exit{}", next_number())
+}

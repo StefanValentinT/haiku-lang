@@ -6,7 +6,7 @@
 
 int main(void) {
     struct s;
-    union s { // conflicts w/ earlier declaration
+    union s { 
         int a;
     };
 

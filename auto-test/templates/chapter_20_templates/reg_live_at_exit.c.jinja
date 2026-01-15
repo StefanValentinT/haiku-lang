@@ -11,12 +11,12 @@
 {{typ}} glob = {{const(10)}};
 {{typ}} glob2 = {{const(0)}};
 
-// The first round of coalescing will coalesce x into {{ret_reg}}.
-// Then, if we don't realize that {{ret_reg}} is live at exit, we'll
-// coalesce the temporary that holds x + glob into {{ret_reg}}, clobbering x.
+
+
+
 
 {{typ}} target(void) {
-    {{typ}} x = glob + {{const(1)}};  // {{const(11)}}
+    {{typ}} x = glob + {{const(1)}};  
     glob2 = x + glob;
     return x;
 }

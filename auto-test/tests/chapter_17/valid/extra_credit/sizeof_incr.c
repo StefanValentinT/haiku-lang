@@ -1,4 +1,4 @@
-// Test that we correctly get the size of ++ and -- expressions (and don't evaluate them)
+
 
 
 int main(void) {
@@ -7,43 +7,43 @@ int main(void) {
     static char arr[3] = {0, 0, 0};
     char *ptr = arr;
     if (sizeof (i++) != 4) {
-        return 1; // fail
+        return 1; 
     }
 
     if (sizeof (arr[0]--) != 1) {
-        return 2; // fail
+        return 2; 
     }
 
 
     if (sizeof (++l) != 8) {
-        return 3; // fail
+        return 3; 
     }
 
     if (sizeof (--arr[1]) != 1) {
-        return 4; // fail
+        return 4; 
     }
 
     if (sizeof (ptr--) != 8) {
         return 5;
     }
 
-    // make sure we didn't actually increment/decrement anything
+    
 
     if (i) {
-        return 6; // fail
+        return 6; 
     }
 
     if (l) {
-        return 7; // fail
+        return 7; 
     }
 
     if (arr[0] || arr[1] || arr[2]) {
-        return 8; // fail
+        return 8; 
     }
 
     if (ptr != arr) {
-        return 9; // fail
+        return 9; 
     }
 
-    return 0; // success
+    return 0; 
 }

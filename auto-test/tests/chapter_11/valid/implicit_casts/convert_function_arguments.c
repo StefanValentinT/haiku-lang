@@ -31,14 +31,14 @@ int foo(long a, int b, int c, int d, long e, int f, long g, int h) {
 
 int main(void) {
     int a = -1;
-    long int b = 4294967298;  // 2^32 + 2, becomes 2 when converted to an int
-    long c = -4294967296;     // -2^32, becoems 0 when converted to int
+    long int b = 4294967298;  
+    long c = -4294967296;     
     long d =
-        21474836475;  // 2^34 + 2^32 - 5, becomes -5 when converted to an int
+        21474836475;  
     int e = -101;
     long f = -123;
     int g = -10;
-    long h = -9223372036854774574;  // -2^63 + 1234, becomes 1234 when converted
-                                    // to an int
+    long h = -9223372036854774574;  
+                                    
     return foo(a, b, c, d, e, f, g, h);
 }

@@ -6,11 +6,11 @@ int main(void) {
     int y = 1;
     int z = 2;
 
-    // define two arrays of pointers
+    
     int *arr[3] = { &x, &y, &z };
     int *arr2[3] = {&z, &y, &x};
 
-    // an array of pointers to arrays of pointers
+    
     int *(*array_of_pointers[3])[3] = {&arr, &arr2, &arr};
     if (array_of_pointers[0] != (int *(*)[3]) arr) {
         return 1;

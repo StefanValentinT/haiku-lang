@@ -1,7 +1,7 @@
 /* Tests for bit-shift operations on unsigned integers */
 
 int main(void) {
-    unsigned int ui = -1u;  // 2^32 - 1, or 4294967295
+    unsigned int ui = -1u;  
 
     /* Shifting left by 2 is like subtracting 3;
      * note that we don't cast ui to a long first.
@@ -30,5 +30,5 @@ int main(void) {
         return 4;
     }
 
-    return 0;  // success
+    return 0;  
 }

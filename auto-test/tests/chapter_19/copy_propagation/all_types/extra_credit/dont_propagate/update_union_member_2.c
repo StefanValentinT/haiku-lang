@@ -14,6 +14,6 @@ union u {
 int main(void) {
     union u x;
     x.i = 100;
-    x.l = 200; // clobber x.i;
-    return x.i; // should be 200 (due to type punning), not 100
+    x.l = 200; 
+    return x.i; 
 }

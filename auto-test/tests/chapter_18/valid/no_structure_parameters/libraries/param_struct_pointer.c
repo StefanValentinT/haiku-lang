@@ -20,7 +20,7 @@ int access_members_through_pointer(struct outer *ptr, int expected_a,
         return 0;
     }
 
-    return 1;  // success
+    return 1;  
 }
 
 void update_members_through_pointer(struct outer *ptr, int a, int b,

@@ -26,7 +26,7 @@ int print_letters(void) {
 }
 
 int main(void) {
-    //print uppercase and lowercase version of each letter in the alphabet
+    
     for (int i = 0; i < 26; i = i + 1)
         print_letters();
 }

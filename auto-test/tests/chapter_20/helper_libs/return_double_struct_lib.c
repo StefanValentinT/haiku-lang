@@ -4,7 +4,7 @@ struct s {
     double d2;
 };
 
-// defined in test/chapter_20/all_types/no_coalescing/return_double_struct.c
+
 struct s return_struct(void);
 
 int target(void) {

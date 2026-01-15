@@ -4,13 +4,13 @@
 
 
 double target_add(void) {
-    // Because 1.2345e60 is so large, adding one to it doesn't change its value
+    
     return 1.2345e60 + 1.;
 }
 
 double target_sub(void) {
-    // make sure we properly calculate the difference between two very close
-    // subnormal numbers
+    
+    
     return 5.85543871245623688067e-311 - 5.85543871245574281503e-311;
 }
 
@@ -23,7 +23,7 @@ double target_div(void) {
 }
 
 double target_div_underflow(void) {
-    // this result should underflow to zero
+    
     return 0.5e-100 / 2e307;
 }
 
@@ -36,14 +36,14 @@ int target_not(void) {
 }
 
 int target_eq(void) {
-    // these decimal constants should be rounded to the same floating-point
-    // value, so this will return 1
+    
+    
     return 0.1 == 0.10000000000000001;
 }
 
 int target_neq(void) {
-    // these should compare unequal; 5e-324 will be rounded to the subnormal
-    // number just above zero
+    
+    
     return 5e-324 != 0.0;
 }
 
@@ -56,8 +56,8 @@ int target_ge(void) {
 }
 
 int target_lt(void) {
-    // these decimal constants should be rounded to the same floating-point
-    // value, so this will return 0
+    
+    
     return 0.1 < 0.10000000000000001;
 }
 
@@ -66,22 +66,22 @@ int target_le(void) {
 }
 
 double target_negate_zero(void) {
-    // make sure this gives us negative zero and not zero
+    
     return -0.0;
 }
 
 double target_infinity(void) {
-    // this will result in infinity
+    
     return 1e308 * 2.;
 }
 
 int target_compare_infininty(void) {
-    // infinity == infinity
+    
     return 10e308 == 12e308;
 }
 
 int main(void) {
-    // arithmetic
+    
     if (target_add() != 1.2345e60) {
         return 1;
     }
@@ -98,13 +98,13 @@ int main(void) {
     if (target_div_underflow() != 0.0) {
         return 5;
     }
-    // add to result and compare to 0, instead of comparing result to
-    // -.000000275, so we don't constant-fold -.000000275 here
+    
+    
     if (target_neg() + .000000275 != 0.0) {
         return 6;
     }
 
-    // logical ops and comparisons
+    
     if (target_not() != 0) {
         return 7;
     }
@@ -127,7 +127,7 @@ int main(void) {
         return 13;
     }
 
-    // infinity
+    
     if (target_infinity() != 10e308) {
         return 14;
     }
@@ -135,8 +135,8 @@ int main(void) {
         return 15;
     }
 
-    // check that we got -0.0, not 0.0;
-    // 1/0 is infinity, 1/-0 is negative infinity
+    
+    
     if (!((1 / target_negate_zero()) < 0.0)) {
         return 16;
     }

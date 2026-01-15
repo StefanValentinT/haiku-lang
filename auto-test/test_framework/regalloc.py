@@ -424,7 +424,7 @@ def make_regalloc_test(
 
     elif isinstance(test_info, NoSpillTest):
         # assign test_info to another variable to make mypy happy
-        # see https://github.com/python/mypy/issues/2608
+        # see https:
         nospilltest_info = test_info
 
         def test(self: TestRegAlloc) -> None:

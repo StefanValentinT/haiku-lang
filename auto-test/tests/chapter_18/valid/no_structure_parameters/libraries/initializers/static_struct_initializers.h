@@ -20,22 +20,22 @@ struct s {
     int four_i;
 };
 
-// static structures defined in client
+
 extern struct s uninitialized;
 extern struct s partial;
 extern struct s partial_with_array;
 extern struct s converted;
 
-// validation functions defined in library
 
-// case 1: struct with no explicit initializer should be all zeros
+
+
 int test_uninitialized(void);
 
-// case 2: partially initialized struct
+
 int test_partially_initialized(void);
 
-// case 3: partially initialized array w/in struct
+
 int test_partial_inner_init(void);
 
-// case 4: implicit conversion of scalar elements
+
 int test_implicit_conversion(void);

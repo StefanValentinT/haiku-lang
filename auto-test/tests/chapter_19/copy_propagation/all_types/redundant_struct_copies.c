@@ -14,12 +14,12 @@ double target(int flag, int flag2, struct s y) {
     struct s x = y;
 
     if (flag) {
-        y = x;  // we can remove this because x and y already have the same
-                // value
+        y = x;  
+                
     }
     if (flag2) {
-        x = y;  // we can remove this because x and y already have the same
-                // value
+        x = y;  
+                
     }
     return x.d + y.d + x.i + y.i;
 }

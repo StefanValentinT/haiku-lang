@@ -4,8 +4,8 @@ int main(void) {
             return 0;
         case 4: {
             int acc = 0;
-            // make sure we can use continue inside a loop
-            // inside a switch
+            
+            
             for (int i = 0; i < 10; i = i + 1) {
                 if (i % 2)
                     continue;

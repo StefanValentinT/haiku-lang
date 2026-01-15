@@ -4,7 +4,7 @@
 
 int memcmp(void *s1, void *s2, unsigned long n);
 
-// Pass sizes 1 - 6 in registers, remainders on the stack
+
 int fun0(struct bytesize1 a, struct bytesize2 b, struct bytesize3 c,
          struct bytesize4 d, struct bytesize5 e, struct bytesize6 f,
          struct bytesize7 g, struct bytesize8 h, struct bytesize9 i,
@@ -121,10 +121,10 @@ int fun0(struct bytesize1 a, struct bytesize2 b, struct bytesize3 c,
         return 0;
     }
 
-    return 1; // success
+    return 1; 
 }
 
-// Pass sizes 7-10 bytes in regs, 1-6 on the stack
+
 int fun1(struct bytesize7 a, struct bytesize8 b, struct bytesize9 c,
          struct bytesize10 d, struct bytesize1 e, struct bytesize2 f,
          struct bytesize3 g, struct bytesize4 h, struct bytesize5 i,
@@ -174,10 +174,10 @@ int fun1(struct bytesize7 a, struct bytesize8 b, struct bytesize9 c,
         return 0;
     }
 
-    return 1; // success
+    return 1; 
 }
 
-// Pass sizes 11-13 in regs, 1 on the stack
+
 int fun2(struct bytesize11 a, struct bytesize12 b, struct bytesize13 c,
          struct bytesize1 d, unsigned char *a_expected,
          unsigned char *b_expected, unsigned char *c_expected,
@@ -198,10 +198,10 @@ int fun2(struct bytesize11 a, struct bytesize12 b, struct bytesize13 c,
         return 0;
     }
 
-    return 1; // success
+    return 1; 
 }
 
-// pass sizes 14-16 in regs, 2 on the stack
+
 int fun3(struct bytesize14 a, struct bytesize15 b, struct bytesize16 c,
          struct bytesize2 d, unsigned char *a_expected,
          unsigned char *b_expected, unsigned char *c_expected,
@@ -222,5 +222,5 @@ int fun3(struct bytesize14 a, struct bytesize15 b, struct bytesize16 c,
         return 0;
     }
 
-    return 1; // success
+    return 1; 
 }

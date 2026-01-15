@@ -13,10 +13,10 @@ int target(int x, int y) {
 
 int main(void) {
     if (target(1, 1) != 1) {
-        return 1; // fail
+        return 1; 
     }
     if (target(0,0) != 1) {
-        return 2; // fail
+        return 2; 
     }
-    return 0; // success
+    return 0; 
 }

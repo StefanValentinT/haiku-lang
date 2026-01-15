@@ -4,5 +4,5 @@ struct s {
 
 int main(void) {
     struct s x = {1};
-    return 0 && x;  // can't apply boolean operators to structs
+    return 0 && x;  
 }

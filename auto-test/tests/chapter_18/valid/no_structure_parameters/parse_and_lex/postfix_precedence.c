@@ -1,4 +1,4 @@
-// postfix operators have higher precedence than prefix
+
 struct inner {
     int inner_arr[3];
 };

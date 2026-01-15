@@ -2,12 +2,12 @@
 
 /* We need to declare these functions ourselves since we can't #include <math.h> */
 
-// fused multiply and add: (x * y) + z
-// note: only the final result of the whole calculation is rounded,
-// not the intermediate result x * y
+
+
+
 double fma(double x, double y, double z);
 
-double ldexp(double x, int exp); // x * 2^exp
+double ldexp(double x, int exp); 
 
 int main(void) {
     double fma_result = fma(5.0, 1E22, 4000000.0);

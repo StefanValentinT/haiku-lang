@@ -8,11 +8,11 @@
  *
  * This test program is generated from templates/chapter_20_templates/twelve_pseudos_interfere.c.jinja.
  */
-int global_one = 1;  // to prevent constant-folding
+int global_one = 1;  
 
 double return_double(void) {
-    // create a clique of 12 pseudos that interfere
-    // we can color all of them w/out spilling anything
+    
+    
 
     int one = 2 - global_one;
     int two = one + one;
@@ -27,12 +27,12 @@ double return_double(void) {
     int eleven = 16 - five;
     int twelve = six + six;
 
-    // validate them
+    
     if (one == 1 && two == 2 && three == 3 && four == 4 && five == 5 &&
         six == 6 && seven == 7 && eight == 8 && nine == 9 && ten == 10 &&
         eleven == 11 && twelve == 12) {
-        return 0.0; // success
+        return 0.0; 
     } else {
-        return 1.0; // fail
+        return 1.0; 
     }
 }

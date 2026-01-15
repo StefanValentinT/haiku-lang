@@ -12,7 +12,7 @@ int main(void) {
     if (strings[1][0] != 'z')
         return 2;
 
-    // remaining bytes should be 0
+    
     for (int i = 1; i < 13; i = i + 1) {
         if (strings[1][i])
             return 3;

@@ -1,19 +1,19 @@
 /* Make sure the parser concatenates adjacent string literals */
 
 
-int strcmp(char *s1, char *s2);  // from standard library
+int strcmp(char *s1, char *s2);  
 
 int main(void) {
     char multi_string[6] =
         "yes"
-        "no";  // can concatenate two string literals in an initializer
+        "no";  
     char nested_multi_string[2][3] = {
         "a"
         "b",
         "c"
-        "d"};  // first element is "ab", second is "cd"
+        "d"};  
 
-    // validate multi_string
+    
     if (strcmp(multi_string, "yesno"))
         return 1;
     if (strcmp(nested_multi_string[0], "ab"))

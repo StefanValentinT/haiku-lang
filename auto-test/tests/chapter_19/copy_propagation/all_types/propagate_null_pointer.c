@@ -4,7 +4,7 @@
 long *target(void) {
     int *ptr = 0;
     long *ptr2 = (long *)ptr;
-    return ptr2;  // this should be rewritten as 'return 0'
+    return ptr2;  
 }
 
 int main(void) {

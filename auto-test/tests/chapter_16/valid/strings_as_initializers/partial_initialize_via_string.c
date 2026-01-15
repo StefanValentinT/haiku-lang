@@ -9,14 +9,14 @@ int test_static(void) {
 }
 
 static signed char nested_static_arr[3][4] = {
-    "", "bc"};  // empty string just initializes to null byte
+    "", "bc"};  
 int test_static_nested(void) {
     for (int i = 0; i < 3; i = i + 1)
         for (int j = 0; j < 4; j = j + 1) {
             signed char c = nested_static_arr[i][j];
 
-            // nested_static_arr[1][0] and nested_static_arr[1][1]
-            // have values from initializer; all other elements are 0
+            
+            
             signed char expected = 0;
             if (i == 1 && j == 0) {
                 expected = 'b';
@@ -25,16 +25,16 @@ int test_static_nested(void) {
             }
 
             if (c != expected) {
-                return 0;  // failure
+                return 0;  
             }
         }
 
-    return 1;  // success
+    return 1;  
 }
 
 int test_automatic(void) {
     unsigned char aut[4] = "ab";
-    // first two elements have values from initializer, last two are 0
+    
     return (aut[0] == 'a' && aut[1] == 'b' && !(aut[2] || aut[3]));
 }
 
@@ -60,12 +60,12 @@ int test_automatic_nested(void) {
                 }
 
                 if (c != expected) {
-                    return 0;  // failure
+                    return 0;  
                 }
             }
         }
     }
-    return 1;  // success
+    return 1;  
 }
 
 int main(void) {

@@ -6,7 +6,7 @@ int switch_on_long(long l) {
     switch (l) {
         case 0: return 0;
         case 100: return 1;
-        case 8589934592l: // 2^33
+        case 8589934592l: 
             return 2;
         default:
             return -1;
@@ -18,5 +18,5 @@ int main(void) {
         return 1;
     if (switch_on_long(100) != 1)
         return 2;
-    return 0; // success
+    return 0; 
 }

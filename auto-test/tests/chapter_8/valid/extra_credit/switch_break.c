@@ -1,5 +1,5 @@
-// a basic test that the correct case in a switch statement
-// is executed and that we can break out of a switch statement
+
+
 
 int main(void) {
     int a = 5;

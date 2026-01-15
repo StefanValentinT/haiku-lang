@@ -21,20 +21,20 @@ int flag = 1;
 int* store_a;
 
 int target(void) {
-    // Define 5 variable that take up callee-saved registers
+    
     int callee_saved1 = glob1;
     int callee_saved2 = glob2;
     int callee_saved3 = glob3;
     int callee_saved4 = glob4;
     int callee_saved5 = glob5;
 
-    // call a function to force these to be callee-saved
+    
     check_5_ints(1, 2, 3, 4, 5, 1);
-    // Create a clique of 7 local variables that interfere.
-    // Each one is a pointer that we write through, which remains live
-    // afterwards. As long as we recognize that writing through a pointer
-    // doesn't update that pointer, we can assign each of these to a
-    // caller-saved register and avoid spills.
+    
+    
+    
+    
+    
     int* a;
     int* b;
     int* c;
@@ -42,7 +42,7 @@ int target(void) {
     int* e;
     int* f;
     int* g;
-    // use flag to avoid copy prop
+    
     if (flag) {
         a = &glob1;
         *a = 2;
@@ -57,12 +57,12 @@ int target(void) {
         f = &glob6;
         *f = 12;
         g = &glob7;
-        // every tmp will conflict with the register we load pointers into,
-        // except g (b/c g isn't live while we load earlier pointers into that
-        // register)
+        
+        
+        
         *g = 14;
-        // store a to a global variable so that all regs conflict but we'll have
-        // lower register pressure later when we do comparisons
+        
+        
         store_a = a;
 
     } else {

@@ -4,7 +4,7 @@
 int test_simple(void) {
     int arr[3][3] = {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
 
-    // check the value of each element
+    
     for (int i = 0; i < 3; i = i + 1) {
         for (int j = 0; j < 3; j = j + 1) {
             if (arr[i][j] != i * 3 + j + 1) {
@@ -13,7 +13,7 @@ int test_simple(void) {
         }
     }
 
-    return 1;  // success
+    return 1;  
 }
 
 /* A partially initialized array of constants.
@@ -21,11 +21,11 @@ int test_simple(void) {
  * (including nested arrays) should be zeroed out.
  * */
 int test_partial(void) {
-    // explicitly initialize only the first half of each array,
-    // at each dimension
+    
+    
     int first_half_only[4][2][6] = {
-        {{1, 2, 3}},  // first_half_only[0][0][0-2]
-        {{4, 5, 6}}   // first_half_only[1][0][0-2]
+        {{1, 2, 3}},  
+        {{4, 5, 6}}   
     };
 
     int expected = 1;
@@ -34,7 +34,7 @@ int test_partial(void) {
             for (int k = 0; k < 6; k = k + 1) {
                 int val = first_half_only[i][j][k];
                 if (i > 1 || j > 0 || k > 2) {
-                    // this wasn't explicitly initialized, should be zero
+                    
                     if (val) {
                         return 0;
                     }
@@ -48,15 +48,15 @@ int test_partial(void) {
         }
     }
 
-    return 1;  // success
+    return 1;  
 }
 
 /* elements in a compound initializer may include non-constant expressions
  * and expressions of other types, which are converted to the right type
  * as if by assignment */
 int test_non_constant_and_type_conversion(void) {
-    // first let's define some value (that can't be copy propagated
-    // or constant-folded away in Part III)
+    
+    
     extern unsigned int three(void);
     static int x = 2000;
     int negative_four = -4;
@@ -75,10 +75,10 @@ int test_non_constant_and_type_conversion(void) {
         return 0;
     }
 
-    return 1;  // success
+    return 1;  
 }
 
-// helper function for previous test
+
 unsigned int three(void) {
     return 3u;
 }
@@ -110,7 +110,7 @@ int test_preserve_stack(void) {
         return 0;
     }
 
-    return 1;  // success
+    return 1;  
 }
 
 int main(void) {
@@ -130,5 +130,5 @@ int main(void) {
         return 4;
     }
 
-    return 0;  // success
+    return 0;  
 }

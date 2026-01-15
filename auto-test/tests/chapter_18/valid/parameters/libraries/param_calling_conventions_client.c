@@ -3,7 +3,7 @@
 
 
 int main(void) {
-    // define a bunch of structures
+    
     struct two_longs two_longs = {1234567l, 89101112l};
     struct one_int one_int = {54320, 'c'};
     struct one_int_exactly one_long = {567890l};
@@ -19,14 +19,14 @@ int main(void) {
     struct odd_size odd = {"lmno"};
     struct memory mem = {15.75, "rs", 4444, 3333};
 
-    // call validation functions
+    
 
     if (!pass_small_structs(two_xmm, one_int, one_xmm, xmm_and_int, xii,
                             one_long)) {
         return 1;
     }
 
-    // based on example in Listing 18-45
+    
     if (!a_bunch_of_arguments(0, 1, 2, 3, 4, two_longs, 5)) {
         return 2;
     }
@@ -44,7 +44,7 @@ int main(void) {
         return 4;
     }
 
-    // define some more structs to use in last two test cases
+    
     struct twelve_bytes struct1 = {-1, {127, 126, 125}};
     struct twelve_bytes struct2 = {-5, {100, 101, 102}};
     struct odd_size os = {{100, 99, 98, 97, 96}};
@@ -58,6 +58,6 @@ int main(void) {
         return 6;
     }
 
-    // success!
+    
     return 0;
 }

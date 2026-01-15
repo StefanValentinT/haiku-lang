@@ -2,7 +2,7 @@
 
 
 int lt(double d, long l) {
-    // l is implicitly converted to a double
+    
     return d < l;
 }
 

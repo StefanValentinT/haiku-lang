@@ -24,16 +24,16 @@ int update_static_or_global(int update_global, int new_val)
         i = new_val;
     }
     else
-        // update local i
+        
         i = new_val;
 
-    // return local i, regardless of what was updated
+    
     return i;
 }
 
 int main(void)
 {
-    if (i != 0) // i with external linkage should be initialized to 0
+    if (i != 0) 
         return 1;
 
     /* update i with external linkage, and check values of both variables */

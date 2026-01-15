@@ -3,7 +3,7 @@
  * operations _using_ NaN.
  */
 
-int double_isnan(double d); // defined in tests/chapter_13/helper_libs/nan.c
+int double_isnan(double d); 
 
 double target_nan(void){
     return 0./0.;

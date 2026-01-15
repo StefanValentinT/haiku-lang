@@ -7,13 +7,13 @@
  */
 
 
-// recognize that addsd uses its source
+
 double src_test(double arg) {
-    // this becomes:
-    // movsd .Lconst_5(%rip), %x
-    // addsd %arg, %x
-    // if we don't recognize that addsd makes arg live, we'll coalesce both
-    // arg and x into XMM0, and check_one_double will fail
+    
+    
+    
+    
+    
     double x = 5 + arg;
     check_one_double(x, 6.0);
     return 0;
@@ -22,26 +22,26 @@ double src_test(double arg) {
 double glob = 1;
 double glob2;
 int flag = 1;
-// recognize that divsd uses its destination
+
 int dst_test(void) {
     double a = dbl_id(100.0);
 
-    // wrap this in if statement so we can't copy prop temporary values
-    // into check_one_double calls below
+    
+    
     if (flag) {
-        // this addition becomes:
-        // movsd %a, %tmp
-        // addsd %glob, %tmp
-        // movsd %tmp, %glob2
-        // so we'll coalesce a & tmp unless we recognize that a is still live,
-        // which requires us to realize that the divsd instruction below
-        // doesn't kill it
+        
+        
+        
+        
+        
+        
+        
         glob2 = a + glob;
 
-        // first round of coalescing will coalesce a with temporary result of
-        // a / 2.0, so this will be
-        // divsd .Lconst_2(%rip), %a.0
-        // so we need to recognize that this divsd instruction uses a
+        
+        
+        
+        
         a = a / 2.0;
     }
 

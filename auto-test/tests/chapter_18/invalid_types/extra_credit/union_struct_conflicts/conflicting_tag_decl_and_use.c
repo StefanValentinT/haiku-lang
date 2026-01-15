@@ -4,6 +4,6 @@
 struct x { int a; };
 
 int main(void) {
-    union x foo; // incompatible with earlier declration of 'struct x' type
+    union x foo; 
     return 0;
 }

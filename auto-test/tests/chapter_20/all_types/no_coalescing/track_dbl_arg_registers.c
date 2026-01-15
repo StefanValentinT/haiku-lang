@@ -9,8 +9,8 @@
  * */
 
 
-// defined in tests/chapter_20/helper_libs/track_dbl_arg_registers_lib.c,
-// exits early if a, b, c don't have expected values
+
+
 int callee(double a, double b, double c);
 
 double glob1;
@@ -25,11 +25,11 @@ double glob9;
 double glob10;
 double glob11;
 
-// Note: we deliberately give target the same number of params as callee;
-// if liveness incorrectly thought that some reg was used by callee and
-// therefore live, it still wouldn't interfere with the parameter passed to
-// target in that reg, so the error wouldn't necessarily force a spill. (I think
-// having _fewer_ params in target than in callee would be be fine.)
+
+
+
+
+
 int target(double one, double two, double three) {
     double four = three + one;
     double five = two + three;
@@ -43,7 +43,7 @@ int target(double one, double two, double three) {
     double thirteen = (nine + ten) - six;
     double fourteen = eleven + 3;
 
-    // copy variables into global variables to make them interfere
+    
     glob1 = one;
     glob2 = two;
     glob3 = three;
@@ -56,12 +56,12 @@ int target(double one, double two, double three) {
     glob10 = ten;
     glob11 = eleven;
 
-    // don't need to copy in twelve through fourteen b/c we use them below
+    
 
-    // use ten through twelve
+    
     callee(twelve, thirteen, fourteen);
 
-    // validate globals
+    
     check_14_doubles(glob1, glob2, glob3, glob4, glob5, glob6, glob7, glob8,
                      glob9, glob10, glob11, 12., 13., 14., 1);
 

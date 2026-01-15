@@ -15,21 +15,21 @@ int callee(int a, int b) {
 
 int target(int param) {
     int x = param;
-    // should be able to propagate param into var but we don't explicitly
-    // check that here
+    
+    
     set_globvar(x);
-    int y = x;  // gen y = x;
-    x = 10;     // kill x = param and y = x, gen x = 10
-    // make sure we propagate x = 10 but not y = x
-    return callee(x, y);  // becomes callee(10, y)
+    int y = x;  
+    x = 10;     
+    
+    return callee(x, y);  
 }
 
 int main(void) {
     if (target(4) != 14) {
         return 1;
     }
-    if (globvar != 4) {  // make sure we passed the right value to set_globvar
+    if (globvar != 4) {  
         return 2;
     }
-    return 0;  // success
+    return 0;  
 }

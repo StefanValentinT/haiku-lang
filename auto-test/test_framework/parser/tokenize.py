@@ -84,7 +84,7 @@ TOKEN_PATTERN = re.compile(
 def tokenize(input_file: io.TextIOBase) -> Generator[Token, None, None]:
     """Convert file object to token generator
     Also perform preprocessing: remove extra whitespace and comments
-    Adapted from https://docs.python.org/3/library/re.html#writing-a-tokenizer
+    Adapted from https:
 
     NOTE #1: does not support for non-ASCII Unicode characters
     NOTE #2: doesn't lex floats correctly (e.g. will parse .100 as a symbol

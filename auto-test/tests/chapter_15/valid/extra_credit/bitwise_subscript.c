@@ -1,8 +1,8 @@
-// Test bitwise operations on array elements
+
 int main(void) {
     int arr[6] = {-10, 10, -11, 11, -12, 12};
     if ((arr[0] & arr[5]) != 4) {
-        return 1; // fail
+        return 1; 
     }
 
     if ((arr[1] | arr[4]) != -2) {

@@ -22,9 +22,9 @@ int or(int i, unsigned u) {
 }
 
 int main(void) {
-    // this would be equal to zero if we only considered lower 32 bits
-    unsigned long ul = 1152921504606846976ul; // 2^60
-    unsigned int u = 2147483648u; // 2^31
+    
+    unsigned long ul = 1152921504606846976ul; 
+    unsigned int u = 2147483648u; 
     unsigned long zero = 0l;
     if (not(ul)) {
         return 1;

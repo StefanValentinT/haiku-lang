@@ -8,7 +8,7 @@ int update_x(int new_val);
 int read_x(void);
 
 
-// an external variable can be declared multiple times.
+
 extern int x;
 
 int main(void) {

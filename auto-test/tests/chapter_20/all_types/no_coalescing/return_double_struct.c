@@ -16,11 +16,11 @@ struct s {
     double d1;
     double d2;
 };
-int global_one = 1;  // to prevent constant-folding
+int global_one = 1;  
 
 struct s return_struct(void) {
-    // create a clique of 12 pseudos that interfere
-    // we can color all of them w/out spilling anything
+    
+    
 
     int one = 2 - global_one;
     int two = one + one;
@@ -35,14 +35,14 @@ struct s return_struct(void) {
     int eleven = 16 - five;
     int twelve = six + six;
 
-    // validate them
+    
     if (one == 1 && two == 2 && three == 3 && four == 4 && five == 5 &&
         six == 6 && seven == 7 && eight == 8 && nine == 9 && ten == 10 &&
         eleven == 11 && twelve == 12) {
         struct s retval = {0.0, 200.0};
-        return retval; // success
+        return retval; 
     } else {
         struct s retval = {1.0, -1.0};
-        return retval; // fail
+        return retval; 
     }
 }

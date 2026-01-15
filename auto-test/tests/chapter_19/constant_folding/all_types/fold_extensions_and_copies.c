@@ -28,7 +28,7 @@ long target_int_to_long(void) {
 }
 
 int uint_to_int(void) {
-    // outside the range of int; will be negative
+    
     return (int)4294967200U;
 }
 
@@ -37,7 +37,7 @@ unsigned int int_to_uint(void) {
 }
 
 long ulong_to_long(void) {
-    // outside the range of long; will be negative
+    
     return (long)18446744073709551615UL;
 }
 
@@ -46,7 +46,7 @@ unsigned long long_to_ulong(void) {
 }
 
 long implicit(void) {
-    // same as ulong_to_long, but cast is implicit
+    
     return 18446744073709551615UL;
 }
 
@@ -90,5 +90,5 @@ int main(void) {
         return 9;
     }
 
-    return 0;  // success
+    return 0;  
 }

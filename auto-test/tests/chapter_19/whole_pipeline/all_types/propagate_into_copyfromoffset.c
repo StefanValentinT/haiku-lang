@@ -14,20 +14,20 @@ int target(void) {
 
     glob = loc;
 
-    int x = glob.b;  // rewrite as x = loc.b
+    int x = glob.b;  
 
     return x;
 }
 
 int main(void) {
     if (target() != 200) {
-        return 1;  // failure
+        return 1;  
     }
     if (glob.a != 100) {
-        return 2;  // failure
+        return 2;  
     }
     if (glob.b != 200) {
-        return 3;  // failure
+        return 3;  
     }
-    return 0;  // success
+    return 0;  
 }

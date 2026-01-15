@@ -11,7 +11,7 @@ int target(int flag) {
     int x = 3;
     if (flag)
         callee();
-    return x;  // should become return 3
+    return x;  
 }
 
 int main(void) {
@@ -21,9 +21,9 @@ int main(void) {
     if (target(1) != 3) {
         return 2;
     }
-    // make sure callee was called once
+    
     if (var != 1) {
         return 3;
     }
-    return 0;  // success
+    return 0;  
 }

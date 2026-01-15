@@ -1,5 +1,5 @@
-// Make sure we validate the types of nested aggregate inits within union
-// initializers
+
+
 
 struct one_elem {
     long l;
@@ -16,8 +16,8 @@ union one_or_three_elems {
 };
 
 int main(void) {
-    // invalid: first element of union is struct one_elem, which we can't
-    // initialize with three-element initializer
+    
+    
     static union one_or_three_elems my_union = {{1, 2, 3}};
     return 0;
 }

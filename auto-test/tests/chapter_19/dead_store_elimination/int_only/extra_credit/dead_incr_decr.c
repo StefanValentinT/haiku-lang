@@ -4,12 +4,12 @@
 static int glob;
 
 int target(void) {
-    // initialize these so they can't be constant-folded
+    
     int a = glob;
     int b = glob;
     int c = glob;
     int d = glob;
-    // these operations are all dead stores so we'll eliminate them
+    
     a++;
     b--;
     ++c;

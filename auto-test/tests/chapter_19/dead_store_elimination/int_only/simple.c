@@ -2,7 +2,7 @@
 
 
 int target(void) {
-    int x = 10; // this is a dead store
+    int x = 10; 
     return 3;
 }
 

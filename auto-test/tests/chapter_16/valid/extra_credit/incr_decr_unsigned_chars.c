@@ -1,26 +1,26 @@
-// Increment and decrement lvalues of unsigned character type
+
 int main(void) {
     unsigned char chars[5] = {0, 2, 4, 253, 255};
 
-    // validate expression results
-    if (chars[0]--) {  // result is 0
-        return 1;      // fail
+    
+    if (chars[0]--) {  
+        return 1;      
     }
 
     if (chars[1]++ != 2) {
-        return 2;  // fail
+        return 2;  
     }
 
     if (--chars[3] != 252) {
         return 3;
     }
 
-    if (++chars[4] != 0) {  // wraps around
+    if (++chars[4] != 0) {  
         return 4;
     }
 
-    // validate side effects/updated values
-    if (chars[0] != 255) {  // wraps around
+    
+    if (chars[0] != 255) {  
         return 5;
     }
 
@@ -28,7 +28,7 @@ int main(void) {
         return 6;
     }
 
-    if (chars[2] != 4) {  // we didn't change this one
+    if (chars[2] != 4) {  
         return 7;
     }
 
@@ -40,5 +40,5 @@ int main(void) {
         return 9;
     }
 
-    return 0;  // success
+    return 0;  
 }

@@ -15,9 +15,9 @@ int target(int a, int b, int c, int d) {
         }
 
         while (b > 0) {
-            c = 10;  // this is not dead, b/c it's used in previous while
-                     // loop, but it takes multiple passes for that
-                     // information to propagate to this point
+            c = 10;  
+                     
+                     
             b = b - 1;
         }
 

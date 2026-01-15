@@ -1,16 +1,16 @@
-// Test that we can use character constants as cases in switch statements
+
 int main(void) {
     static int i = 65;
     switch (i) {
         case 100l:
-            return 1;  // fail
+            return 1;  
         case 'A':
-            return 0;  // success
+            return 0;  
         case 'B':
-            return 2;  // fail
+            return 2;  
         case 2000u:
-            return 3;  // fail
+            return 3;  
         default:
-            return -1;  // fail
+            return -1;  
     }
 }

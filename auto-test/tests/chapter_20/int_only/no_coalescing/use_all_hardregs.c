@@ -4,11 +4,11 @@
  * This test program is generated from templates/chapter_20_templates/use_all_hardregs.c.jinja
  * */
 
-int global_one = 1;  // to prevent constant-folding
+int global_one = 1;  
 
 int target(void) {
-    // create a clique of 12 pseudos that interfere
-    // we can color all of them w/out spilling anything
+    
+    
 
     int one = 2 - global_one;
     int two = one + one;
@@ -23,9 +23,9 @@ int target(void) {
     int eleven = 16 - five;
     int twelve = six + six;
 
-    // validate one through twelve
-    // (this makes them all live at this point)
+    
+    
     check_12_ints(one, two, three, four, five, six, seven, eight, nine, ten,
                   eleven, twelve, 1);
-    return 0;  // success
+    return 0;  
 }

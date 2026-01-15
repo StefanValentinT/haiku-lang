@@ -2,7 +2,7 @@
  * and each struct type's member names as separate namespaces
  * */
 
-// two structs can use same member names
+
 int test_shared_member_names(void) {
     struct pair1 {
         int x;
@@ -19,11 +19,11 @@ int test_shared_member_names(void) {
         return 0;
     }
 
-    return 1;  // success
+    return 1;  
 }
 
-// you can use the same member name in different ways in the same expression,
-// and the type checker can infer what struct type each one refers to
+
+
 int test_shared_nested_member_names(void) {
     struct pair1 {
         int x;
@@ -37,16 +37,16 @@ int test_shared_nested_member_names(void) {
     struct pair1 p1 = {3, &(p1.x)};
     struct pair2 p2 = {&p1, {1.0, 2.0, 3.0, 4.0}};
 
-    // nested access with two 'y' members
+    
     if (((struct pair1 *)p2.x)->x != 3) {
         return 0;
     }
 
-    return 1;  // success
+    return 1;  
 }
 
-// you can use the same identiifer as a struct tag, member name, and variable
-// name
+
+
 int test_same_name_var_member_and_tag(void) {
     struct x {
         int x;
@@ -56,11 +56,11 @@ int test_same_name_var_member_and_tag(void) {
         return 0;
     }
 
-    return 1;  // success
+    return 1;  
 }
 
-// you can use the same identifier as a struct tag, member name, and function
-// name
+
+
 int test_same_name_fun_member_and_tag(void) {
     struct f {
         int f;
@@ -72,7 +72,7 @@ int test_same_name_fun_member_and_tag(void) {
         return 0;
     }
 
-    return 1;  // success
+    return 1;  
 }
 
 int f(void) {

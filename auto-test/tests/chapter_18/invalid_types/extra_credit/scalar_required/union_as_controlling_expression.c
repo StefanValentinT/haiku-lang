@@ -1,4 +1,4 @@
-// Can't use union as controlling expression
+
 
 union u {int x;};
 

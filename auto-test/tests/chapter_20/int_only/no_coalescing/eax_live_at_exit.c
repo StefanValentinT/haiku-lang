@@ -9,12 +9,12 @@
 int glob = 10;
 int glob2 = 0;
 
-// The first round of coalescing will coalesce x into EAX.
-// Then, if we don't realize that EAX is live at exit, we'll
-// coalesce the temporary that holds x + glob into EAX, clobbering x.
+
+
+
 
 int target(void) {
-    int x = glob + 1;  // 11
+    int x = glob + 1;  
     glob2 = x + glob;
     return x;
 }

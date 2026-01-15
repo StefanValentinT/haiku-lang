@@ -10,7 +10,7 @@ int f(struct s arg) {
 int target(void) {
     struct s my_struct = {4};
     int x = f(my_struct);
-    my_struct.i = 10;  // dead!
+    my_struct.i = 10;  
     return x;
 }
 

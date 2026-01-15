@@ -1,4 +1,4 @@
-// a switch statement may jump into the middle of other control flow constructs
+
 
 int main(void) {
     int switch1 = 0;

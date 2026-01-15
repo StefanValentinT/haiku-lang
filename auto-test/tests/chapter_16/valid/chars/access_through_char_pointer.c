@@ -5,7 +5,7 @@
 
 int main(void) {
 
-    // inspect the four bytes of an int
+    
     int x = 100;
     char *byte_ptr = (char *) &x;
 
@@ -17,8 +17,8 @@ int main(void) {
         return 2;
     }
 
-    // now inspect a double -- only upper bit should be set
-    double d = -0.0; // 0x8000_0000_0000_0000
+    
+    double d = -0.0; 
     byte_ptr = (char *) &d;
     if (byte_ptr[7] != -128) {
         return 3;
@@ -30,14 +30,14 @@ int main(void) {
         }
     }
 
-    // finally, let's look at an array
+    
     unsigned int array[3][2][1] = {
         {{-1}, {-1}},
         {{-1}, {-1}},
-        {{4294901760u}} // 0xffff_0000
+        {{4294901760u}} 
     };
     byte_ptr = (char *) array;
-    byte_ptr = byte_ptr + 16; // each row is 8 bytes since it has 2 ints
+    byte_ptr = byte_ptr + 16; 
     if (byte_ptr[0] || byte_ptr[1]) {
         return 5;
     }

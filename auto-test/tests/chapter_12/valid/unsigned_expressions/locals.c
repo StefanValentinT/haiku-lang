@@ -5,9 +5,9 @@ int main(void) {
      * Identical to chapter 11 long_and_int_locals but with some unsigned integers
      */
 
-    unsigned long a = 8589934592ul; // this number is outside the range of int
+    unsigned long a = 8589934592ul; 
     int b = -1;
-    long c = -8589934592l; // also outside the range of int
+    long c = -8589934592l; 
     unsigned int d = 10u;
 
     /* Make sure every variable has the right value */
@@ -28,7 +28,7 @@ int main(void) {
     a = -a;
     b = b - 1;
     c = c + 8589934594l;
-    d = d * 268435456u; // result is between INT_MAX and UINT_MAX
+    d = d * 268435456u; 
 
     /* Make sure the updated values are correct */
     if (a != 18446744065119617024ul) {

@@ -12,7 +12,7 @@ double return_double(void) {
 }
 
 int check_assignment(double arg) {
-    // arg = 4.9
+    
     int i = 0;
     /* truncate arg to 4 */
     i = arg;
@@ -36,7 +36,7 @@ int main(void) {
     }
 
     /* initializer */
-    double d = 18446744073709551586ul; // implicitly convert constant to nearest double
+    double d = 18446744073709551586ul; 
 
     if (d != 18446744073709551616.) {
         return 4;

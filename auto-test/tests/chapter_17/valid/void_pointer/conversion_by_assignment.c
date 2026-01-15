@@ -7,27 +7,27 @@ void free(void *ptr);
 int memcmp(void *s1, void *s2, unsigned long n);
 
 void *return_ptr(char *i) {
-    // get pointer to i[3], implicitly cast from char * to void *
+    
     return i + 3;
 }
 
 int check_char_ptr_argument(char *pointer, char expected_val) {
-    // note: strict aliasing rules let us inspect any object through char,
-    // so this is well-defined even if pointer points to an object
-    // whose effective type is not char
+    
+    
+    
     return *pointer == expected_val;
 }
 
 int *return_void_ptr_as_int_ptr(void *pointer) {
-    return pointer; // implicitly convert pointer type from void * to int *
+    return pointer; 
 }
 
-// allocate an array of n doubles
+
 double *get_dbl_array(unsigned long n) {
     return (double *) malloc(n * sizeof (double));
 }
 
-// populate an array of n doubles with value d
+
 void set_doubles(double *array, unsigned long n, double d) {
     for (unsigned long i = 0; i < n; i = i + 1) {
         array[i] = d;
@@ -37,7 +37,7 @@ void set_doubles(double *array, unsigned long n, double d) {
 
 
 void *return_dbl_ptr_as_void_ptr(double *ptr) {
-    return ptr; // implicitly convert pointer type from double * to void *
+    return ptr; 
 }
 
 int main(void) {
@@ -47,7 +47,7 @@ int main(void) {
 
     /* Initializer: implicitly convert void * to int * */
     int *int_ptr = four_bytes;
-    *int_ptr = -1; // set all bytes to 1
+    *int_ptr = -1; 
 
     /* Function argument: convert four_bytes to function argument
      * with type (char *). If we interpret lowest byte of four_bytes
@@ -85,7 +85,7 @@ int main(void) {
 
     /* Function argument - convert void_array to parameter with type double * */
     set_doubles(void_array, 5, 4.0);
-    // make sure that worked
+    
     if (dbl_array[3] != 4.0) {
         return 4;
     }
@@ -99,19 +99,19 @@ int main(void) {
     /* Assignment: assign some other pointer types to a void * object */
     void *some_other_ptr = 0;
 
-    some_other_ptr = dbl_array; // convert double * to void *
+    some_other_ptr = dbl_array; 
     if (some_other_ptr != void_array) {
         return 6;
     }
 
-    some_other_ptr = &some_other_ptr; // convert void ** to void *
+    some_other_ptr = &some_other_ptr; 
     if (some_other_ptr == void_array) {
         return 7;
     }
 
     complicated_ptr = 0;
     some_other_ptr = complicated_ptr;
-    if (some_other_ptr) { // null pointer is always 0 no matter what type it points to
+    if (some_other_ptr) { 
         return 8;
     }
 
@@ -119,11 +119,11 @@ int main(void) {
 
     /* Convert void * to another pointer type in a compound initializer */
     long *long_ptr_array[3] = {
-        // convert three pointers from (void *) to (long *)
+        
         malloc(sizeof(long)), malloc(sizeof(long)), malloc(sizeof(long))
     };
 
-    //make sure we can read/write this malloc'ed memory
+    
     *long_ptr_array[0] = 100l;
     *long_ptr_array[1] = 200l;
     *long_ptr_array[2] = 300l;
@@ -140,10 +140,10 @@ int main(void) {
     long arr1[3] = {1, 2, 3};
     long arr2[3] = {1, 2, 3};
     long arr3[3] = {1, 2, 4};
-    if (memcmp(arr1, arr2, sizeof arr1) != 0) { // these compare equal
+    if (memcmp(arr1, arr2, sizeof arr1) != 0) { 
         return 10;
     }
-    if (memcmp(arr1, arr3, sizeof arr2) != -1) { //arr1 should compare less than arr3, since 3 < 4
+    if (memcmp(arr1, arr3, sizeof arr2) != -1) { 
         return 11;
     }
     return 0;

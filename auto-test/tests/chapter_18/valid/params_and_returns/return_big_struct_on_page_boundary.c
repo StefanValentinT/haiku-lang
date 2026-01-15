@@ -10,8 +10,8 @@ struct eighteen_bytes {
     char arr[18];
 };
 
-// irregularly-sized struct that's right on a page boundary,
-// defined in big_data_on_page_boundary_<PLATFORM>.s
+
+
 extern struct eighteen_bytes on_page_boundary;
 
 struct eighteen_bytes return_struct(void) {
@@ -23,10 +23,10 @@ struct eighteen_bytes return_struct(void) {
 }
 
 int main(void) {
-    // call function that returns on_page_boundary
+    
     struct eighteen_bytes x = return_struct();
 
-    // validate it
+    
     for (int i = 0; i < 18; i = i + 1) {
         char val = x.arr[i];
         if (i == 7) {
@@ -45,10 +45,10 @@ int main(void) {
             if (val != 12) {
                 return 4;
             }
-        } else if (x.arr[i]) {  // all other elements are 0
+        } else if (x.arr[i]) {  
             return 5;
         }
     }
 
-    return 0;  // success
+    return 0;  
 }

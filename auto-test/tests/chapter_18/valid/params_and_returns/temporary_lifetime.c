@@ -29,5 +29,5 @@ int main(void) {
     if (k != 3) {
         return 3;
     }
-    return 0;  // success
+    return 0;  
 }

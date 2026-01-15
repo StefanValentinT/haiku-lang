@@ -1,14 +1,14 @@
-// Make sure members in static structures retain their values
-// across multiple function invocations
+
+
 
 
 void *malloc(unsigned long size);
 int putchar(int ch);
 int puts(char *s);
 
-// test that changes to static struct are retained across function calls
-// do this by validating text written to stdout,
-// instead of usual pattern of signifying success/failure with return value
+
+
+
 void test_static_local(int a, int b) {
     struct s {
         int a;
@@ -28,8 +28,8 @@ void test_static_local(int a, int b) {
     static_struct.b = b;
 }
 
-// test that changes to struct made through static pointer are retained across
-// function calls do this by validating text written to stdout
+
+
 void test_static_local_pointer(int a, int b) {
     struct s {
         int a;
@@ -49,7 +49,7 @@ void test_static_local_pointer(int a, int b) {
     struct_ptr->b = b;
 }
 
-// test that changes to global struct are visible across function calls
+
 struct global {
     char x;
     char y;
@@ -82,7 +82,7 @@ void test_global_struct(void) {
     f2();
 }
 
-// test that changes to global struct pointer are visible across function calls
+
 struct global *g_ptr;
 
 void f3(void) {
@@ -99,12 +99,12 @@ void f4(void) {
 }
 
 void test_global_struct_pointer(void) {
-    g_ptr = &g;  // first, point to global struct from previous test
+    g_ptr = &g;  
     f3();
     f4();
     f3();
     f4();
-    // now declare a new struct and point to that instead
+    
     g_ptr = malloc(sizeof(struct global));
     g_ptr->x = 'a';
     g_ptr->y = 'b';
@@ -119,11 +119,11 @@ int main(void) {
     test_static_local('m', 'n');
     test_static_local('o', 'p');
     test_static_local('!', '!');
-    ;  // last one, won't be printed
+    ;  
     test_static_local_pointer('w', 'x');
     test_static_local_pointer('y', 'z');
     test_static_local_pointer('!', '!');
-    ;  // last one, won't be printed
+    ;  
     test_global_struct();
     test_global_struct_pointer();
     return 0;

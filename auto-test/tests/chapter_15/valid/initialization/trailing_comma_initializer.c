@@ -3,7 +3,7 @@ int main(void) {
     int arr[3] = {
         1,
         2,
-        3, // last element in a compound initializer may have a trailing comma
+        3, 
     };
     return arr[2];
 }

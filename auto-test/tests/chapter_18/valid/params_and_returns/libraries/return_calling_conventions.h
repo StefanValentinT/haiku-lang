@@ -63,7 +63,7 @@ struct memory {
     int i;
 };
 
-// returning structures
+
 
 struct one_int return_int_struct(void);
 struct twelve_bytes return_two_int_struct(void);
@@ -73,7 +73,7 @@ struct xmm_and_int return_mixed(void);
 struct int_and_xmm return_mixed2(void);
 struct memory return_on_stack(void);
 
-// return on stack + pass other int params
+
 struct memory pass_and_return_regs(int i, double d, struct int_and_xmm strct,
                                    int c, struct two_ints t_i, long l,
                                    struct one_int_exactly o_i_e, int c2);

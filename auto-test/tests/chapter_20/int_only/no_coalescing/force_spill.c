@@ -11,12 +11,12 @@
 int glob_three = 3;
 
 int target(void) {
-    // This is our spill candidate: it has the highest degree and is
-    // used only once.
+    
+    
     int should_spill = glob_three + 3;
 
-    // create 12 pseudos that all interfere w/ should_spill and each other;
-    // this forces a spill, since only 12 hard registers are available
+    
+    
     int one = glob_three - 2;
     int two = one + one;
     int three = 2 + one;
@@ -30,13 +30,13 @@ int target(void) {
     int eleven = 16 - five;
     int twelve = six + six;
 
-    // validate one through twelve
-    // (this makes them all live at this point)
+    
+    
     check_12_ints(one, two, three, four, five, six, seven, eight, nine, ten,
                   eleven, twelve, 1);
-    // create another clique of twelve pseudos that interfere with each other
-    // and should_spill, so should_spill will have more conflicts than other
-    // pseudoregisters
+    
+    
+    
     int thirteen = 10 + glob_three;
     int fourteen = thirteen + 1;
     int fifteen = 28 - thirteen;
@@ -50,15 +50,15 @@ int target(void) {
     int twenty_three = 6 + seventeen;
     int twenty_four = thirteen + 11;
 
-    // validate thirteen through twenty-four
-    // (this makes them all live at this point)
+    
+    
     check_12_ints(thirteen, fourteen, fifteen, sixteen, seventeen, eighteen,
                   nineteen, twenty, twenty_one, twenty_two, twenty_three,
                   twenty_four, 13);
 
     if (should_spill != 6) {
-        return -1;  // fail
+        return -1;  
     }
 
-    return 0;  // success
+    return 0;  
 }

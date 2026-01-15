@@ -6,7 +6,7 @@
  * This test makes sure that we evaluate % as a remainder rather than modulo
  * operation during constant folding.
  * More info:
- * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Remainder
+ * https:
  * Also note that not everyone uses exactly the same terminolgy here -
  * e.g. Python's documentation says "The % (modulo) operator yields the
  * remainder from the division of the first argument by the second."
@@ -24,7 +24,7 @@ int target(void) {
 
 int main(void) {
     if (target() != 1) {
-        return 1; // fail
+        return 1; 
     }
-    return 0; // success
+    return 0; 
 }

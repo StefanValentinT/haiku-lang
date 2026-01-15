@@ -7,16 +7,16 @@
 int flag = 0;
 int result = 0;
 
-// global variables; use these to initialize pseudos while
-// preventing copy propagation
+
+
 int glob0;
 int glob1;
 int glob2;
 int glob3;
 int glob4;
 
-// helper functiont set global variables to increasing values starting with
-// start
+
+
 int set_globals(int start) {
     glob0 = start;
     glob1 = start + 1;
@@ -60,7 +60,7 @@ int target(void) {
 
 
 
-    // define zero through four, initialize them to 0 through 4
+    
     set_globals(0);
     int zero = glob0;
     int one = glob1;
@@ -68,7 +68,7 @@ int target(void) {
     int three = glob3;
     int four = glob4;
 
-    // define five through nine, initialize to 5 through 9
+    
     set_globals(5);
     int five = glob0;
     int six = glob1;
@@ -76,11 +76,11 @@ int target(void) {
     int eight = glob3;
     int nine = glob4;
 
-    // use each variable once
+    
     check_5_ints(zero, one, two, three, four, 0);
     check_5_ints(five, six, seven, eight, nine, 5);
 
-    // define ten through fourteen, initialize to 10 through 14
+    
     set_globals(10);
     int ten = glob0;
     int eleven = glob1;
@@ -88,17 +88,17 @@ int target(void) {
     int thirteen = glob3;
     int fourteen = glob4;
 
-    // check zero-four first to force fourteen to be callee-saved
+    
     check_5_ints(zero, one, two, three, four, 0);
 
-    // use ten through fourteen a bunch of times to increase spill cost
+    
     check_5_ints(ten, eleven, twelve, thirteen, fourteen, 10);
     check_5_ints(ten, eleven, twelve, thirteen, fourteen, 10);
     check_5_ints(ten, eleven, twelve, thirteen, fourteen, 10);
     check_5_ints(ten, eleven, twelve, thirteen, fourteen, 10);
 
-    // use zero through four one more time so its spill cost is higher than
-    // five through nine
+    
+    
     check_5_ints(zero - 3, one - 3, two - 3, three - 3, four - 3, -3);
 
     return 0;

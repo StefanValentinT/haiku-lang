@@ -11,19 +11,19 @@
 long x = 5l;
 
 int add_large(void) {
-    // x = 5l
-    x = x + 4294967290l; // this constant is 2^32 - 6
+    
+    x = x + 4294967290l; 
     return (x == 4294967295l);
 }
 
 int subtract_large(void) {
-    // x = 4294967295l
+    
     x = x - 4294967290l;
     return (x == 5l);
 }
 
 int multiply_by_large(void) {
-    // x = 5
+    
     x = x * 4294967290l;
     return (x == 21474836450l);
 }

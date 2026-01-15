@@ -4,5 +4,5 @@ int foo(int **x) {
 
 int main(void) {
     int arr[1] = {10};
-    return foo(&arr); // a pointer to an array is not the same as a pointer to a pointer
+    return foo(&arr); 
 }

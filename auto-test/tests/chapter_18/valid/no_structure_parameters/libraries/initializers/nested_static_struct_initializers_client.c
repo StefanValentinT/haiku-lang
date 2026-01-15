@@ -7,38 +7,38 @@
 
 
 
-// structs defined here
-// validation functions defined in library
 
-// case 1: struct with no explicit initializer should be all zeros
+
+
+
 struct outer all_zeros;
 
-// case 2: partially initialized struct
+
 struct outer partial = {
     100l,
-    {10, {10}},  // leave arr[1], arr[2], and y uninitialized
-    "Hello!"};   // leave d uninitialized
+    {10, {10}},  
+    "Hello!"};   
 
 struct outer full = {
     18014398509481979l,
     {1000, "ok",
-     4292870144u},  // can initialized signed char array w/ static string
+     4292870144u},  
     "Another message",
     2e12};
 
 struct outer converted = {
-    10.5,  // 10l
+    10.5,  
     {
-        2147483650u,  // -2147483646
+        2147483650u,  
         {
-            15.6,             // 15
-            17592186044419l,  // 3
-            2147483777u       // -127
+            15.6,             
+            17592186044419l,  
+            2147483777u       
         },
-        1152921506754330624ul  // 2147483648u
+        1152921506754330624ul  
     },
-    0ul,                   // null pointer
-    9223372036854776833ul  // 9223372036854777856.0
+    0ul,                   
+    9223372036854776833ul  
 };
 
 struct outer struct_array[3] = {{1, {2, "ab", 3}, 0, 5},
@@ -65,5 +65,5 @@ int main(void) {
         return 5;
     }
 
-    return 0;  // success
+    return 0;  
 }

@@ -2,6 +2,6 @@
 int main(void) {
     long x = 1;
     long y = 2;
-    x = y;            // gen x = y
-    return &x == &y;  // don't rewrite as &y == &y
+    x = y;            
+    return &x == &y;  
 }

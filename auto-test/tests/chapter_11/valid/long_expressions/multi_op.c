@@ -1,5 +1,5 @@
 int target(long a) {
-    // a = 4294967290l
+    
 
     /* This expression produces an intermediate result that cannot
      * fit in an int, in order to test that we track the sizes

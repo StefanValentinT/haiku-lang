@@ -1,4 +1,4 @@
-// Can't cast operand to union type even if it already has that type
+
 
 union u1 {
     int a;
@@ -7,6 +7,6 @@ union u1 {
 
 int main(void){
     union u1 var = {10};
-    (union u1) var; // illegal - no casts to union type
+    (union u1) var; 
     return 0;
 }

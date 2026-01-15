@@ -1,12 +1,12 @@
 /* Test casting between pointers and ints.
  * The behavior we test here is implementation-defined.
  * We follow GCC's behavior, defined here:
- * https://gcc.gnu.org/onlinedocs/gcc/Arrays-and-pointers-implementation.html
+ * https:
  */
 
-// NOTE: converting an integer to a pointer is undefined behavior
-// if the resulting pointer is misaligned. These integers' values
-// are divisible by 8, so it's safe to cast them to any pointer type.
+
+
+
 int i = 128;
 long l = 128l;
 
@@ -30,7 +30,7 @@ int pointer_to_int(void) {
  * upper bits are discarded; we don't cover that case here.)
  */
 
-// long to pointer and back
+
 int cast_long_round_trip(void) {
     int *ptr = (int *) l;
     long l2 = (long) ptr;
@@ -38,7 +38,7 @@ int cast_long_round_trip(void) {
 }
 
 
-// pointer to ulong and back
+
 int cast_ulong_round_trip(void) {
     long *ptr = &l;
     unsigned long ptr_as_ulong = (unsigned long) ptr;
@@ -46,7 +46,7 @@ int cast_ulong_round_trip(void) {
     return (ptr == ptr2);
 }
 
-// int to pointer and back
+
 int cast_int_round_trip(void) {
     double *a = (double *)i;
     int i2 = (int) a;

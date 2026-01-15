@@ -1,4 +1,4 @@
-// Trailing commas are permitted in compound initializers
+
 struct s {
     int a;
     int b;
@@ -13,5 +13,5 @@ int main(void) {
         return 1;
     }
 
-    return 0;  // success
+    return 0;  
 }

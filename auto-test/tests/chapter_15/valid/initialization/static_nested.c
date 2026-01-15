@@ -1,7 +1,7 @@
 /* Test initializing multi-dimensional arrays with static storage duration */
 
 
-// fully initialized
+
 double double_arr[2][2] = {{1.1, 2.2}, {3.3, 4.4}};
 
 int check_double_arr(double (*arr)[2]) {
@@ -24,7 +24,7 @@ int check_double_arr(double (*arr)[2]) {
     return 0;
 }
 
-// uninitialized; should be all zeros
+
 long long_arr[30][50][40];
 
 int check_long_arr(long (*arr)[50][40]) {
@@ -41,12 +41,12 @@ int check_long_arr(long (*arr)[50][40]) {
     return 0;
 }
 
-// partially initialized using values of different types
+
 
 unsigned long ulong_arr[4][6][2] = {
     {{
          1000.3,
-     }, // truncated to 1000
+     }, 
      {12u}},
     {{2}}};
 
@@ -68,7 +68,7 @@ int check_ulong_arr(unsigned long (*arr)[6][2]) {
                         return 8;
                     }
                 } else {
-                    // not explicitly initialized, should be 0
+                    
                     if (val) {
                         return 9;
                     }
@@ -80,7 +80,7 @@ int check_ulong_arr(unsigned long (*arr)[6][2]) {
     return 0;
 }
 
-// validate all the global arrays
+
 int test_global(void) {
     int check = check_double_arr(double_arr);
     if (check) {
@@ -98,7 +98,7 @@ int test_global(void) {
     return 0;
 }
 
-// equivalent static local arrays
+
 int test_local(void) {
 
     static double local_double_arr[2][2] = {{1.1, 2.2}, {3.3, 4.4}};
@@ -117,7 +117,7 @@ int test_local(void) {
     static unsigned long local_ulong_arr[4][6][2] = {
         {{
             1000.3,
-        }, // truncated to 1000
+        }, 
         {12u}},
         {{2}}};
     check = check_ulong_arr(local_ulong_arr);

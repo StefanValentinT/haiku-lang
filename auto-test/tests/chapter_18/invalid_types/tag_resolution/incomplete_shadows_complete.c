@@ -3,8 +3,8 @@ struct s {
 };
 
 int main(void) {
-    struct s;  // incomplete declaration shadows complete
+    struct s;  
     struct s *x;
-    x->a = 10;  // illegal; x has incomplete type w/out member 'a'
+    x->a = 10;  
     return 0;
 }

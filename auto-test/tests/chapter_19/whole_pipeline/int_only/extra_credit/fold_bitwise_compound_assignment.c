@@ -7,18 +7,18 @@ int target(void) {
     int y = 300;
     int z = 40000;
 
-    v ^= 10; // -106
-    w |= v; // -10
-    x &= 30; // 8
-    y <<= x; // 76800
-    // include chained compound assignment
-    z >>= (x |= 2); // z = 39 x = 10
+    v ^= 10; 
+    w |= v; 
+    x &= 30; 
+    y <<= x; 
+    
+    z >>= (x |= 2); 
 
     if (v == -106 && w == -10 && x == 10 && y == 76800 && z == 39) {
-        return 0; // success
+        return 0; 
     }
 
-    return 1; //fail
+    return 1; 
 }
 
 int main(void) {

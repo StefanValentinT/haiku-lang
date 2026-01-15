@@ -3,8 +3,8 @@
  * original program, but the aliasing gets optimized away.
  */
 
-// shouldn't need to place any pseudos in this function on the stack
+
 int target(int arg) {
-    int *optimized_away = &arg; // dead store; will get optimized away
+    int *optimized_away = &arg; 
     return arg + 10;
 }

@@ -4,7 +4,7 @@
 double zero = 0.0;
 double non_zero = 1E-20;
 double one = 1.0;
-// this number is so small it will be rounded to zero
+
 double rounded_to_zero = 1e-330;
 
 int main(void) {
@@ -20,7 +20,7 @@ int main(void) {
     }
 
     if (non_zero) {
-        // no-op; should take this one
+        
     } else {
         return 3;
     }
@@ -58,7 +58,7 @@ int main(void) {
     }
 
 
-    // mix of double and integer operands
+    
     if (18446744073709551615UL && zero) {
         return 11;
     }
@@ -82,12 +82,12 @@ int main(void) {
         return 15;
     }
 
-    // mix of double and integer operands
+    
     if (!(non_zero || 0u)) {
         return 16;
     }
 
-    // try || with two constants
+    
     if (!(0 || 0.0000005)) {
         return 17;
     }

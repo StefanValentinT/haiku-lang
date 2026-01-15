@@ -1,6 +1,6 @@
 /* Test case where we return NaN after constant folding */
 
-int double_isnan(double d); // defined in tests/chapter_13/helper_libs/nan.c
+int double_isnan(double d); 
 
 double target(void) {
     return 0.0 / 0.0;
@@ -9,8 +9,8 @@ double target(void) {
 int main(void) {
     double nan = target();
     if (double_isnan(nan)) {
-        return 0; // success
+        return 0; 
     }
 
-    return 1; // fail
+    return 1; 
 }

@@ -26,16 +26,16 @@ so we'll still have test coverage for this rewrite rule when we run the chapter 
 
 {{ helpers.check_12_ints_decl }}
 
-// use a variable with static storage duration in operations below
-// so they can't be constant folded
+
+
 {{ glob.type }} glob = {{ glob.init }};
 
 int main(void) {
-    // The {{ comment.operation_name }} operation whose result we want to spill;
-    // this is our best spill candidate b/c it has the most conflicts with other
-    // pseudos and is tied for fewest uses. NOTE: optimizations must be enabled
-    // so we propagate the temporary variable holding the result of this
-    // expression instead of copying it into should_spill.
+    
+    
+    
+    
+    
     {{ should_spill.type }} should_spill = {{ should_spill.expr }};
 
     {% set spill_thing = comment.instr + " result" %}
@@ -43,12 +43,12 @@ int main(void) {
     {% include 'includes/spill_var.c.jinja' %}
     {% endfilter %}
 
-    // use {{ comment.instr }} result to make it interfere with other pseudos
-    // and validate that it wasn't clobbered
+    
+    
     if (should_spill != {{ should_spill.val }}) {
         return -1;
     }
-    return 0;  // success
+    return 0;  
 }
 
 {{ helpers.check_12_ints }}

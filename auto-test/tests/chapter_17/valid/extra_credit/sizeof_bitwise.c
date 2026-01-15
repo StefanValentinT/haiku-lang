@@ -1,35 +1,35 @@
-// Test that we correctly get the size of bitwise and bitshift expression
+
 int main(void) {
     static long l = 0;
     int i = 0;
     static char c = 0;
 
-    // result type for &, |, ^ is common type
+    
     if (sizeof (c & i) != 4) {
-        return 1;  // fail
+        return 1;  
     }
 
     if (sizeof (i | l) != 8) {
-        return 2;  // fail
+        return 2;  
     }
 
-    // character operands are promoted
+    
     if (sizeof (c ^ c) != 4) {
-        return 3;  // fail
+        return 3;  
     }
 
-    // result type for <<, >> is type of left operand
+    
     if (sizeof (i << l) != 4) {
-        return 4; // fail
+        return 4; 
     }
 
-    // character operands are promoted
+    
     if (sizeof (c << i) != 4) {
-        return 5; // fail
+        return 5; 
     }
 
     if (sizeof (l >> c) != 8) {
-        return 6; // fail
+        return 6; 
     }
 
     return 0;

@@ -8,11 +8,11 @@
  * */
 
 
- // check alignment of RSP and exit with exit_code if it's misaligned
- // defined in tests/chapter_20/helper_libs/alignment_check_<PLATFORM>.s
+ 
+ 
 int check_alignment(int exit_code);
 
-// 5 callee-saved registers, 16 bytes (2 longs) on stack
+
 int test1(void) {
     long a = id(1);
     unsigned long b = id(2);
@@ -32,7 +32,7 @@ int test1(void) {
     return 0;
 }
 
-// two callee-saved registers, 11 bytes on stack
+
 int test2(void) {
     char a = id(4);
     unsigned int b = id(5);
@@ -46,7 +46,7 @@ int test2(void) {
     return 0;
 }
 
-// three callee-saved registers, one aliased var on the stack
+
 int test3(void) {
     static int *ptr;
     char a = id(4);

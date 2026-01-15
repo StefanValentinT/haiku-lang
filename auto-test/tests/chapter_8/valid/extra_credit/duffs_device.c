@@ -1,4 +1,4 @@
-// A fun use of fallthrough - see https://en.wikipedia.org/wiki/Duff%27s_device
+
 int main(void) {
     int count = 37;
     int iterations = (count + 4) / 5;

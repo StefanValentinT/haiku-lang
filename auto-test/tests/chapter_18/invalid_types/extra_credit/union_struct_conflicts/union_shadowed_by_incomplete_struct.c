@@ -8,7 +8,7 @@ int main(void) {
     union tag {int a;};
     {
         struct tag;
-        union tag *x; // illegal b/c "union tag" isn't visible
+        union tag *x; 
     }
     return 0;
 }

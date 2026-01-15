@@ -3,7 +3,7 @@
  * */
 
 
-// define some functions that return pointers to structs
+
 struct inner *make_struct_inner(int seed) {
     struct inner *ptr = malloc(sizeof(struct inner));
     ptr->d = seed;

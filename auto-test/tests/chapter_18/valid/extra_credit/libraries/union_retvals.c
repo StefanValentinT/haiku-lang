@@ -54,12 +54,12 @@ union lotsa_chars pass_params_and_return_in_mem(int i1,
     union scalar_and_struct int_and_dbl, union two_arrs two_arrs, int i2,
     union contains_union_array big_union, union one_int_nested oin) {
 
-    // first, validate params, starting w/ scalars
+    
     if (i1 != 1 || i2 != 25) {
         exit(-1);
     }
 
-    // now validate non-scalar params
+    
     if (int_and_dbl.cfe.c != -115 || int_and_dbl.cfe.d != 222222.25) {
         exit(-2);
     }
@@ -77,7 +77,7 @@ union lotsa_chars pass_params_and_return_in_mem(int i1,
         exit(-5);
     }
 
-    // now construct result
+    
     union lotsa_chars result = { "ABCDEFGHIJKLMNOPQ" };
     return result;
 }

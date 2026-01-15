@@ -6,15 +6,15 @@ int x = 0;
 int y = 0;
 
 int callee(void) {
-    y = x * 2;  // make sure x still has the right value at this point
+    y = x * 2;  
     return 5;
 }
 
 int target(void) {
-    x = 2;         // gen x = 2
-    x = callee();  // kill x = 2
-    x = 2;         // gen x = 2 again
-    return x;      // should become "return 2"
+    x = 2;         
+    x = callee();  
+    x = 2;         
+    return x;      
 }
 
 int main(void) {
@@ -22,11 +22,11 @@ int main(void) {
     if (result != 2) {
         return 1;
     }
-    if (y != 4) {  // make sure we called callee()
+    if (y != 4) {  
         return 2;
     }
     if (x != 2) {
         return 3;
     }
-    return 0;  // success
+    return 0;  
 }

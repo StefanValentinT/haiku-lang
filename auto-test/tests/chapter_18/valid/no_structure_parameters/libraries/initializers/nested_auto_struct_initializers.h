@@ -15,7 +15,7 @@
 
 int strcmp(char *s1, char *s2);
 
-// struct type defs
+
 struct pair {
     int a;
     int b;
@@ -35,7 +35,7 @@ struct outer {
     struct pair five_pair;
 };
 
-// validation functions defined in library
+
 int validate_full_initialization(struct outer *ptr);
 int validate_partial_initialization(struct outer *ptr);
 int validate_mixed_initialization(struct outer *ptr);

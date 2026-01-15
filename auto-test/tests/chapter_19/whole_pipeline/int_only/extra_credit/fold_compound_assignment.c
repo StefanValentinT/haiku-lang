@@ -11,14 +11,14 @@ int target(void) {
     w -= 20;
     x *= 30;
     y /= 100;
-    // include chained compound assignment
+    
     z %= y += 6;
 
     if (v == -90 && w == 80 && x == 6000 && y == 9 && z == 4) {
-        return 0; // success
+        return 0; 
     }
 
-    return 1; //fail
+    return 1; 
 }
 
 int main(void) {

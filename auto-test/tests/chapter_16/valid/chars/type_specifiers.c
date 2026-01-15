@@ -1,4 +1,4 @@
-// make sure we can parse different ways to specify signed & unsigned char
+
 
 
 char signed static a = 10;
@@ -24,7 +24,7 @@ int main(void)
 
     int loop_counter = 0;
 
-    // declare a character in a for loop header
+    
     for (unsigned char d = 0; d < 100; d = d + 1) {
         loop_counter = loop_counter + 1;
     }

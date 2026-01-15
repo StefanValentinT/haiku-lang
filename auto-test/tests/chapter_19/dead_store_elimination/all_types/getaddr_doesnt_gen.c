@@ -3,8 +3,8 @@
  * */
 
 int target(void) {
-    int x = 4;  // initialization is a dead store because we never use the value
-                // of x
+    int x = 4;  
+                
     int *ptr = &x;
     return ptr == 0;
 }

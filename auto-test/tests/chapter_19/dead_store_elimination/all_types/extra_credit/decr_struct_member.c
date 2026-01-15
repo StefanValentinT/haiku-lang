@@ -7,7 +7,7 @@ struct s {
 int target(void) {
     struct s my_struct = {4};
     int x = 15;
-    my_struct.i--; // dead!
+    my_struct.i--; 
     return x;
 }
 

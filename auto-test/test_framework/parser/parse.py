@@ -299,8 +299,8 @@ def parse_memory_operand(toks: List[Token]) -> tuple[Operand, Optional[int]]:
     Parse memory operand
 
     <memory-operand> ::= [ <expr> ] "(" <guts> ")"
-    <guts> ::= <reg> [ "," <idx-and-or-scale> ] // base, with or without other stuff
-            | "," <idx-and-or-scale> // no base
+    <guts> ::= <reg> [ "," <idx-and-or-scale> ] 
+            | "," <idx-and-or-scale> 
 
     <idx-and-or-scale> ::= <int> | <reg> [ "," [ <int> ]]
     """

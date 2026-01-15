@@ -2,8 +2,8 @@
  * we can delete the copy to that variable
  * */
 int target(void) {
-    int x = 10;  // delete this after copy prop rewrites return
-    return x;    // rewrite as 'return x' via copy prop
+    int x = 10;  
+    return x;    
 }
 
 int main(void) {

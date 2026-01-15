@@ -1,4 +1,4 @@
-// Can't use structure as controlling expression in switch statement
+
 struct s {
     int i;
 };

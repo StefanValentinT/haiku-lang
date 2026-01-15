@@ -10,10 +10,10 @@ int target(int x) {
     case 1:
         retval = 1; break;
     case 2: retval = 2; break;
-        callee(); // unreachable - occurs after 'break' from previous case and before next one
+        callee(); 
     case 3: retval = 10; break;
     default: return -1;
-        callee(); // unreachable
+        callee(); 
     }
 
     return retval;

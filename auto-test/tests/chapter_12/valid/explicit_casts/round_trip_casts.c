@@ -2,8 +2,8 @@
  * does not always recover its original value
  */
 
-// start with a global variable so we can't optimize away casts in Part III
-unsigned long a = 8589934580ul; // 2^33 - 12
+
+unsigned long a = 8589934580ul; 
 
 int main(void) {
 

@@ -1,4 +1,4 @@
-// Like structures, unions can appear in conditional expression
+
 
 union u {
     long l;
@@ -16,12 +16,12 @@ int choose_union(int flag) {
 
 int main(void) {
     if (choose_union(1) != -1) {
-        return 1; // fail
+        return 1; 
     }
 
     if (choose_union(0) != 100) {
-        return 2; // fail
+        return 2; 
     }
 
-    return 0; // success
+    return 0; 
 }

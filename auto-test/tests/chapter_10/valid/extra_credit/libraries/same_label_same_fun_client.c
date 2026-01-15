@@ -1,5 +1,5 @@
-// make sure we can handle two labels with the same ID, in two functions with
-// the same name, in different translation units
+
+
 
 int f(void) {
     goto x;
@@ -8,15 +8,15 @@ x:
     return 1;
 }
 
-int f_caller(void); // declared in same_label_same_fun.c
+int f_caller(void); 
 
 int main(void) {
     if (f() != 1) {
-        return 1;  // fail
+        return 1;  
     }
     if (f_caller() !=
-        2) {       // call "f" with internal linkage in other translation unit
-        return 2;  // fail
+        2) {       
+        return 2;  
     }
-    return 0;  // success
+    return 0;  
 }

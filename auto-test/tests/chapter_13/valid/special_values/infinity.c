@@ -10,7 +10,7 @@ int main(void) {
 
     /* Rounding constants to infinity */
 
-    // 11e330 should be rounded to infinity
+    
     if (inf != 11e330) {
         return 1;
     }

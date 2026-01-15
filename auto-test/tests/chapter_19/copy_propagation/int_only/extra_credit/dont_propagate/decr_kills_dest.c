@@ -23,17 +23,17 @@ int target(int flag) {
 
     if (flag) {
         if (w == 4 && x == 9 && y == -11 && z == -101) {
-            // success
+            
             return 0;
         }
         return 1;
     }
     else {
         if (w == 3 && x == 10 && y == -12 && z == -100) {
-            // success
+            
             return 0;
         }
-        return 1; // fail
+        return 1; 
 
     }
 
@@ -41,11 +41,11 @@ int target(int flag) {
 
 int main(void) {
     if (target(0)) {
-        return 1; // fail
+        return 1; 
     }
 
     if (target(1)) {
-        return 2; // fail
+        return 2; 
     }
 
     return 0;

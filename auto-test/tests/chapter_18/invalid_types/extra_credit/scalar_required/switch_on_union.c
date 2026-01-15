@@ -1,4 +1,4 @@
-// Can't use union as controlling expression in switch statement
+
 union s {
     int i;
 };

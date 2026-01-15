@@ -540,7 +540,7 @@ class ExtraCredit(Flag):
     NAN = auto()
     UNION = auto()
     NONE = 0
-    # spurious pylint error (https://github.com/PyCQA/pylint/issues/7381)
+    # spurious pylint error (https:
     # pylint: disable=unsupported-binary-operation
     ALL = BITWISE | COMPOUND | INCREMENT | GOTO | SWITCH | NAN | UNION
 

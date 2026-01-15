@@ -55,18 +55,18 @@ int main(void) {
      * to represent as a signed or unsigned int
      */
 
-    if (!ulong_to_uint(1152921506754330624ul, 2147483648u)) { // reduce to 2^31
+    if (!ulong_to_uint(1152921506754330624ul, 2147483648u)) { 
         return 7;
     }
 
-    if (!ulong_to_int(1152921506754330624ul, -2147483648)){ // reduce to -2^31
+    if (!ulong_to_int(1152921506754330624ul, -2147483648)){ 
         return 8;
     }
 
     /* truncate unsigned long constant that can't
      * be expressed in 32 bits, to test rewrite rule
      */
-    unsigned int ui = (unsigned int)17179869189ul; // 2^34 + 5
+    unsigned int ui = (unsigned int)17179869189ul; 
     if (ui != 5)
         return 9;
 

@@ -25,8 +25,8 @@ int update_x(int new_val) {
  */
 extern int x;
 
-// a non-tentative definition of x
+
 static int x = 5;
 
-// yet another tentative definition of x
+
 static int x;

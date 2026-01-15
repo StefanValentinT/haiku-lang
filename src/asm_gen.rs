@@ -1,4 +1,7 @@
-use crate::tac::{TacBinaryOp, TacFuncDef, TacInstruction, TacProgram, TacUnaryOp, TacVal};
+use crate::{
+    gen_names::make_fun_exit,
+    tac::{TacBinaryOp, TacFuncDef, TacInstruction, TacProgram, TacUnaryOp, TacVal},
+};
 use std::{collections::HashMap, fmt::Write};
 
 #[derive(Debug)]
@@ -73,16 +76,16 @@ pub enum AsmReg {
 
 pub fn gen_asm(program: TacProgram) -> AsmProgram {
     match program {
-        TacProgram::Program(_tac_func_defs) => todo!(),
-        
-        TacProgram::Programmain_func } => {
-            let asm_func = convert_func(main_func);
-
-            let (asm_func, stack_size) = replace_pseudoregisters(asm_func);
-
-            let asm_func = fixup_instructions(asm_func, stack_size);
-
-            AsmProgram::Program(asm_func)
+        TacProgram::Program(funcs) => {
+            let asm_funcs: Vec<AsmFuncDef> = funcs
+                .into_iter()
+                .map(|f| {
+                    let asm_func = convert_func(f);
+                    let (asm_func, stack_size) = replace_pseudoregisters(asm_func);
+                    fixup_instructions(asm_func, stack_size)
+                })
+                .collect();
+            AsmProgram::Program(asm_funcs)
         }
     }
 }
@@ -220,9 +223,30 @@ fn convert_func(func: TacFuncDef) -> AsmFuncDef {
         TacFuncDef::Function { name, params, body } => {
             let mut instructions = Vec::new();
 
+            let arg_registers = [
+                AsmReg::Di,
+                AsmReg::Si,
+                AsmReg::Dx,
+                AsmReg::Cx,
+                AsmReg::R8,
+                AsmReg::R9,
+            ];
+
+            for (i, param) in params.iter().enumerate() {
+                let src = if i < 6 {
+                    AsmOperand::Reg(arg_registers[i].clone())
+                } else {
+                    AsmOperand::Stack(16 + 8 * (i - 6) as i32)
+                };
+                instructions.push(AsmInstruction::Mov {
+                    src,
+                    dest: AsmOperand::Pseudo(param.clone()),
+                });
+            }
+
             convert_instr(body, &mut instructions);
 
-            instructions.push(AsmInstruction::Label("__func_exit".into()));
+            instructions.push(AsmInstruction::Label(make_fun_exit()));
             instructions.push(AsmInstruction::Ret);
 
             AsmFuncDef::Function { name, instructions }
@@ -346,7 +370,63 @@ fn convert_instr(tac_instructions: Vec<TacInstruction>, instructions: &mut Vec<A
                 fun_name,
                 args,
                 dest,
-            } => todo!(),
+            } => {
+                let mut instrs = Vec::new();
+
+                let reg_args = [
+                    AsmReg::Di,
+                    AsmReg::Si,
+                    AsmReg::Dx,
+                    AsmReg::Cx,
+                    AsmReg::R8,
+                    AsmReg::R9,
+                ];
+                let (stack_args, reg_args_to_use) = if args.len() > 6 {
+                    (&args[6..], &args[..6])
+                } else {
+                    (&[][..], &args[..])
+                };
+
+                if stack_args.len() % 2 != 0 {
+                    instrs.push(AllocateStack(8));
+                }
+
+                for (i, arg) in reg_args_to_use.iter().enumerate() {
+                    instrs.push(Mov {
+                        src: tac_op_to_asm(arg.clone()),
+                        dest: AsmOperand::Reg(reg_args[i].clone()),
+                    });
+                }
+
+                for arg in stack_args.iter().rev() {
+                    let asm_op = tac_op_to_asm(arg.clone());
+                    match asm_op {
+                        AsmOperand::Reg(_) | AsmOperand::Imm(_) => instrs.push(Push(asm_op)),
+                        _ => {
+                            instrs.push(Mov {
+                                src: asm_op,
+                                dest: AsmOperand::Reg(AsmReg::Ax),
+                            });
+                            instrs.push(Push(AsmOperand::Reg(AsmReg::Ax)));
+                        }
+                    }
+                }
+
+                instrs.push(Call(fun_name));
+
+                if !stack_args.is_empty() {
+                    let remove_bytes =
+                        8 * stack_args.len() as i32 + if stack_args.len() % 2 != 0 { 8 } else { 0 };
+                    instrs.push(DeallocateStack(remove_bytes));
+                }
+
+                instrs.push(Mov {
+                    src: AsmOperand::Reg(AsmReg::Ax),
+                    dest: tac_op_to_asm(dest),
+                });
+
+                instrs
+            }
         };
         instructions.append(&mut new_instr);
     }

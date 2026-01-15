@@ -9,22 +9,22 @@ double ulong_to_double(unsigned long ul) {
 
 int main(void) {
 
-    // uint that's smaller than INT_MAX
+    
     if (uint_to_double(1000u) != 1000.0) {
         return 1;
     }
 
-    // uint that's larger than INT_MAX, so we can't just use cvtsi2sd
+    
     if (uint_to_double(4294967200u) != 4294967200.0) {
         return 2;
     }
 
-    // ulong that's smaller than LONG_MAX
+    
     if (ulong_to_double(138512825844ul) != 138512825844.0) {
         return 3;
     }
 
-    // ulong that's larger than LONG_MAX
+    
     if (ulong_to_double(10223372036854775816ul) != 10223372036854775808.0) {
         return 4;
     }

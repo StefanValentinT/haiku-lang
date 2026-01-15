@@ -1,5 +1,5 @@
-// We can implicitly get the address of a union with temporary lifetime
-// (and subscript it)
+
+
 
 struct has_char_array {
     char arr[8];
@@ -20,15 +20,15 @@ int main(void) {
     union has_array union1 = {9876543210l};
     union has_array union2 = {1234567890l};
 
-    // first access member in union1
+    
     if ((get_flag() ? union1 : union2).s.arr[0] != -22) {
-        return 1; // fail
+        return 1; 
     }
 
-    // then access member in union2
+    
     if ((get_flag() ? union1 : union2).s.arr[0] != -46) {
-        return 2; // fail
+        return 2; 
     }
 
-    return 0; // success
+    return 0; 
 }

@@ -1,4 +1,4 @@
-// Can't perform bitshift operations with void operands
+
 void f(void){
     return;
 }

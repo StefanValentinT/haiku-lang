@@ -1,3 +1,3 @@
-void char *x; // you can't combine void with other type specifiers
+void char *x; 
 
 int main(void) { return 0; }

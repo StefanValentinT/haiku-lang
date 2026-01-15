@@ -6,11 +6,11 @@ int main(void) {
              * so its value will be 10 even though we jump over this declaration
              */
             static int x = 10;
-            // we DON'T execute this, since it's a statement rather than a
-            // static initializer
+            
+            
             x = 0;
         case 3:
-            return x; // expected return value: 10
+            return x; 
     }
-    return 0; // fail
+    return 0; 
 }

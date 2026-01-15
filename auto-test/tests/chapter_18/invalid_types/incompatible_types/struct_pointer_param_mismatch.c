@@ -12,6 +12,6 @@ int get_a(struct s1 *ptr) {
 
 int main(void) {
     struct s2 arg = {1};
-    // can't pass a struct s2 * to a function that expects a struct s1 *
+    
     return get_a(&arg);
 }

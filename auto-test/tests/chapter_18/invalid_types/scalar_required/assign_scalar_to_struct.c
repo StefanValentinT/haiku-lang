@@ -6,6 +6,6 @@ struct s x = {1};
 
 int main(void) {
   struct s *ptr = &x;
-  *ptr = 2; // can't assign scalar value to lvalue of struct type
+  *ptr = 2; 
   return 0;
 }

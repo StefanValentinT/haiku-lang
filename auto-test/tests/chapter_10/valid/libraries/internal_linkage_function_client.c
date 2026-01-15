@@ -10,7 +10,7 @@
  */
 extern int my_fun(void);
 
-// functions with external linkage from other file
+
 int call_static_my_fun(void);
 int call_static_my_fun_2(void);
 

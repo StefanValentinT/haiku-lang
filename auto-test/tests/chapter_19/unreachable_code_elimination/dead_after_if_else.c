@@ -12,14 +12,14 @@ int target(int a) {
         return 2;
     }
 
-    return callee();  // this should be optimized away
+    return callee();  
 }
 int main(void) {
     if (target(1) != 1) {
-        return 1; // fail
+        return 1; 
     }
     if (target(0) != 2) {
-        return 2; // fail
+        return 2; 
     }
-    return 0; // success
+    return 0; 
 }

@@ -9,19 +9,19 @@ double target(int flag, int flag2, double y) {
     double x = y;
 
     if (flag) {
-        y = x;  // we can remove this because x and y already have the same
-                // value
+        y = x;  
+                
     }
     if (flag2) {
-        x = y;  // we can remove this because x and y already have the same
-                // value
+        x = y;  
+                
     }
     return x + y;
 }
 
 int main(void) {
     if (target(0, 1, 10.0) != 20.0) {
-        return 1; // fail
+        return 1; 
     }
     return 0;
 }

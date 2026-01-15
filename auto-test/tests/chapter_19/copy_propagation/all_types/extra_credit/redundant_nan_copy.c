@@ -4,7 +4,7 @@
  * We should be able to eliminate all control-flow instructions from target
  */
 
-int double_isnan(double d); // defined in tests/chapter_13/helper_libs/nan.c
+int double_isnan(double d); 
 
 double na;
 
@@ -12,7 +12,7 @@ int target(int flag) {
     na = 0.0 / 0.0;
     double d = 0.0 / 0.0;
     if (flag) {
-        na = d; // same value it already is; can delete this
+        na = d; 
     }
     return 0;
 }
@@ -20,7 +20,7 @@ int target(int flag) {
 int main(void) {
     target(1);
     if (!double_isnan(na)) {
-        return 1; // fail
+        return 1; 
     }
 
     return 0;

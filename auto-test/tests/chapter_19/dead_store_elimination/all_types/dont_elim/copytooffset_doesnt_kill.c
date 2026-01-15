@@ -9,16 +9,16 @@ struct s {
 struct s glob = {1, 2, 3};
 
 int main(void) {
-    struct s my_struct = glob;  // not a dead store
-    my_struct.c = 100;          // this doesn't make my_struct dead
+    struct s my_struct = glob;  
+    my_struct.c = 100;          
     if (my_struct.c != 100 ) {
-        return 1; // fail
+        return 1; 
     }
     if (my_struct.a != 1) {
-        return 2; // fail
+        return 2; 
     }
     if (glob.c != 3) {
-        return 3; // fail
+        return 3; 
     }
-    return 0; // success
+    return 0; 
 }

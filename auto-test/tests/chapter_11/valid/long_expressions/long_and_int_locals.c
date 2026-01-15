@@ -3,9 +3,9 @@ int main(void) {
      * to check that we allocate enough stack space for each of them,
      * and writing to one doesn't clobber another */
 
-    long a = 8589934592l; // this number is outside the range of int
+    long a = 8589934592l; 
     int b = -1;
-    long c = -8589934592l; // also outside the range of int
+    long c = -8589934592l; 
     int d = 10;
 
     /* Make sure every variable has the right value */

@@ -6,7 +6,7 @@
 #endif
 #endif
 
-// library functions
+
 int strcmp(char *s1, char *s2);
 
 union simple {

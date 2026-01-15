@@ -1,4 +1,4 @@
-use assert_cmd::Command;
+use assert_cmd::{Command, cargo};
 use std::fs;
 use std::path::PathBuf;
 
@@ -13,14 +13,12 @@ fn hk_golden_tests() {
             continue;
         }
 
-        println!("Testing {}", path.display());
-
         let contents = fs::read_to_string(&path)
             .unwrap_or_else(|_| panic!("Failed to read {}", path.display()));
         let expected_output = extract_expected_output(&contents)
             .unwrap_or_else(|| panic!("No expected output in {}", path.display()));
 
-        let mut cmd = Command::cargo_bin("compiler").expect("Binary not found");
+        let mut cmd = cargo::cargo_bin_cmd!("compiler");
         let output = cmd.arg(&path).output().expect("Failed to run compiler");
 
         assert!(
@@ -32,7 +30,6 @@ fn hk_golden_tests() {
 
         let stdout = String::from_utf8_lossy(&output.stdout);
 
-        // Compare stdout to expected
         assert_eq!(
             stdout.trim(),
             expected_output.trim(),

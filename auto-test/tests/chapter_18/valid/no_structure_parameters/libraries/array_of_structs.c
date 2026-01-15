@@ -12,5 +12,5 @@ int validate_struct_array(struct outer *struct_array) {
         if (struct_array[i].b.arr[1] != i * 5)
             return 0;
     }
-    return 1;  // success
+    return 1;  
 }

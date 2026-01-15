@@ -4,28 +4,28 @@
 
 
 int target(void) {
-    // propagate doubles
+    
     double d = 1500.0;
     double d2 = d;
 
-    int sum = (int)(d + d2);  // 3000
+    int sum = (int)(d + d2);  
 
-    // propagate chars
-    char c = 250;  // will be converted to -6
+    
+    char c = 250;  
     char c2 = c;
-    sum = sum + (c2 + c);  // 2988
+    sum = sum + (c2 + c);  
 
-    // propagate unsigned char
-    unsigned char uc = -1;  // will be converted to 255
+    
+    unsigned char uc = -1;  
     unsigned char uc2 = uc;
-    sum = sum + uc + uc2;  // 3498
+    sum = sum + uc + uc2;  
 
-    // propagate unsigned long
-    unsigned long ul = 18446744073709551615UL;  // ULONG_MAX
-    unsigned long ul2 = ul + 3ul;               // wraps around to 2
-    sum = sum + ul2;                            // 3500
+    
+    unsigned long ul = 18446744073709551615UL;  
+    unsigned long ul2 = ul + 3ul;               
+    sum = sum + ul2;                            
 
-    return sum;  // rewrite as "return 3500"
+    return sum;  
 }
 
 int main(void) {

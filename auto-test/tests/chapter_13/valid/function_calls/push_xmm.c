@@ -39,7 +39,7 @@ int callee(double a, double b, double c, double d, double e, double f, double g,
         return 11;
     }
 
-    return 0;  // success
+    return 0;  
 }
 
 int target(int a, int b, int c, int d, int e) {

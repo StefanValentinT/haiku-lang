@@ -1,23 +1,23 @@
-// Helper functions for
-// tests/chapter_20/all_types/no_coalescing/mixed_type_arg_registers.c
+
+
 
 
 struct s1 {
-    // XMM0
+    
     double d;
-    // RDI
+    
     char c;
     int i;
 };
 
 struct s2 {
-    // RSI
+    
     unsigned long ul;
-    // XMM1
+    
     double d;
 };
 
-// passed in memory
+
 struct s3 {
     double d1;
     double d2;

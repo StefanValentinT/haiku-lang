@@ -1,4 +1,4 @@
-// make sure we apply usual label validation in switch statement
+
 int main(void) {
     int a = 3;
     switch (a) {

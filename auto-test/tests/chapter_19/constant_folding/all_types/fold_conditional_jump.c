@@ -4,34 +4,34 @@
  * but with non-int operands
  * */
 
-// We'll emit two TACKY instructions of the form
-// JumpIfZero(0, false_label)
-// both should be rewritten as Jump instructions
+
+
+
 int target_jz_to_jmp(void) {
-    return 0l && 0; // 0
+    return 0l && 0; 
 }
 
-// We'll emit two TACKY instructions of the form
-// JumpIfZero(1, false_label)
-// both should be removed
+
+
+
 int target_remove_jz(void) {
-    return 1u && 1.; // 1
+    return 1u && 1.; 
 }
 
-// We'll emit two JumpIfNotZero instructions:
-// JumpIfNotZero(3, true_label)
-// JumpIfNotZero(99, true_label)
-// both should be written as Jump instructions
+
+
+
+
 int target_jnz_to_jmp(void) {
-    return 3.5 || 99ul; // 1
+    return 3.5 || 99ul; 
 }
 
-// We'll emit two JumpIfNotZero instructions:
-// JumpIfNotZero(0, true_label)
-// JumpIfNotZero(1, true_label)
-// we should remove the first, rewrite the second as a Jump instruction
+
+
+
+
 int target_remove_jnz(void) {
-    return 0ul || 1; // 1
+    return 0ul || 1; 
 }
 
 int main(void) {
@@ -47,5 +47,5 @@ int main(void) {
     if (target_remove_jnz() != 1) {
         return 4;
     }
-    return 0; // success
+    return 0; 
 }

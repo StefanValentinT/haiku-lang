@@ -1,5 +1,5 @@
-// Can't perform +=/-= with void * lvalue
-// NOTE: GCC/Clang permit this as a language extension
+
+
 void *malloc(unsigned long size);
 
 int main(void) {

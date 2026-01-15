@@ -7,7 +7,7 @@ extern signed char sc;
 int update_global_chars(void);
 
 int main(void) {
-    // check initial values
+    
     if (c != 100) {
         return 1;
     }
@@ -22,7 +22,7 @@ int main(void) {
 
     update_global_chars();
 
-    // check updated values
+    
     if (c != 110) {
         return 4;
     }

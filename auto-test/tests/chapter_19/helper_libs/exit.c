@@ -4,9 +4,9 @@
  * Used in unreachable_code_elimination/infinite_loop.c
  * */
 
-void exit(int status); // from standard library
+void exit(int status); 
 
 int exit_wrapper(int status) {
     exit(status);
-    return 0; // never reached
+    return 0; 
 }

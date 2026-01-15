@@ -10,9 +10,9 @@ int f(void) {
 }
 
 int target(void) {
-    int y = x;  // generate y = x
-    f();        // kill y = x
-    return y;   // don't
+    int y = x;  
+    f();        
+    return y;   
 }
 
 int main(void) {
@@ -20,10 +20,10 @@ int main(void) {
         return 1;
     }
 
-    // make sure x actually got updated
+    
     if (x != 4) {
         return 2;
     }
 
-    return 0;  // success
+    return 0;  
 }

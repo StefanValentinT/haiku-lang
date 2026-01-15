@@ -8,7 +8,7 @@ union u {
 };
 
 int main(void) {
-    // invalid; cannot implicitly convert double 1.0 to type of first
-    // member (long *)
+    
+    
     union u my_union = {1.0};
 }

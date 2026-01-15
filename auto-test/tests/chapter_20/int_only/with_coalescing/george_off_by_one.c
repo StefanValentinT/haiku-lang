@@ -15,16 +15,16 @@ int glob = 0;
 
 int target(int a) {
 
-    // Make sure we don't coalesce a into EDI; this would fail the George
-    // test because a's neighbor, one, has degree k. First we define a clique of
-    // 12 registers, one-twelve. one interferes with a and has exactly 12
-    // neighbors. Once we prune a, we can prune one, then two-twelve. To avoid
-    // spilling, one must go in EDI, because two-twelve all conflict with EDI.
-    // If we coalesce a with EDI, we won't be able to prune one and we'll have
-    // to spill something.
-    // NOTE - some of this is copy/pasted from twelve_regs_conflict.c.jinja;
-    // it's just different enough that using the template arguably isn't worth
-    // it.
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
     int one = 2 - a;
     int two = one + one;
@@ -39,14 +39,14 @@ int target(int a) {
     int eleven = 16 - five;
     int twelve = eleven + one;
 
-    // save one to validate later/make it conflict with all the others
+    
     glob = one;
 
-    // validate others/make them conflict with EDI
+    
     check_12_ints(1, two, three, four, five, six, seven, eight, nine, ten,
                   eleven, twelve, 1);
 
-    // validate one
+    
     check_one_int(glob, 1);
     return 0;
 }

@@ -1,6 +1,6 @@
-// Apply ++ and -- to subscript expressions, which are lvalues
 
-// indices (static to prevent copy prop)
+
+
 int i = 2;
 int j = 1;
 int k = 0;
@@ -10,23 +10,23 @@ int main(void) {
         {{1, 2}, {3, 4}}, {{5, 6}, {7, 8}}, {{9, 10}, {11, 12}}};
 
     if (arr[i][j][k]++ != 11) {
-        return 1;  // fail
+        return 1;  
     }
     if (arr[i][j][k] != 12) {
-        return 2;  // fail
+        return 2;  
     }
 
-    // also apply ++/-- to indices
+    
     if (++arr[--i][j--][++k] /* arr[1][1][1] */ != 9) {
-        return 3;  // fail
+        return 3;  
     }
 
-    // check side effect of updating j
+    
     if (arr[i][j][k] /* arr[1][0][1]*/ != 6) {
-        return 4;  // fail
+        return 4;  
     }
     if (--arr[i][j][k] != 5) {
-        return 5;  // fail
+        return 5;  
     }
-    return 0;  // success
+    return 0;  
 }

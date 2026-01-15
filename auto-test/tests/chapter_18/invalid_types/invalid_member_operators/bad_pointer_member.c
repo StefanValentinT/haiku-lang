@@ -12,6 +12,6 @@ struct b {
 
 int main(void) {
   struct a *ptr = malloc(sizeof(struct a));
-  ptr->m = 10; // "struct a" has no member "m"
+  ptr->m = 10; 
   return 0;
 }

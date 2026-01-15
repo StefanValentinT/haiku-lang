@@ -3,7 +3,7 @@
  * */
 
 
-// a and b should be 11 and 12
+
 int f(int a, int b) {
     if (a != 11) {
         printf("Expected a to be 11 but found %d\n", a);

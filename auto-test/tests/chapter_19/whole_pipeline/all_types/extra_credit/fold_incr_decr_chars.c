@@ -9,14 +9,14 @@ int target(void) {
     unsigned char uc3 = ++uc1;
 
     if (!(s == 127 && s2 == -128 && s3 == -128)) {
-        return 1; // fail
+        return 1; 
     }
 
     if (!(uc1 == 1 && uc2 == 255 && uc3 == 1)) {
-        return 2; // fail
+        return 2; 
     }
 
-    return 0; // success
+    return 0; 
 }
 
 int main(void) {

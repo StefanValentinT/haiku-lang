@@ -14,6 +14,6 @@ union u glob = {{1, 2}};
 
 int main(void) {
     union u my_union;
-    my_union = glob; // not a dead store b/c we access a member
+    my_union = glob; 
     return my_union.str.a;
 }

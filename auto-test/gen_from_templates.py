@@ -16,15 +16,15 @@ from jinja2.filters import do_wordwrap
 def comment_wrap(e: Environment, value: str, width: int = 73) -> str:
     # default width is short b/c we usually call this in a context w/ indent of 4
     # and there's no good way to directly track current indent
-    lines = [l.strip().removeprefix("//") for l in value.splitlines()]
-    oneline = "//" + "".join(lines)
+    lines = [l.strip().removeprefix("
+    oneline = "
     return (
         do_wordwrap(
             e,
             oneline,
             width=width,
             break_long_words=False,
-            wrapstring="\n// ",
+            wrapstring="\n
         )
         + "\n"
     )

@@ -9,12 +9,12 @@
 double glob = 10.0;
 double glob2 = 0.0;
 
-// The first round of coalescing will coalesce x into XMM0.
-// Then, if we don't realize that XMM0 is live at exit, we'll
-// coalesce the temporary that holds x + glob into XMM0, clobbering x.
+
+
+
 
 double target(void) {
-    double x = glob + 1.0;  // 11.0
+    double x = glob + 1.0;  
     glob2 = x + glob;
     return x;
 }

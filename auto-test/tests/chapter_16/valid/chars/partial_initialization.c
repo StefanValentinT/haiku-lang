@@ -8,7 +8,7 @@ unsigned char static3[3] = {5};
 int main(void)
 {
 
-    // validate static arrays
+    
     if (static1[0] != 1 || static1[1] != 2 || static1[2] || static1[3])
         return 1;
 
@@ -18,7 +18,7 @@ int main(void)
     if (static3[0] != 5 || static3[1] || static3[2])
         return 3;
 
-    // define some non-static arrays
+    
     char auto1[5] = {-4, 66, 4.0};
     signed char auto2[3] = {static1[2], -static1[0]};
     unsigned char auto3[2] = {'a'};

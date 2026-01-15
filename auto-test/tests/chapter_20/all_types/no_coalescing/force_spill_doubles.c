@@ -11,7 +11,7 @@ int target(void) {
      * even if we end up choosing other nodes as spill candidates first
      */
     double should_spill = (double)glob;
-    // all these registers conflict with should_spill and each other
+    
     double one = 4.0 - glob;
     double two = one + one;
     double three = (double)glob;
@@ -27,12 +27,12 @@ int target(void) {
     double thirteen = five + eight;
     double fourteen = 21 - seven;
 
-    // validate them
+    
     check_14_doubles(one, two, three, four, five, six, seven, eight, nine, ten,
                      eleven, twelve, thirteen, fourteen, 1.0);
 
-    // make another fourteen pseudos that conflict w/ should_spill and each
-    // other
+    
+    
     double fifteen = glob2 * 4.0 - 1;
     double sixteen = glob2 * 4.0;
     double seventeen = fifteen + 2.0;

@@ -4,16 +4,16 @@
 
 
 long ternary(int flag, char c) {
-    // first we'll convert c to an unsigned int (2^32 - c), then to a long
+    
     return flag ? c : 1u;
 }
 
 int char_lt_int(char c, int i) {
-    return c < i;  // common type is int
+    return c < i;  
 }
 
 int uchar_gt_long(unsigned char uc, long l) {
-    return uc > l;  // common type is long
+    return uc > l;  
 }
 
 /* On operations with two character types, both are promoted to int */
@@ -40,27 +40,27 @@ int multiply(void) {
 
 int main(void) {
     if (ternary(1, -10) != 4294967286l) {
-        // 1 ? -10 : 1u
-        // ==> (long) (UINT_MAX - 10)
+        
+        
         return 1;
     }
 
     if (!char_lt_int((char)1, 256)) {
-        // 1 < 256 ; if we converted 256 to a char, its value would be 0,
-        // so it would evaluate to less than 1
+        
+        
         return 2;
     }
 
     if (!uchar_gt_long((unsigned char)100, -2)) {
-        // we should convert 100 to a long, preserving its type
+        
         return 3;
     }
 
     char c = -1;
     unsigned char u = 2;
     if (!char_lt_uchar(c, u)) {
-        // we convert both c and u to int; we DON'T convert c to an unsigned
-        // char!
+        
+        
         return 4;
     }
 

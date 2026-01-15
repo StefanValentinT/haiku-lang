@@ -6,9 +6,9 @@
  */
 int target(int i) {
     unsigned int j = i;
-    return (j / 100);  // make sure we don't rewrite as i / 100
-                       // correct answer is 42949670,
-                       // but if we propagate this copy we'll return -2
+    return (j / 100);  
+                       
+                       
 }
 
 int main(void) {

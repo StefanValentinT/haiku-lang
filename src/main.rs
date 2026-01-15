@@ -1,5 +1,7 @@
 use std::{
     fs,
+    io::Write,
+    path::Path,
     process::{Command, exit},
 };
 
@@ -7,6 +9,7 @@ mod asm_gen;
 mod code_emission;
 mod gen_names;
 mod lexer;
+mod llvm_codegen;
 mod parser;
 mod queue;
 mod semantic;
@@ -16,126 +19,152 @@ mod utils;
 use clap::Parser;
 
 use crate::{
-    asm_gen::gen_asm, code_emission::*, lexer::lex_string, parser::parse,
-    semantic::semantic_analysis, tac::gen_tac,
+    lexer::lex_string, llvm_codegen::emit_llvm, parser::parse, semantic::semantic_analysis,
+    tac::gen_tac,
 };
+
+static mut VERBOSE: bool = false;
+
+macro_rules! vprintln {
+    ($($arg:tt)*) => {
+        unsafe {
+            if VERBOSE {
+                println!($($arg)*);
+            }
+        }
+    }
+}
 
 #[derive(Parser, Debug)]
 #[command(author, version, about)]
 struct Args {
     #[arg(long)]
     lex: bool,
+
     #[arg(long)]
     parse: bool,
+
     #[arg(long)]
     codegen: bool,
+
     #[arg(long)]
     tacky: bool,
+
     #[arg(long)]
     validate: bool,
+
     #[arg(short)]
     c: bool,
 
+    #[arg(short, long)]
+    verbose: bool,
+
     filename: String,
 }
+use std::process::Stdio;
 
-pub fn compile_assembly(input_path: &str, asm_text: &str, object_only: bool) -> String {
-    let asm_file = if let Some(pos) = input_path.rfind('.') {
-        format!("{}.s", &input_path[..pos])
-    } else {
-        format!("{}.s", input_path)
-    };
+pub fn compile_ir(input_path: &str, asm_text: &str, object_only: bool) -> String {
+    let input_path = Path::new(input_path);
+    let build_dir = input_path
+        .parent()
+        .unwrap_or_else(|| Path::new("."))
+        .join("build");
+
+    if let Err(e) = std::fs::create_dir_all(&build_dir) {
+        eprintln!("Failed to create build directory '{:?}': {}", build_dir, e);
+        std::process::exit(1);
+    }
+
+    let llvm_file = build_dir
+        .join(input_path.file_stem().unwrap())
+        .with_extension("ll");
+
+    let file = build_dir.join(input_path.file_stem().unwrap());
 
     let output_file = if object_only {
-        if let Some(pos) = input_path.rfind('.') {
-            format!("{}.o", &input_path[..pos])
-        } else {
-            format!("{}.o", input_path)
-        }
+        file.with_extension(".o").to_string_lossy().to_string()
     } else {
-        if let Some(pos) = input_path.rfind('.') {
-            input_path[..pos].to_string()
-        } else {
-            input_path.to_string()
-        }
+        file.with_extension("").to_string_lossy().to_string()
     };
 
-    fs::write(&asm_file, asm_text).unwrap_or_else(|_| {
-        eprintln!("Failed to write assembly file: {}", asm_file);
-        exit(1);
-    });
-    println!("Assembly written to {}", asm_file);
+    if let Err(e) = std::fs::write(&llvm_file, asm_text) {
+        vprintln!("Failed to write LLVM IR to '{:?}': {}", llvm_file, e);
+        std::process::exit(1);
+    }
+    vprintln!("LLVM IR written to '{:?}'", llvm_file);
 
     let mut cmd = Command::new("cc");
-    cmd.arg(&asm_file);
-
+    cmd.arg(&llvm_file).stderr(Stdio::piped());
     if object_only {
         cmd.arg("-c");
-    } else {
-        cmd.arg("-o").arg(&output_file);
     }
+    cmd.arg("-o").arg(&output_file);
 
-    let status = cmd.status().expect("Failed to invoke system compiler");
+    let status = cmd.status().unwrap_or_else(|e| {
+        vprintln!("Failed to invoke compiler: {}", e);
+        std::process::exit(1);
+    });
+
     if !status.success() {
-        eprintln!("Compilation failed");
-        exit(1);
+        vprintln!("Compilation failed with status: {}", status);
+        std::process::exit(1);
     }
 
-    println!("Output written to {}", output_file);
-
+    vprintln!("Output written to '{}'", output_file);
     output_file
 }
 
 fn main() {
     let args = Args::parse();
 
+    unsafe {
+        VERBOSE = args.verbose;
+    }
+
     let content = fs::read_to_string(&args.filename).expect("Failed to read the input file");
 
-    println!("Processing file: {}", args.filename);
+    vprintln!("Processing file: {}", args.filename);
 
     let lexeme = lex_string(content);
-    println!("Lexeme: {:?}", lexeme);
+    vprintln!("Lexeme: {:?}", lexeme);
     if args.lex {
         return;
     }
 
     let ast = parse(lexeme);
-    println!("AST:\n{:#?}", ast);
+    vprintln!("AST:\n{:#?}", ast);
     if args.parse {
         return;
     }
 
     let transformed_ast = semantic_analysis(ast);
-    println!("AST after Semantic Analysis:\n{:#?}", transformed_ast);
+    vprintln!("AST after Semantic Analysis:\n{:#?}", transformed_ast);
     if args.validate {
         return;
     }
 
     let tac_ast = gen_tac(transformed_ast);
-    println!("TAC-AST:\n{:#?}", tac_ast);
+    vprintln!("TAC-AST:\n{:#?}", tac_ast);
     if args.tacky {
         return;
     }
 
-    let asm_ast = gen_asm(tac_ast);
-    println!("ASM-AST:\n{:#?}", asm_ast);
+    let llvm_ir = emit_llvm(&tac_ast);
+    vprintln!("LLVM IR:\n{}", llvm_ir);
     if args.codegen {
         return;
     }
 
-    let asm = emit_assembly(&asm_ast);
-    println!("Assembly:\n{:#?}", asm);
-
-    let output_file = compile_assembly(&args.filename, &asm, args.c);
+    let output_file = compile_ir(&args.filename, &llvm_ir, args.c);
 
     if !args.c {
-        println!("Running executable...");
-        let status = Command::new(&output_file)
+        vprintln!("Running executable...");
+        let status = std::process::Command::new(&output_file)
             .status()
             .expect("Failed to execute program");
 
         match status.code() {
-            Some(code) => println!("Program result: {}", code as i8),
+            Some(code) => println!("{}", code as i8),
             None => println!("Program terminated by signal"),
         }
     }

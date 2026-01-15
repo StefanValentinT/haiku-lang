@@ -3,9 +3,9 @@
 int target(void) {
     double nan = 0.0 / 0.0;
     if (nan) {
-        return 0; // success
+        return 0; 
     }
-    return 1; // fail
+    return 1; 
 }
 
 int main(void) {

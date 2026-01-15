@@ -16,7 +16,7 @@ struct s {
 int main(void) {
     int x;
 
-    // invalid initializer for last element of arr;
-    // can't convert pointer &x to double
+    
+    
     struct s my_struct = {&x, {{1.0}, {2.0}, {&x}}};
 }

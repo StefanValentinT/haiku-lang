@@ -6,19 +6,19 @@ int indirect_update(void);
 
 int f(int new_total) {
     static int total = 0;
-    total = new_total;  // generate copy total = new_total
+    total = new_total;  
     if (total > 100)
         return 0;
-    total = 10;         // generate total = 10
-    indirect_update();  // kill total = 10 (b/c total is static)
-    return total;       // can't rewrite as 'return 10'
+    total = 10;         
+    indirect_update();  
+    return total;       
 }
 
 int indirect_update(void) {
-    f(101);  // this will update 'total'
+    f(101);  
     return 0;
 }
 
 int main(void) {
-    return f(1);  // expected return value: 101
+    return f(1);  
 }

@@ -15,8 +15,8 @@ int test_simple(void) {
 int test_partial(void) {
     double arr[5] = {1.0, 123e4};
 
-    // make sure first two elements have values from initializer and last three
-    // are zero
+    
+    
     return (arr[0] == 1.0 && arr[1] == 123e4 && !arr[2] && !arr[3] && !arr[4]);
 }
 
@@ -25,19 +25,19 @@ int test_partial(void) {
 int test_non_constant(long negative_7billion, int *ptr) {
     *ptr = 1;
     extern int three(void);
-    long var = negative_7billion * three();  // -21 billion
+    long var = negative_7billion * three();  
     long arr[5] = {
         negative_7billion,
-        three() * 7l,                      // 21
-        -(long)*ptr,                       // -1
-        var + (negative_7billion ? 2 : 3)  // -21 billion  + 2
-    };  // fifth element  not initialized, should be 0
+        three() * 7l,                      
+        -(long)*ptr,                       
+        var + (negative_7billion ? 2 : 3)  
+    };  
 
     return (arr[0] == -7000000000 && arr[1] == 21l && arr[2] == -1l &&
             arr[3] == -20999999998l && arr[4] == 0l);
 }
 
-// helper function for test case above
+
 int three(void) {
     return 3;
 }
@@ -49,13 +49,13 @@ int test_type_conversion(int *ptr) {
     *ptr = -100;
 
     unsigned long arr[4] = {
-        3458764513821589504.0,  // convert double to ulong
-        *ptr,  // dereference to get int, then convert to ulong - end up with
-               // 2^64 - 100
-        (unsigned int)18446744073709551615UL,  // this is ULONG_MAX - truncate
-                                               // to unsigned int, then back to
-                                               // ulong, end up with UINT_MAX
-        -global_one                            // converts to ULONG_MAX
+        3458764513821589504.0,  
+        *ptr,  
+               
+        (unsigned int)18446744073709551615UL,  
+                                               
+                                               
+        -global_one                            
     };
 
     return (arr[0] == 3458764513821589504ul &&
@@ -77,7 +77,7 @@ int test_preserve_stack(void) {
     int arr[3] = {global_one * 2l, global_one + three()};
     unsigned int u = 2684366905;
 
-    // check surrounding objects
+    
     if (i != -1) {
         return 0;
     }
@@ -85,7 +85,7 @@ int test_preserve_stack(void) {
         return 0;
     }
 
-    // check arr itself
+    
     return (arr[0] == 2 && arr[1] == 4 && !arr[2]);
 }
 
@@ -99,7 +99,7 @@ int main(void) {
     }
 
     long negative_seven_billion = -7000000000l;
-    int i = 0;  // value of i doesn't matter, functions will always overwrite it
+    int i = 0;  
     if (!test_non_constant(negative_seven_billion, &i)) {
         return 3;
     }
@@ -112,5 +112,5 @@ int main(void) {
         return 5;
     }
 
-    return 0;  // success
+    return 0;  
 }

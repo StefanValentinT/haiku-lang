@@ -1,14 +1,14 @@
 int update_x(void);
 
-// test that we can use an external variable in a switch statement
+
 int main(void) {
-    update_x(); // set x to 4
-    extern int x; // bring x into scope
+    update_x(); 
+    extern int x; 
     switch(x) {
-        case 0: return 1; // fail
-        case 1: return 2; // fail
-        case 4: return 0; // success!
-        default: return 4; // fail
+        case 0: return 1; 
+        case 1: return 2; 
+        case 4: return 0; 
+        default: return 4; 
 
     }
 }

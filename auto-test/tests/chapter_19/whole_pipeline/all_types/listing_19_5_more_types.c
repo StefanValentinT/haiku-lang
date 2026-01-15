@@ -1,8 +1,8 @@
 /* A variation on listing_19_5.c with types other than int */
 
-// make flag a global variable rather than a parameter
-// so we don't have any instructions setting up function parameters,
-// e.g. movl %edi, -4(%rbp), which the test script will complain about
+
+
+
 double flag = 12e5;
 
 struct inner {

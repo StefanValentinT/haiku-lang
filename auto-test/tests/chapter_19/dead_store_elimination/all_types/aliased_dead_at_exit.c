@@ -11,19 +11,19 @@ void callee(int *ptr) {
 
 int target(void) {
     int x = 10;
-    callee(&x);  // generates all aliased variables (i.e. x)
+    callee(&x);  
     int y = x;
-    x = 50;  // this is dead
+    x = 50;  
     return y;
 }
 
 int main(void) {
     int a = target();
     if (a != 100) {
-        return 1; // fail
+        return 1; 
     }
     if (b != 10) {
-        return 2; // fail
+        return 2; 
     }
-    return 0; // success
+    return 0; 
 }

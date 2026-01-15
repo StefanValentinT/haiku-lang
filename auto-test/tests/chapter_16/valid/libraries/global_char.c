@@ -4,7 +4,7 @@ signed char sc = 0;
 
 int update_global_chars(void) {
     c = c + 10;
-    uc = uc + 10; // wraps around
+    uc = uc + 10; 
     sc = sc - 10;
     return 0;
 }

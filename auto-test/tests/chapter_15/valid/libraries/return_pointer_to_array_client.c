@@ -9,7 +9,7 @@ int main(void) {
 
     long (*row_pointer)[4] = return_row(nested_array, 1);
 
-    // make sure values are correctly
+    
     for (int i = 0; i < 3; i = i + 1) {
         for (int j = 0; j < 4; j = j + 1) {
             if (row_pointer[i][j] != nested_array[1][i][j]) {
@@ -18,8 +18,8 @@ int main(void) {
         }
     }
 
-    // make sure that when we update the array through one pointer,
-    // it's visible in the other
+    
+    
 
     row_pointer[2][1] = 100;
     if (nested_array[1][2][1] != 100) {

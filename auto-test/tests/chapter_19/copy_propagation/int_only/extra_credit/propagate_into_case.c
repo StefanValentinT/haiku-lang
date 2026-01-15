@@ -12,8 +12,8 @@ int target(int flag) {
             arg = 20;
             break;
         case 2:
-            // replace arg w/ 10 here - previous assignment
-            // doesn't kill this b/c we never pass through it to get here
+            
+            
             callee(arg);
             break;
         default:
@@ -25,8 +25,8 @@ int target(int flag) {
 int main(void) {
     target(2);
     if (globvar == 10) {
-        return 0; // success
+        return 0; 
     }
 
-    return 1; // fail
+    return 1; 
 }

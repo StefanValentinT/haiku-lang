@@ -10,5 +10,5 @@ union t {
 
 int main(void) {
     union s foo = {1};
-    return foo.blah; // "union s" has no member "blah"
+    return foo.blah; 
 }

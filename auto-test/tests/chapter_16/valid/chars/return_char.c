@@ -5,15 +5,15 @@
 
 
 char return_char(void) {
-    return 5369233654l;  // this will be truncated to -10
+    return 5369233654l;  
 }
 
 signed char return_schar(void) {
-    return 5369233654l;  // this will be truncated to -10
+    return 5369233654l;  
 }
 
 unsigned char return_uchar(void) {
-    return 5369233654l;  // this will be truncated to 246
+    return 5369233654l;  
 }
 
 int main(void) {
@@ -25,8 +25,8 @@ int main(void) {
     unsigned char retval_uc = return_uchar();
     char char_array4[2] = {-5, -6};
 
-    // make sure we got the right return values and didn't overwrite
-    // other arrays on the stack
+    
+    
     if (char_array[0] != 121 || char_array[1] != -122 || char_array[2] != -3) {
         return 1;
     }

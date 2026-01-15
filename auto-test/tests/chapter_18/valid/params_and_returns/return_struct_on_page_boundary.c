@@ -8,8 +8,8 @@ struct ten_bytes {
     char arr[10];
 };
 
-// irregularly-sized struct that's right on a page boundary,
-// defined in data_on_page_boundary_<PLATFORM>.s
+
+
 extern struct ten_bytes on_page_boundary;
 
 struct ten_bytes return_struct(void) {
@@ -20,10 +20,10 @@ struct ten_bytes return_struct(void) {
 }
 
 int main(void) {
-    // call function that returns on_page_boundary
+    
     struct ten_bytes x = return_struct();
 
-    // validate it
+    
     for (int i = 0; i < 7; i = i + 1) {
         if (x.arr[i]) {
             return 1;
@@ -39,5 +39,5 @@ int main(void) {
     if (x.arr[9] != -1) {
         return 3;
     }
-    return 0;  // success
+    return 0;  
 }

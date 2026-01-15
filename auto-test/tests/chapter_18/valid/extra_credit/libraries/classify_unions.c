@@ -76,7 +76,7 @@ int test_has_nine_byte_struct(union has_nine_byte_struct u) {
         }
     }
 
-    return 1; // success
+    return 1; 
 }
 int test_has_uneven_union(struct has_uneven_union s) {
     return s.i == -2147483647 && strcmp(s.u.arr, "!@#$") == 0 && s.u.uc == 33;
@@ -93,7 +93,7 @@ int test_has_other_unions(union has_other_unions u) {
         }
     }
 
-    return 1; // success
+    return 1; 
 }
 int test_union_array(union union_array u) {
     return (u.u_arr->d == -20. && u.u_arr[1].d == -30.);

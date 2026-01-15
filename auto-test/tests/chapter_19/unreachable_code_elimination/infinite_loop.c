@@ -3,7 +3,7 @@
  * but the compiler doesn't know that.
  * */
 
-int exit_wrapper(int status); // defined in chapter_19/libraries/exit.c
+int exit_wrapper(int status); 
 
 int main(void) {
     int i = 0;

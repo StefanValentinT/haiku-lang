@@ -22,7 +22,7 @@ int main(void) {
     if (target_neg() != -three) {
         return 1;
     }
-    // etc.
+    
 }
 ```
 

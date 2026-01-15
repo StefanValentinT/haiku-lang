@@ -22,25 +22,25 @@ int nested_array_param(int (*a)[3]);
 
 int main(void) {
 
-    // Make sure we adjust parameters in local function declarations too
+    
     int array_param(int a[6]);
     int nested_array_param(int a[5][3]);
 
 
-    // call array_param and make sure it works as expected
+    
     int arr[8] = {8, 7, 6, 5, 4, 3, 2, 1};
     array_param(arr);
     if (arr[4]) {
         return 1;
     }
 
-    // check the other elements too
+    
     for (int i = 0; i < 8; i = i + 1) {
         if (i != 4 && arr[i] != 8 - i)
             return 2;
     }
 
-    // call nested_array_param and make sure it works as expected
+    
     int nested_arr[4][3] = { {-1, -1, -1}, {-2, -2, -2}, {-3, -3, -3}, {-4, -4, -4}};
 
     nested_array_param(nested_arr);
@@ -48,7 +48,7 @@ int main(void) {
         return 3;
     }
 
-    // check other elements
+    
     for (int i = 0; i < 4; i = i + 1) {
         int expected = -1 - i;
         for (int j = 0; j < 3; j = j + 1) {

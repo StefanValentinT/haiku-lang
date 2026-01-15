@@ -4,54 +4,54 @@
  * */
 
 
-double copysign(double x, double y);  // standard math library
+double copysign(double x, double y);  
 
 double target_from_neg_int(void) {
-    return (double)-2147483647;  // can convert exactly
+    return (double)-2147483647;  
 }
 
-// exactly between two representable doubles;
-// same as target_from_long in constant_folding/all_types/fold_cast_to_double.c
-// but negated
+
+
+
 double target_from_neg_long(void) {
     return (double)-4611686018427388416l;
 }
 
-// test conversion from char to double
+
 double target_from_char(void) {
     char c = 127;
     return (double)c;
 }
 
-// test conversion from signed char to double
+
 double target_from_schar(void) {
     char c = -127;
     return (double)c;
 }
 
-// test conversion from uchar to double
+
 double target_from_uchar(void) {
     unsigned char u = 255;
     return (double)u;
 }
 
-// if we initially assign char a value outside its range,
-// make sure we truncate before converting to double
+
+
 double target_from_truncated_char(void) {
     char c = -129;
-    return (double)c;  // 127
+    return (double)c;  
 }
 
-// if we initially assign uchar a value outside its range,
-// make sure we truncate before converting to double
+
+
 double target_from_truncated_uchar(void) {
     unsigned char c = 1000;
-    return (double)c;  // 232
+    return (double)c;  
 }
 
 double target_from_negated_int_zero(void) {
-    // negating integer zero is just zero,
-    // which will be converted to positive floating-point zero
+    
+    
     return -0;
 }
 
@@ -81,5 +81,5 @@ int main(void) {
     if (zero != 0 || copysign(5., zero) != 5.) {
         return 8;
     }
-    return 0;  // success
+    return 0;  
 }

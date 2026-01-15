@@ -1,4 +1,4 @@
-// It's illegal to take the address of a label
+
 int main(void) {
     int x = 0;
     lbl:

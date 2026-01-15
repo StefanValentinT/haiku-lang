@@ -3,27 +3,27 @@
  * and that we evaluate them with unsigned division/comparison functions.
  */
 unsigned int target_add(void) {
-    // result exceeds UINT_MAX and wraps around past 0
+    
     return 4294967295U + 10u;
 }
 
 unsigned int target_sub(void) {
-    // result is less then 0 and wraps back round past UINT_MAX
+    
     return 10u - 12u;
 }
 
 unsigned int target_mult(void) {
-    // wraps back around to 2147483648u
+    
     return 2147483648u * 3u;
 }
 
 unsigned int target_div(void) {
-    // result would be different if we interpreted values as signed
+    
     return 4294967286u / 10u;
 }
 
 unsigned int target_rem(void) {
-    // result would be different if we interpreted values as signed
+    
     return 4294967286u % 10u;
 }
 
@@ -36,7 +36,7 @@ unsigned int target_neg(void) {
 }
 
 int target_not(void) {
-    return !65536u;  // 2^16
+    return !65536u;  
 }
 
 int target_eq(void) {
@@ -44,15 +44,15 @@ int target_eq(void) {
 }
 
 int target_neq(void) {
-    // these have identical binary representations except for the most
-    // significant bit
+    
+    
     return 2147483649u != 1u;
 }
 
 int target_gt(void) {
-    // make sure we're using unsigned comparisons;
-    // if we interpret these as signed integers,
-    // we'll think 2147483649u is negative and return 0
+    
+    
+    
     return 2147483649u > 1000u;
 }
 
@@ -61,8 +61,8 @@ int target_ge(void) {
 }
 
 int target_lt(void) {
-    // as with target_gt, make sure we don't interpret 2147483649u
-    // as a negative signed integer
+    
+    
     return 2147483649u < 1000u;
 }
 
@@ -71,7 +71,7 @@ int target_le(void) {
 }
 
 int main(void) {
-    // binary arithmetic
+    
     if (target_add() != 9u) {
         return 1;
     }
@@ -88,7 +88,7 @@ int main(void) {
         return 5;
     }
 
-    // unary operators
+    
     if (target_complement() != 4294967294U) {
         return 6;
     }
@@ -101,7 +101,7 @@ int main(void) {
         return 8;
     }
 
-    // comparisons
+    
     if (!target_eq()) {
         return 9;
     }

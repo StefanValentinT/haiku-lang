@@ -8,8 +8,8 @@ int main(void) {
     struct outer auto_array[3] = {
         {0, {0, {0, 0}}}, {2, {3, {4, 5}}}, {4, {6, {8, 10}}}};
 
-    // pass pointers to struct arrays with both static and automatic storage
-    // both have same contents so we can validate them with the same function
+    
+    
 
     if (!validate_struct_array(static_array)) {
         return 1;
@@ -19,5 +19,5 @@ int main(void) {
         return 2;
     }
 
-    return 0;  // success
+    return 0;  
 }

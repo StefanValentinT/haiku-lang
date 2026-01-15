@@ -4,7 +4,7 @@ int glob = 0;
 
 int target(void) {
     int x = glob;
-    x *= 20; // dead
+    x *= 20; 
     x = 10;
     return x;
 }

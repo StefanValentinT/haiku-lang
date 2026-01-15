@@ -7,10 +7,10 @@ int main(void) {
     switch (*get_ptr()) {
         case 1:
             return 1;
-        case 4: // l % 2^32
+        case 4: 
             return 2;
         case 4294967300l:
-            return 0; // success
+            return 0; 
         case 18446744073709551600UL:
             return 3;
         default:

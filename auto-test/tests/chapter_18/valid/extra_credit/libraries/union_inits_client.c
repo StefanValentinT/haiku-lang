@@ -1,30 +1,30 @@
-// Test initialization of unions with automatic storage duration
+
 
 
 
 int test_simple(void) {
-    // initialize simple union w/ only scalar members
+    
     union simple x = { 123.45 };
     return validate_simple(&x);
 }
 
 int test_simple_converted(void) {
-    // initialize simple union where value of element is implicitly converted
-    // to target type (in this case the nearest representatble double,
-    // 18446744073709549568.0)
+    
+    
+    
     union simple x = { 18446744073709550315UL };
     return validate_simple_converted(&x);
 }
 
 
 int test_nested(void) {
-    // initalize nested union where first member is a structure
+    
     union nested x = { {4294967395l, {{-1, -2, -3, -4, -5, -6, -7, -8, -9}}} };
     return validate_nested(&x);
 }
 
 int test_nested_partial_init(void) {
-    // initialize union where inner subobject is a partly initialized struct
+    
     union nested x = { {9000372036854775800l, {"string"}} };
     return validate_nested_partial(&x);
 }

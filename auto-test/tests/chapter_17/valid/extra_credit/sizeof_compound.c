@@ -1,5 +1,5 @@
-// Test that we correctly get size of compound expressions (and don't evaluate
-// them)
+
+
 
 
 int main(void) {
@@ -10,40 +10,40 @@ int main(void) {
     long *ptr = long_arr;
 
     if (sizeof(long_arr[1] *= 10) != 8) {
-        return 1;  // fail
+        return 1;  
     }
     if (sizeof(i /= 10ul) != 4) {
-        return 2;  // fail
+        return 2;  
     }
     if (sizeof(uc %= 2) != 1) {
-        return 3;  // fail
+        return 3;  
     }
     if (sizeof(d -= 11) != 8) {
-        return 4;  // fail
+        return 4;  
     }
     if (sizeof(ptr += 1) != 8) {
-        return 5;  // fail
+        return 5;  
     }
 
-    // make sure we didn't actually evaluate any sizeof operands
+    
     if (long_arr[0] != 1) {
-        return 6;  // fail
+        return 6;  
     }
     if (long_arr[1] != 2) {
-        return 7;  // fail
+        return 7;  
     }
     if (i != 3) {
-        return 8;  // fail
+        return 8;  
     }
     if (uc != 4) {
-        return 9;  // fail
+        return 9;  
     }
     if (d != 5.0) {
-        return 10;  // fail
+        return 10;  
     }
     if (ptr != long_arr) {
-        return 11;  // fail
+        return 11;  
     }
 
-    return 0;  // success
+    return 0;  
 }

@@ -11,24 +11,24 @@
  * This test program is generated from templates/pre_ch20_spill_var.c.jinja.
  * */
 
-// for validation
+
 int check_12_ints(int start, int a, int b, int c, int d, int e, int f, int g,
                   int h, int i, int j, int k, int l);
 
-// use a variable with static storage duration in operations below
-// so they can't be constant folded
+
+
 double glob = 5000.;
 
 int main(void) {
-    // The cvttsd2sdi operation whose result we want to spill;
-    // this is our best spill candidate b/c it has the most conflicts with other
-    // pseudos and is tied for fewest uses. NOTE: optimizations must be enabled
-    // so we propagate the temporary variable holding the result of this
-    // expression instead of copying it into should_spill.
+    
+    
+    
+    
+    
     long should_spill = (long)glob;
 
-    // create 12 pseudos that all interfere w/ cvttsd2si result and each
-    // other; this forces a spill, since only 12 hard registers are available
+    
+    
     int one = glob - 4999;
     int two = one + one;
     int three = 2 + one;
@@ -42,13 +42,13 @@ int main(void) {
     int eleven = 16 - five;
     int twelve = six + six;
 
-    // validate one through twelve
-    // (this makes them all live at this point)
+    
+    
     check_12_ints(one, two, three, four, five, six, seven, eight, nine, ten,
                   eleven, twelve, 1);
-    // create another clique of twelve pseudos that interfere with each other
-    // and cvttsd2si result, so cvttsd2si result will have more conflicts than
-    // other pseudoregisters
+    
+    
+    
     int thirteen = glob - 4987;
     int fourteen = thirteen + 1;
     int fifteen = 28 - thirteen;
@@ -62,23 +62,23 @@ int main(void) {
     int twenty_three = 6 + seventeen;
     int twenty_four = thirteen + 11;
 
-    // validate thirteen through twenty-four
-    // (this makes them all live at this point)
+    
+    
     check_12_ints(thirteen, fourteen, fifteen, sixteen, seventeen, eighteen,
                   nineteen, twenty, twenty_one, twenty_two, twenty_three,
                   twenty_four, 13);
-    // use cvttsd2si result to make it interfere with other pseudos
-    // and validate that it wasn't clobbered
+    
+    
     if (should_spill != 5000) {
         return -1;
     }
-    return 0;  // success
+    return 0;  
 }
 
-// validate that a == start, b == start + 1, ...l == start + 11
-// NOTE: 'start' is the last param because if it were first, every
-// arg in the caller would interfere with EDI and we'd have to spill more than
-// one pseudo
+
+
+
+
 int check_12_ints(int a, int b, int c, int d, int e, int f, int g, int h, int i,
                   int j, int k, int l, int start) {
     int expected = 0;
@@ -143,5 +143,5 @@ int check_12_ints(int a, int b, int c, int d, int e, int f, int g, int h, int i,
         return expected;
     }
 
-    return 0;  // success
+    return 0;  
 }

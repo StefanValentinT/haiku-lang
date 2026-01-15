@@ -21,9 +21,9 @@ int main(void) {
     struct pair arg = {1, 4};
     struct pair2 result = double_members(arg);
 
-    // validate
+    
     if (result.d != 2.0 || result.l != 8) {
         return 1;
     }
-    return 0;  // success
+    return 0;  
 }

@@ -5,7 +5,7 @@ int target(void) {
 
 int main(void) {
     if (~target() != 2147483647) {
-        return 1; // fail
+        return 1; 
     }
     return 0;
 }

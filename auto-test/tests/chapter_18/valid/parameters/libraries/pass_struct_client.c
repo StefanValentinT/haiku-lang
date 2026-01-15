@@ -8,5 +8,5 @@ int main(void) {
     if (!validate_struct_param(arg)) {
         return 1;
     }
-    return 0; // success
+    return 0; 
 }

@@ -16,8 +16,8 @@ int main(void) {
         return 2;
     }
 
-    // cast a constant to double to exercise rewrite rule for cvtsi2sd $const, dst
-    double d = (double) 1152921504606846977l; // 2^60 + 1; nearest double is 2^60
+    
+    double d = (double) 1152921504606846977l; 
     if (d != 1152921504606846976.0) {
         return 3;
     }

@@ -1,11 +1,11 @@
 
-// Test out bitwise operations on dereferenced pointers,
-// including ones that require implicit type conversions.
-// This performs the same calculations as tests/chapter_12/valid/extra_credit/bitwise_unsigned_ops.c
-// but through dereferenced pointers
+
+
+
+
 int main(void) {
-    unsigned int ui = -1u; // lower 32 bits set
-    unsigned long ul = 9223372036854775808ul; // 2^63, only uppermost bit set
+    unsigned int ui = -1u; 
+    unsigned long ul = 9223372036854775808ul; 
     unsigned int *ui_ptr = &ui;
     unsigned long *ul_ptr = &ul;
 
@@ -27,5 +27,5 @@ int main(void) {
         return 4;
     }
 
-    return 0; // success
+    return 0; 
 }

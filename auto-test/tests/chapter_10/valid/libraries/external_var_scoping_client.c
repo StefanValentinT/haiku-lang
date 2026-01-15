@@ -8,7 +8,7 @@ int x = 10;
 int read_x(void);
 
 int main(void) {
-    // shadow x
+    
     int x = 0;
 
     if (x == 0) {
@@ -18,7 +18,7 @@ int main(void) {
         if (read_x() != 10)
             return 1;
 
-        // bring x back into scope
+        
         extern int x;
         if (x != 10)
             return 1;

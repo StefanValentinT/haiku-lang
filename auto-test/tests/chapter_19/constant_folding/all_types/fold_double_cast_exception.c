@@ -9,9 +9,9 @@
 
 
 int main(void) {
-    int dead_int_cast = 0 ? (int)2147483649.0 : 100; // in the range of uint but not int
-    unsigned int dead_uint_cast = 0 ? (unsigned int) 34359738368.0 : 200; // in the range of long but not uint
-    signed long dead_long_cast = 1 ? 300 : 9223372036854777856.0; // in the range of unsigned long but not long
-    unsigned long dead_ulong_cast = 1 ? 200 : (unsigned long)200e300; //outside the range of unsigned long
+    int dead_int_cast = 0 ? (int)2147483649.0 : 100; 
+    unsigned int dead_uint_cast = 0 ? (unsigned int) 34359738368.0 : 200; 
+    signed long dead_long_cast = 1 ? 300 : 9223372036854777856.0; 
+    unsigned long dead_ulong_cast = 1 ? 200 : (unsigned long)200e300; 
     return dead_int_cast + dead_uint_cast + dead_long_cast + dead_ulong_cast;
 }

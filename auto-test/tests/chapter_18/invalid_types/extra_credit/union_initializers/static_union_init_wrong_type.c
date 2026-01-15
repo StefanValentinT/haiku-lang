@@ -8,6 +8,6 @@ union u {
 };
 
 int main(void) {
-    // invalid; cannot implicitly convert char * to signed char *
+    
     static union u my_union = {"A char array"};
 }

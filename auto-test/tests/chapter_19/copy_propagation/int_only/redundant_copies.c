@@ -8,16 +8,16 @@ int target(int flag, int flag2, int y) {
     int x = y;
 
     if (flag) {
-        y = x;  // we can remove this because x and y already have the same
-                // value
+        y = x;  
+                
     }
     if (flag2) {
-        x = y;  // we can remove this because x and y already have the same
-                // value
+        x = y;  
+                
     }
     return x + y;
 }
 
 int main(void) {
-    return target(0, 1, 10);  // should return 20
+    return target(0, 1, 10);  
 }

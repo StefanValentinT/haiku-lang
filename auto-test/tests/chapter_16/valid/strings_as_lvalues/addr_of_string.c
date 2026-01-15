@@ -7,9 +7,9 @@ int main(void) {
     char(*str)[16] = &"Sample\tstring!\n";
     puts(*str);
 
-    // get pointer to one-past-the-end of this string
+    
     char (*one_past_the_end)[16] = str + 1;
-    char *last_byte_pointer = (char *)one_past_the_end - 1; // now get pointer to the last byte
+    char *last_byte_pointer = (char *)one_past_the_end - 1; 
     if (*last_byte_pointer != 0) {
         return 1;
     }

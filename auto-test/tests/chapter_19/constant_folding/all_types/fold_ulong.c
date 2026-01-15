@@ -4,17 +4,17 @@
  * and that we can evaluate expressions requiring all 64 bits.
  */
 unsigned long target_add(void) {
-    // result exceeds ULONG_MAX and wraps around past 0
+    
     return 18446744073709551615UL + 10ul;
 }
 
 unsigned long target_sub(void) {
-    // result is less then 0 and wraps back around past ULONG_MAX
+    
     return 10ul - 12ul;
 }
 
 unsigned long target_mult(void) {
-    // wraps back around to 9223372036854775808ul
+    
     return 9223372036854775808ul * 3ul;
 }
 
@@ -35,7 +35,7 @@ unsigned long target_neg(void) {
 }
 
 int target_not(void) {
-    return !4294967296UL;  // 2^32
+    return !4294967296UL;  
 }
 
 int target_eq(void) {
@@ -43,26 +43,26 @@ int target_eq(void) {
 }
 
 int target_neq(void) {
-    // these have identical binary representations except for the most
-    // significant bit
+    
+    
     return 9223372036854775809ul != 1ul;
 }
 
 int target_gt(void) {
-    // make sure we're using unsigned comparisons;
-    // if we interpret these as signed integers,
-    // we'll think 9223372036854775809ul is negative and return 0
+    
+    
+    
     return 9223372036854775809ul > 1000ul;
 }
 
 int target_ge(void) {
-    // 200ul would be greater if we only considered lower 32 bits
+    
     return 9223372036854775809ul >= 200ul;
 }
 
 int target_lt(void) {
-    // as with target_gt, make sure we don't interpret 9223372036854775809ul
-    // as a negative signed integer
+    
+    
     return 9223372036854775809ul < 1000ul;
 }
 
@@ -71,12 +71,12 @@ int target_le(void) {
 }
 
 int target_le2(void) {
-    // make sure we're evaluating <= and not <
+    
     return 9223372036854775809ul <= 9223372036854775809ul;
 }
 
 int main(void) {
-    // binary arithmetic
+    
     if (target_add() != 9ul) {
         return 1;
     }
@@ -93,7 +93,7 @@ int main(void) {
         return 5;
     }
 
-    // unary operators
+    
     if (target_complement() != 18446744073709551614ul) {
         return 6;
     }
@@ -106,7 +106,7 @@ int main(void) {
         return 8;
     }
 
-    // comparisons
+    
     if (!target_eq()) {
         return 9;
     }

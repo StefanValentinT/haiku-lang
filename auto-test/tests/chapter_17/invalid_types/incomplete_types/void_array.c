@@ -1,4 +1,4 @@
 int main(void) {
-    void arr[3]; // array of incomplete element type is illegal
+    void arr[3]; 
     return 0;
 }

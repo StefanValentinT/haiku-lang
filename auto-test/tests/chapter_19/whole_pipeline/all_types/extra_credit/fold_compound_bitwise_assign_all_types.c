@@ -5,8 +5,8 @@
  */
 
 
- // Similar to Chapter 16's compound_bitwise_ops_chars.c but modified to be
- // constant-foldable
+ 
+ 
 int target_chars(void) {
     signed char c1 = -128;
     signed char c2 = -120;
@@ -19,60 +19,60 @@ int target_chars(void) {
     unsigned char u3 = 250;
     unsigned char u4 = 255;
 
-    // apply bitwise ops to signed chars
-    c1 ^= 12345; // well-defined b/c of integer promotions
+    
+    c1 ^= 12345; 
     c2 |= u4;
     c3 &= u2 - (unsigned char)185;
-    c4 <<= 7u; // this wraps around to -128; well-defined b/c of integer promotions
-    // it's undefined for shift count to be greater than width of left operand,
-    // but this is well-defined b/c of integer promotions
+    c4 <<= 7u; 
+    
+    
     c5 >>= 31;
 
-    // apply bitwise ops to unsigned chars
+    
     long x = 32;
-    // it's undefined for shift count to be greater than width of left operand,
-    // but this is well-defined b/c of integer promotions
+    
+    
     u4 <<= 12;
     u3 >>= (x - 1);
-    u2 |= -399; // doesn't overflow b/c of integer promotion
-    x = -4296140120l; // a number that doesn't fit in int or unsigned int
+    u2 |= -399; 
+    x = -4296140120l; 
     u1 ^= x;
 
-    // validate
+    
     if (c1 != -71) {
-        return 1; // fail
+        return 1; 
     }
 
     if (c2 != -1) {
-        return 2; // fail
+        return 2; 
     }
 
     if (c3 != -16) {
-        return 3; // fail
+        return 3; 
     }
 
     if (c4 != -128) {
-        return 4; // fail
+        return 4; 
     }
 
     if (c5) {
-        return 5; // fail
+        return 5; 
     }
 
     if (u1 != 168) {
-        return 6; // fail
+        return 6; 
     }
 
     if (u2 != 251) {
-        return 7; // fail
+        return 7; 
     }
 
     if (u3) {
-        return 8; // fail
+        return 8; 
     }
 
     if (u4) {
-        return 9; // fail
+        return 9; 
     }
 
     return 0;
@@ -80,15 +80,15 @@ int target_chars(void) {
 
 
 
-// Identical to chapter 11's compound_bitwise.c, but inspect assembly
+
 int target_long_bitwise(void) {
-    // bitwise compound operations on long integers
-    long l1 = 71777214294589695l;  // 0x00ff_00ff_00ff_00ff
-    long l2 = -4294967296;  // -2^32; upper 32 bits are 1, lower 32 bits are 0
+    
+    long l1 = 71777214294589695l;  
+    long l2 = -4294967296;  
 
     l1 &= l2;
     if (l1 != 71777214277877760l) {
-        return 1; // fail
+        return 1; 
     }
 
     l2 |= 100l;
@@ -101,24 +101,24 @@ int target_long_bitwise(void) {
         return 3;
     }
 
-    // if rval is int, convert to common type
-    l1 = 4611686018427387903l;  // 0x3fff_ffff_ffff_ffff
-    int i = -1073741824;  // 0b1100....0, or 0xc000_0000
-    // 1. sign-extend i to 64 bits; upper 32 bits are all 1s
-    // 2. take bitwise AND of sign-extended value with l1
-    // 3. result (stored in l1) is 0x3fff_ffff_c000_0000;
-    //    upper bits match l1, lower bits match i
+    
+    l1 = 4611686018427387903l;  
+    int i = -1073741824;  
+    
+    
+    
+    
     l1 &= i;
     if (l1 != 4611686017353646080l) {
         return 4;
     }
 
-    // if lval is int, convert to common type, perform operation, then convert back
-    i = -2147483648l; // 0x8000_0000
-    // check result and side effect
-    // 1. sign extend 0x8000_0000 to 0xffff_ffff_8000_0000
-    // 2. calculate 0xffff_ffff_8000_0000 | 0x00ff_00ff_00ff_00ff = 0xffff_ffff_80ff_00ff
-    // 3. truncate to 0x80ff_00ff on assignment
+    
+    i = -2147483648l; 
+    
+    
+    
+    
     if ((i |= 71777214294589695l) != -2130771713) {
         return 5;
     }
@@ -126,30 +126,30 @@ int target_long_bitwise(void) {
         return 6;
     }
 
-    return 0; // success
+    return 0; 
 }
 
 
-// similar to chapter 11's compound_bitshift.c, but we inspect assembly
+
 int target_long_bitshift(void) {
-    // shift int using long shift count
+    
     int x = 100;
     x <<= 22l;
     if (x != 419430400) {
-        return 1; // fail
+        return 1; 
     }
 
-    // try right shift; validate result of expression
+    
     if ((x >>= 4l) != 26214400) {
-        return 2; // fail
+        return 2; 
     }
 
-    // also validate side effect of updating variable
+    
     if (x != 26214400) {
         return 3;
     }
 
-    // now try shifting a long with an int shift count
+    
     long l = 12345l;
     if ((l <<= 33) != 106042742538240l) {
         return 4;
@@ -160,42 +160,42 @@ int target_long_bitshift(void) {
         return 5;
     }
 
-    return 0; // success
+    return 0; 
 }
 
-// similar to chapter 12's compound_bitwise.c, but we inspect assembly
+
 int target_unsigned_bitwise(void) {
-    unsigned long ul = 18446460386757245432ul; // 0xfffe_fdfc_fbfa_f9f8
-    ul &= -1000; // make sure we sign-extend -1000 to unsigned long
+    unsigned long ul = 18446460386757245432ul; 
+    ul &= -1000; 
     if (ul != 18446460386757244952ul /* 0xfffe_fdfc_fbfa_f818 */) {
-        return 1; // fail
+        return 1; 
     }
 
-    ul |= 4294967040u; // 0xffff_ff00 - make sure we zero-extend this to unsigned long
+    ul |= 4294967040u; 
 
     if (ul != 18446460386824683288ul /* 0xfffe_fdfc_ffff_ff18 */) {
-        return 2; // fail
+        return 2; 
     }
 
-    // make sure that we convert result _back_ to type of lvalue,
-    // and that we don't clobber nearby values (e.g. by trying to assign 8-byte)
-    // result to four-byte ui variable
+    
+    
+    
     int i = 123456;
-    unsigned int ui = 4042322160u; // 0xf0f0_f0f0
-    long l = -252645136; // 0xffff_ffff_f0f0_f0f0
-    // 1. zero-extend ui to 8-bytes
-    // 2. XOR w/ l, resulting in 0xffff_ffff_0000_0000
-    // 3. truncate back to 4 bytes, resulting in 0
-    // then check value of expression (i.e. value of ui)
+    unsigned int ui = 4042322160u; 
+    long l = -252645136; 
+    
+    
+    
+    
     if (ui ^= l) {
-        return 3; // fail
+        return 3; 
     }
 
-    // check side effect (i.e. updating ui)
+    
     if (ui) {
-        return 4; // fail
+        return 4; 
     }
-    // check neighbors
+    
     if (i != 123456) {
         return 5;
     }
@@ -203,49 +203,49 @@ int target_unsigned_bitwise(void) {
         return 6;
     }
 
-    return 0; // success
+    return 0; 
 }
 
-// Identical to to chapter 12's compound_bitshift.c, but inspect assembly
+
 int target_unsigned_bitshift(void) {
 
-    // make sure we don't convert to common type before performing shift operation
+    
     int i = -2;
-    // don't convert i to common (unsigned) type; if we do, we'll use logical
-    // instead of arithmetic shift, leading to wrong result
+    
+    
     i >>= 3u;
     if (i != -1) {
         return 1;
     }
 
-    unsigned long ul = 18446744073709551615UL;  // 2^64 - 1
-    ul <<= 44;                                  // 0 out lower 44 bits
+    unsigned long ul = 18446744073709551615UL;  
+    ul <<= 44;                                  
     if (ul != 18446726481523507200ul) {
-        return 2;  // fail
+        return 2;  
     }
-    return 0;  // success
+    return 0;  
 }
 
 int main(void) {
     if (target_chars()) {
-        return 1; // fail
+        return 1; 
     }
 
     if (target_long_bitwise()) {
-        return 2; // fail
+        return 2; 
     }
 
     if (target_long_bitshift()) {
-        return 3; // fail
+        return 3; 
     }
 
     if (target_unsigned_bitwise()) {
-        return 4; // fail
+        return 4; 
     }
 
     if (target_unsigned_bitshift()) {
-        return 5; // fail
+        return 5; 
     }
 
-    return 0; // success
+    return 0; 
 }

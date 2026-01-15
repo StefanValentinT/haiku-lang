@@ -7,6 +7,6 @@ int foo(void) {
 
 int main(void) {
     int x = 3;
-    x = foo();  // this kills x = 3
-    return x;   // don't propagate x = 3
+    x = foo();  
+    return x;   
 }

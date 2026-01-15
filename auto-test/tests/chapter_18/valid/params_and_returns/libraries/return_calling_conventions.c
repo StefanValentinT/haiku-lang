@@ -32,49 +32,49 @@ struct memory return_on_stack(void) {
 }
 
 int leaf_call(struct two_ints t_i, int c, double d) {
-    // validate t_i
+    
     if (t_i.c != '_' || t_i.arr[0] != 5 || t_i.arr[1] != 6 || t_i.arr[2] != 7) {
         return 0;
     }
 
-    // validate c1 and d1 (originally passed in a struct int_and_xmm)
+    
     if (c != 'p' || d != 4.56) {
         return 0;
     }
-    return 1;  // success
+    return 1;  
 }
 
 struct memory pass_and_return_regs(int i, double d, struct int_and_xmm strct,
                                    int c, struct two_ints t_i, long l,
                                    struct one_int_exactly o_i_e, int c2) {
-    // include a stack variable to make sure it doen't overwrite return value
-    // pointer or vice versa
+    
+    
     char stackbytes[8] = "zyxwvut";
     struct memory retval = {0, {0, 0, 0}, 0, 0};
 
-    // make another function call to ensure that passing parameters
-    // doesn't overwrite return address in RDI or other struct eightybtes
-    // passed in registers; validate t_i and strct while we're at it
+    
+    
+    
     if (!leaf_call(t_i, strct.c, strct.d)) {
         retval.i = 1;
         return retval;
     }
-    // validate scalar params
+    
     if (i != 6 || d != 4.0 || c != 5 || l != 77 || c2 != 99) {
         retval.i = 2;
         return retval;
     }
-    // validate remainign struct
+    
     if (o_i_e.l != 567890) {
         retval.i = 3;
         return retval;
     }
 
-    // validate stackbytes
+    
     if (strcmp(stackbytes, "zyxwvut")) {
         retval.i = 4;
         return retval;
     }
     retval.l = 100;
-    return retval;  // success
+    return retval;  
 }

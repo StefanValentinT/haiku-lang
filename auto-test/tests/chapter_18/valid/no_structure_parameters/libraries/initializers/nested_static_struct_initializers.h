@@ -12,10 +12,10 @@
 #endif
 #endif
 
-// standard library function
+
 int strcmp(char *s1, char *s2);
 
-// structure type defs
+
 struct inner {
     int one_i;
     signed char two_arr[3];
@@ -29,14 +29,14 @@ struct outer {
     double four_d;
 };
 
-// declarations of global vars (defined in client)
+
 extern struct outer all_zeros;
 extern struct outer partial;
 extern struct outer full;
 extern struct outer converted;
 extern struct outer struct_array[3];
 
-// declarations of validation functions (defined in lib)
+
 int test_uninitialized(void);
 int test_partially_initialized(void);
 int test_fully_intialized(void);

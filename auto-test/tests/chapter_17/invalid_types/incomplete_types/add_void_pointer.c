@@ -1,5 +1,5 @@
-// no pointer arithmetic with pointers to incomplete type
-// (GCC/Clang allow this as an extension)
+
+
 
 void *malloc(unsigned long size);
 
