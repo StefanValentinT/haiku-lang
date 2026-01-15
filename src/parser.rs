@@ -160,10 +160,7 @@ fn parse_fun_decl(tokens: &mut Queue<Token>) -> FunDecl {
 
 fn parse_param_list(tokens: &mut Queue<Token>) -> Vec<String> {
     match tokens.peek().unwrap() {
-        Token::Keyword(s) if s == "void" => {
-            tokens.consume();
-            Vec::new()
-        }
+        Token::CloseParen => Vec::new(),
         _ => {
             let mut params = Vec::new();
 

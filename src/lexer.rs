@@ -41,9 +41,9 @@ pub enum Token {
     EOF,
 }
 
-const KEYWORDS: [&str; 13] = [
-    "fun", "I32", "void", "return", "if", "else", "do", "while", "for", "break", "continue",
-    "switch", "default",
+const KEYWORDS: [&str; 12] = [
+    "fun", "I32", "return", "if", "else", "do", "while", "for", "break", "continue", "switch",
+    "default",
 ];
 
 fn is_boundary(c: char) -> bool {
