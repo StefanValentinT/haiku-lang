@@ -3,7 +3,8 @@ use crate::queue::*;
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
     Identifier(String),
-    IntLiteral(i32),
+    IntLiteral32(i32),
+    IntLiteral64(i64),
     Keyword(String),
 
     OpenParen,
@@ -37,13 +38,14 @@ pub enum Token {
     Colon,
 
     Comma,
+    Dot,
 
     EOF,
 }
 
-const KEYWORDS: [&str; 13] = [
-    "fun", "I32", "return", "if", "then", "else", "do", "while", "break", "continue", "switch",
-    "default", "let",
+const KEYWORDS: [&str; 14] = [
+    "fun", "I32", "I64", "return", "if", "then", "else", "while", "break", "continue", "switch",
+    "default", "let", "as",
 ];
 
 pub fn lex_string(input: String) -> Queue<Token> {
@@ -86,6 +88,9 @@ pub fn lex_string(input: String) -> Queue<Token> {
                 st(Token::Semicolon, &mut input, &mut tokens);
             }
             ',' => {
+                st(Token::Comma, &mut input, &mut tokens);
+            }
+            '.' => {
                 st(Token::Comma, &mut input, &mut tokens);
             }
             '~' => {
@@ -201,17 +206,44 @@ fn lex_identifier(input: &mut Queue<char>) -> Token {
 }
 
 fn lex_int(input: &mut Queue<char>) -> Token {
-    let mut value = 0i32;
+    let mut digits = String::new();
 
     while let Ok(c) = input.peek() {
         if c.is_ascii_digit() {
-            value = value * 10 + (input.remove().unwrap() as i32 - '0' as i32);
+            digits.push(input.remove().unwrap());
         } else {
             break;
         }
     }
 
-    Token::IntLiteral(value)
+    let mut is_i64 = false;
+    let mut is_i32 = false;
+
+    if input.is_there(0, '_') {
+        input.consume();
+        let mut suffix = String::new();
+        while let Ok(c) = input.peek() {
+            if c.is_ascii_alphanumeric() {
+                suffix.push(input.remove().unwrap());
+            } else {
+                break;
+            }
+        }
+
+        match suffix.to_uppercase().as_str() {
+            "I64" => is_i64 = true,
+            "I32" => is_i32 = true,
+            _ => panic!("Unknown integer literal suffix: {}", suffix),
+        }
+    }
+
+    if is_i64 {
+        let value: i64 = digits.parse().expect("Invalid i64 literal");
+        Token::IntLiteral64(value)
+    } else {
+        let value: i32 = digits.parse().expect("Invalid i32 literal");
+        Token::IntLiteral32(value)
+    }
 }
 
 fn skip_if_comment(input: &mut Queue<char>) -> bool {

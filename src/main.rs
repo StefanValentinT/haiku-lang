@@ -5,8 +5,7 @@ use std::{
     process::{Command, exit},
 };
 
-mod asm_gen;
-mod code_emission;
+mod ast;
 mod gen_names;
 mod lexer;
 mod llvm_codegen;
@@ -164,7 +163,7 @@ fn main() {
             .expect("Failed to execute program");
 
         match status.code() {
-            Some(code) => println!("{}", code as i8),
+            Some(code) => println!("{}", code),
             None => println!("Program terminated by signal"),
         }
     }

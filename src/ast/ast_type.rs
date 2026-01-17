@@ -1,0 +1,33 @@
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
+pub enum Type {
+    I32,
+    I64,
+    Void,
+
+    FunType { params: Vec<Type>, ret: Box<Type> },
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum UnaryOp {
+    Complement,
+    Negate,
+    Not,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum BinaryOp {
+    Add,
+    Subtract,
+    Multiply,
+    Divide,
+    Remainder,
+
+    And,
+    Or,
+    Equal,
+    NotEqual,
+    LessThan,
+    LessOrEqual,
+    GreaterThan,
+    GreaterOrEqual,
+}

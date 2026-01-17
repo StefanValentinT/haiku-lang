@@ -1,75 +1,80 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
-use crate::tac::{TacBinaryOp, TacFuncDef, TacInstruction, TacProgram, TacUnaryOp, TacVal};
+use crate::{
+    ast::ast_type::Type,
+    tac::{TacBinaryOp, TacFuncDef, TacInstruction, TacProgram, TacUnaryOp, TacVal},
+};
 
 pub fn emit_llvm(program: &TacProgram) -> String {
     let TacProgram::Program(funcs) = program;
 
-    let mut defined_functions = HashSet::new();
-    let mut external_functions = HashSet::new();
+    let mut defined = HashSet::new();
+    let mut externs = HashSet::new();
 
     for f in funcs {
         if let TacFuncDef::Function { name, .. } = f {
-            defined_functions.insert(name.clone());
+            defined.insert(name.clone());
         }
     }
 
     let mut reg_counter = 0;
-    let mut functions_ir = String::new();
-
-    for f in funcs {
-        functions_ir.push_str(&emit_function(
-            f,
-            &defined_functions,
-            &mut external_functions,
-            &mut reg_counter,
-        ));
-        functions_ir.push('\n');
-    }
-
     let mut out = String::new();
 
-    for ext in &external_functions {
-        out.push_str(&format!("declare i32 @{}(...)\n", ext));
-    }
-
-    if !external_functions.is_empty() {
+    for f in funcs {
+        out.push_str(&emit_function(f, &defined, &mut externs, &mut reg_counter));
         out.push('\n');
     }
 
-    out.push_str(&functions_ir);
-    out
+    let mut header = String::new();
+    for e in externs {
+        header.push_str(&format!("declare i32 @{}(...)\n", e));
+    }
+
+    if !header.is_empty() {
+        header.push('\n');
+    }
+
+    header + &out
 }
 
-pub fn emit_function(
+fn emit_function(
     func: &TacFuncDef,
-    defined_functions: &HashSet<String>,
-    external_functions: &mut HashSet<String>,
+    defined: &HashSet<String>,
+    externs: &mut HashSet<String>,
     reg_counter: &mut usize,
 ) -> String {
     *reg_counter = 0;
 
-    let TacFuncDef::Function { name, params, body } = func;
+    let TacFuncDef::Function {
+        name,
+        params,
+        ret_type,
+        body,
+    } = func;
 
     let locals = collect_locals(body, params);
 
     let mut out = String::new();
 
+    let ret_llvm_ty = llvm_type(ret_type);
+
     out.push_str(&format!(
-        "define i32 @{}({}) {{\n",
+        "define {} @{}({}) {{\n",
+        ret_llvm_ty,
         name,
         params
             .iter()
-            .map(|p| format!("i32 %arg_{}", p))
+            .map(|p| format!("{} %arg_{}", "i32", p))
             .collect::<Vec<_>>()
             .join(", ")
     ));
 
     out.push_str("entry:\n");
 
-    for v in &locals {
+    for (v, ty) in &locals {
         if !params.contains(v) {
-            out.push_str(&format!("  %{} = alloca i32\n", v));
+            let llvm_ty = llvm_type(ty);
+            out.push_str(&format!("  %{} = alloca {}\n", v, llvm_ty));
         }
     }
 
@@ -80,26 +85,21 @@ pub fn emit_function(
         ));
     }
 
-    let mut prev_terminated = false;
+    let mut terminated = false;
 
     for instr in body {
-        if let TacInstruction::Label(name) = instr {
-            if !prev_terminated {
-                out.push_str(&format!("  br label %{}\n", name));
+        if let TacInstruction::Label(l) = instr {
+            if !terminated {
+                out.push_str(&format!("  br label %{}\n", l));
             }
-            prev_terminated = false;
-            out.push_str(&format!("{}:\n", name));
+            out.push_str(&format!("{}:\n", l));
+            terminated = false;
             continue;
         }
 
-        out.push_str(&emit_instr(
-            instr,
-            defined_functions,
-            external_functions,
-            reg_counter,
-        ));
+        out.push_str(&emit_instr(instr, defined, externs, reg_counter));
 
-        prev_terminated = matches!(
+        terminated = matches!(
             instr,
             TacInstruction::Return(_)
                 | TacInstruction::Jump { .. }
@@ -114,90 +114,78 @@ pub fn emit_function(
 
 fn emit_instr(
     instr: &TacInstruction,
-    defined_functions: &HashSet<String>,
-    external_functions: &mut HashSet<String>,
+    defined: &HashSet<String>,
+    externs: &mut HashSet<String>,
     reg_counter: &mut usize,
 ) -> String {
     match instr {
-        TacInstruction::Label(name) => format!("{}:\n", name),
-
         TacInstruction::Return(v) => {
-            let (load_instr, val_name) = load_val_instr(v, reg_counter);
-            format!("{}  ret i32 {}\n", load_instr, val_name)
+            let (load, val, ty) = load_val(v, reg_counter);
+            format!("{}  ret {} {}\n", load, ty, val)
         }
-
         TacInstruction::Copy { src, dest } => {
-            let (load_instr, val_name) = load_val_instr(src, reg_counter);
+            let (load, val, ty) = load_val(src, reg_counter);
             format!(
-                "{}  store i32 {}, i32* %{}\n",
-                load_instr,
-                val_name,
+                "{}  store {} {}, {}* %{}\n",
+                load,
+                ty,
+                val,
+                ty,
                 var_name(dest)
             )
         }
-
         TacInstruction::Unary { op, src, dest } => {
-            let (load_instr, val_name) = load_val_instr(src, reg_counter);
+            let (load, val, ty) = load_val(src, reg_counter);
             let r = fresh_reg(reg_counter);
 
-            match op {
-                TacUnaryOp::Negate => {
-                    format!(
-                        "{}  {} = sub i32 0, {}\n  store i32 {}, i32* %{}\n",
-                        load_instr,
-                        r,
-                        val_name,
-                        r,
-                        var_name(dest)
-                    )
-                }
-
-                TacUnaryOp::Complement => {
-                    format!(
-                        "{}  {} = xor i32 {}, -1\n  store i32 {}, i32* %{}\n",
-                        load_instr,
-                        r,
-                        val_name,
-                        r,
-                        var_name(dest)
-                    )
-                }
-
+            let op_ir = match op {
+                TacUnaryOp::Negate => format!("sub {} 0, {}", ty, val),
+                TacUnaryOp::Complement => format!("xor {} {}, -1", ty, val),
                 TacUnaryOp::Not => {
                     let c = fresh_reg(reg_counter);
-                    format!(
-                        "{}  {} = icmp eq i32 {}, 0\n  {} = zext i1 {} to i32\n  store i32 {}, i32* %{}\n",
-                        load_instr,
+                    return format!(
+                        "{}  {} = icmp eq {} {}, 0\n  {} = zext i1 {} to i32\n  store i32 {}, i32* %{}\n",
+                        load,
                         c,
-                        val_name,
+                        ty,
+                        val,
                         r,
                         c,
                         r,
                         var_name(dest)
-                    )
+                    );
                 }
-            }
-        }
+            };
 
+            format!(
+                "{}  {} = {}\n  store {} {}, {}* %{}\n",
+                load,
+                r,
+                op_ir,
+                ty,
+                r,
+                ty,
+                var_name(dest)
+            )
+        }
         TacInstruction::Binary {
             op,
             src1,
             src2,
             dest,
         } => {
-            let (a_instr, a_val) = load_val_instr(src1, reg_counter);
-            let (b_instr, b_val) = load_val_instr(src2, reg_counter);
+            let (a_load, a, ty) = load_val(src1, reg_counter);
+            let (b_load, b, _) = load_val(src2, reg_counter);
             let r = fresh_reg(reg_counter);
 
-            match op {
-                TacBinaryOp::Add => bin(&a_instr, &b_instr, "add", &a_val, &b_val, &r, dest),
-                TacBinaryOp::Subtract => bin(&a_instr, &b_instr, "sub", &a_val, &b_val, &r, dest),
-                TacBinaryOp::Multiply => bin(&a_instr, &b_instr, "mul", &a_val, &b_val, &r, dest),
-                TacBinaryOp::Divide => bin(&a_instr, &b_instr, "sdiv", &a_val, &b_val, &r, dest),
-                TacBinaryOp::Remainder => bin(&a_instr, &b_instr, "srem", &a_val, &b_val, &r, dest),
+            let ir = match op {
+                TacBinaryOp::Add => format!("add {} {}, {}", ty, a, b),
+                TacBinaryOp::Subtract => format!("sub {} {}, {}", ty, a, b),
+                TacBinaryOp::Multiply => format!("mul {} {}, {}", ty, a, b),
+                TacBinaryOp::Divide => format!("sdiv {} {}, {}", ty, a, b),
+                TacBinaryOp::Remainder => format!("srem {} {}, {}", ty, a, b),
 
                 _ => {
-                    let cmp = fresh_reg(reg_counter);
                     let pred = match op {
                         TacBinaryOp::Equal => "eq",
                         TacBinaryOp::NotEqual => "ne",
@@ -207,66 +195,73 @@ fn emit_instr(
                         TacBinaryOp::GreaterOrEqual => "sge",
                         _ => unreachable!(),
                     };
-                    format!(
-                        "{}{}  {} = icmp {} i32 {}, {}\n  {} = zext i1 {} to i32\n  store i32 {}, i32* %{}\n",
-                        a_instr,
-                        b_instr,
-                        cmp,
+                    let c = fresh_reg(reg_counter);
+                    return format!(
+                        "{}{}  {} = icmp {} {} {}, {}\n  {} = zext i1 {} to i32\n  store i32 {}, i32* %{}\n",
+                        a_load,
+                        b_load,
+                        c,
                         pred,
-                        a_val,
-                        b_val,
+                        ty,
+                        a,
+                        b,
                         r,
-                        cmp,
+                        c,
                         r,
                         var_name(dest)
-                    )
+                    );
                 }
-            }
-        }
+            };
 
+            format!(
+                "{}{}  {} = {}\n  store {} {}, {}* %{}\n",
+                a_load,
+                b_load,
+                r,
+                ir,
+                ty,
+                r,
+                ty,
+                var_name(dest)
+            )
+        }
         TacInstruction::Jump { target } => format!("  br label %{}\n", target),
-
         TacInstruction::JumpIfZero { condition, target } => {
-            let (load_instr, val_name) = load_val_instr(condition, reg_counter);
-
-            let reg_num = *reg_counter;
+            let (load, v, ty) = load_val(condition, reg_counter);
             let r = fresh_reg(reg_counter);
-            let cont_label = format!("cont{}", reg_num);
+            let cont = format!("cont{}", reg_counter);
 
             format!(
-                "{}  {} = icmp eq i32 {}, 0\n  br i1 {}, label %{}, label %{}\n{}:\n",
-                load_instr, r, val_name, r, target, cont_label, cont_label
+                "{}  {} = icmp eq {} {}, 0\n  br i1 {}, label %{}, label %{}\n{}:\n",
+                load, r, ty, v, r, target, cont, cont
             )
         }
-
         TacInstruction::JumpIfNotZero { condition, target } => {
-            let (load_instr, val_name) = load_val_instr(condition, reg_counter);
-
-            let reg_num = *reg_counter;
+            let (load, v, ty) = load_val(condition, reg_counter);
             let r = fresh_reg(reg_counter);
-            let cont_label = format!("cont{}", reg_num);
+            let cont = format!("cont{}", reg_counter);
 
             format!(
-                "{}  {} = icmp ne i32 {}, 0\n  br i1 {}, label %{}, label %{}\n{}:\n",
-                load_instr, r, val_name, r, target, cont_label, cont_label
+                "{}  {} = icmp ne {} {}, 0\n  br i1 {}, label %{}, label %{}\n{}:\n",
+                load, r, ty, v, r, target, cont, cont
             )
         }
-
         TacInstruction::FunCall {
             fun_name,
             args,
             dest,
         } => {
-            if !defined_functions.contains(fun_name) {
-                external_functions.insert(fun_name.clone());
+            if !defined.contains(fun_name) {
+                externs.insert(fun_name.clone());
             }
 
             let mut ir = String::new();
-            let mut arg_vals = vec![];
+            let mut arg_list = vec![];
+
             for a in args {
-                let (load_instr, val_name) = load_val_instr(a, reg_counter);
-                ir.push_str(&load_instr);
-                arg_vals.push(format!("i32 {}", val_name));
+                let (load, v, ty) = load_val(a, reg_counter);
+                ir.push_str(&load);
+                arg_list.push(format!("{} {}", ty, v));
             }
 
             let r = fresh_reg(reg_counter);
@@ -274,38 +269,84 @@ fn emit_instr(
                 "  {} = call i32 @{}({})\n  store i32 {}, i32* %{}\n",
                 r,
                 fun_name,
-                arg_vals.join(", "),
+                arg_list.join(", "),
                 r,
                 var_name(dest)
             ));
+
             ir
         }
-    }
-}
+        TacInstruction::Label(_) => unreachable!(),
+        TacInstruction::Truncate { src, dest } => {
+            let (load, v, src_ty) = load_val(src, reg_counter);
+            let dst_ty = llvm_type(match dest {
+                TacVal::Var(_, ty) => ty,
+                _ => unreachable!(),
+            });
 
-fn load_val_instr(v: &TacVal, reg_counter: &mut usize) -> (String, String) {
-    match v {
-        TacVal::Constant(c) => ("".to_string(), c.to_string()),
-        TacVal::Var(name) => {
             let r = fresh_reg(reg_counter);
-            let instr = format!("  {} = load i32, i32* %{}\n", r, name);
-            (instr, r)
+
+            format!(
+                "{}  {} = trunc {} {} to {}\n  store {} {}, {}* %{}\n",
+                load,
+                r,
+                src_ty,
+                v,
+                dst_ty,
+                dst_ty,
+                r,
+                dst_ty,
+                var_name(dest)
+            )
+        }
+
+        TacInstruction::SignExtend { src, dest } => {
+            let (load, v, src_ty) = load_val(src, reg_counter);
+            let dst_ty = llvm_type(match dest {
+                TacVal::Var(_, ty) => ty,
+                _ => unreachable!(),
+            });
+
+            let r = fresh_reg(reg_counter);
+
+            format!(
+                "{}  {} = sext {} {} to {}\n  store {} {}, {}* %{}\n",
+                load,
+                r,
+                src_ty,
+                v,
+                dst_ty,
+                dst_ty,
+                r,
+                dst_ty,
+                var_name(dest)
+            )
         }
     }
 }
 
-fn bin(a_instr: &str, b_instr: &str, op: &str, a: &str, b: &str, r: &str, dest: &TacVal) -> String {
-    format!(
-        "{}{}  {} = {} i32 {}, {}\n  store i32 {}, i32* %{}\n",
-        a_instr,
-        b_instr,
-        r,
-        op,
-        a,
-        b,
-        r,
-        var_name(dest)
-    )
+fn load_val(v: &TacVal, reg_counter: &mut usize) -> (String, String, &'static str) {
+    match v {
+        TacVal::I32(c) => ("".into(), c.to_string(), "i32"),
+        TacVal::I64(c) => ("".into(), c.to_string(), "i64"),
+        TacVal::Var(name, ty) => {
+            let r = fresh_reg(reg_counter);
+            let llvm_ty = llvm_type(ty);
+            (
+                format!("  {} = load {}, {}* %{}\n", r, llvm_ty, llvm_ty, name),
+                r,
+                llvm_ty,
+            )
+        }
+    }
+}
+
+fn llvm_type(ty: &Type) -> &'static str {
+    match ty {
+        Type::I32 => "i32",
+        Type::I64 => "i64",
+        _ => panic!("unsupported type"),
+    }
 }
 
 fn fresh_reg(reg_counter: &mut usize) -> String {
@@ -316,31 +357,60 @@ fn fresh_reg(reg_counter: &mut usize) -> String {
 
 fn var_name(v: &TacVal) -> &str {
     match v {
-        TacVal::Var(s) => s,
-        _ => panic!("Expected variable"),
+        TacVal::Var(name, _) => name,
+        _ => panic!("expected variable"),
     }
 }
 
-fn collect_locals(body: &[TacInstruction], params: &[String]) -> HashSet<String> {
+fn collect_locals(body: &[TacInstruction], params: &[String]) -> HashSet<(String, Type)> {
     let mut vars = HashSet::new();
 
     for p in params {
-        vars.insert(p.clone());
+        vars.insert((p.clone(), Type::I32));
     }
 
-    for i in body {
-        match i {
-            TacInstruction::Copy { dest, .. }
-            | TacInstruction::Unary { dest, .. }
-            | TacInstruction::Binary { dest, .. }
-            | TacInstruction::FunCall { dest, .. } => {
-                if let TacVal::Var(v) = dest {
-                    vars.insert(v.clone());
-                }
+    for instr in body {
+        match instr {
+            TacInstruction::Copy { src, dest } | TacInstruction::Unary { src, dest, .. } => {
+                collect_val(src, &mut vars);
+                collect_val(dest, &mut vars);
             }
+
+            TacInstruction::Binary {
+                src1, src2, dest, ..
+            } => {
+                collect_val(src1, &mut vars);
+                collect_val(src2, &mut vars);
+                collect_val(dest, &mut vars);
+            }
+
+            TacInstruction::FunCall { args, dest, .. } => {
+                for a in args {
+                    collect_val(a, &mut vars);
+                }
+                collect_val(dest, &mut vars);
+            }
+
+            TacInstruction::Truncate { src, dest } | TacInstruction::SignExtend { src, dest } => {
+                collect_val(src, &mut vars);
+                collect_val(dest, &mut vars);
+            }
+
+            TacInstruction::Return(v)
+            | TacInstruction::JumpIfZero { condition: v, .. }
+            | TacInstruction::JumpIfNotZero { condition: v, .. } => {
+                collect_val(v, &mut vars);
+            }
+
             _ => {}
         }
     }
 
     vars
+}
+
+fn collect_val(v: &TacVal, vars: &mut HashSet<(String, Type)>) {
+    if let TacVal::Var(name, ty) = v {
+        vars.insert((name.clone(), ty.clone()));
+    }
 }
