@@ -83,18 +83,21 @@ fn typecheck_fun_decl(decl: FunDecl, symbols: &mut SymbolTable) -> TypedFunDecl 
         })
         .collect();
 
-    let body_items = decl
-        .body
-        .map(|b| typecheck_block(&b, &mut local_symbols))
-        .unwrap_or_else(|| Vec::new());
-
-    let body_block = TypedBlock::Block(body_items);
+    let body = if decl.body.is_some() {
+        let body_items = decl
+            .body
+            .map(|b| typecheck_block(&b, &mut local_symbols))
+            .unwrap_or_else(|| Vec::new());
+        Some(TypedBlock::Block(body_items))
+    } else {
+        None
+    };
 
     TypedFunDecl {
         name: decl.name,
         params: typed_params,
         ret_type: ret_ty,
-        body: body_block,
+        body: body,
     }
 }
 

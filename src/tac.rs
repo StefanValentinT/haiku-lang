@@ -98,10 +98,11 @@ pub fn gen_tac(program: TypedProgram) -> TacProgram {
 
 fn func_to_tac(func: TypedFunDecl) -> TacFuncDef {
     let mut instructions = Vec::new();
+    let has_body = func.body.is_some();
+    
+    if has_body {
+        block_to_tac(func.body.clone().unwrap(), &mut instructions);
 
-    block_to_tac(func.body, &mut instructions);
-
-    if instructions.is_empty() {
         instructions.push(match func.ret_type {
             Type::I32 => TacInstruction::Return(TacVal::I32(0)),
             Type::I64 => TacInstruction::Return(TacVal::I64(0)),

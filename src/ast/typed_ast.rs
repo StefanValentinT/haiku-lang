@@ -13,7 +13,7 @@ pub struct TypedFunDecl {
     pub name: String,
     pub params: Vec<(String, Type)>,
     pub ret_type: Type,
-    pub body: TypedBlock,
+    pub body: Option<TypedBlock>,
 }
 
 #[derive(Debug, Clone)]

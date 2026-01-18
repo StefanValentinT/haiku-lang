@@ -17,6 +17,12 @@ pub fn parse(tokens: Queue<Token>) -> Program {
 }
 
 fn parse_fun_decl(tokens: &mut Queue<Token>) -> FunDecl {
+    let extern_fun = if tokens.peek().unwrap() == Token::Keyword("extern".to_string()) {
+        tokens.consume();
+        true
+    } else {
+        false
+    };
     expect(Token::Keyword("fun".to_string()), tokens);
 
     let name = match tokens.remove().unwrap() {
@@ -31,9 +37,17 @@ fn parse_fun_decl(tokens: &mut Queue<Token>) -> FunDecl {
     let ret_type = parse_type(tokens);
 
     let body = match tokens.peek().unwrap() {
-        Token::OpenBrace => Some(parse_block(tokens)),
+        Token::OpenBrace => {
+            if extern_fun {
+                panic!("Extern function has a body.")
+            }
+            Some(parse_block(tokens))
+        }
         Token::Semicolon => {
             tokens.consume();
+            if !extern_fun {
+                panic!("Not extern function doesn't have a body.")
+            }
             None
         }
         t => panic!("Expected {{ or ; after function declaration, got {:?}", t),

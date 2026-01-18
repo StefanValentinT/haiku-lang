@@ -52,6 +52,19 @@ fn emit_function(
         body,
     } = func;
 
+    if body.is_empty() {
+        return format!(
+            "declare {} @{}({})\n",
+            llvm_type(ret_type),
+            name,
+            params
+                .iter()
+                .map(|_| "i32".to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
+    }
+
     let locals = collect_locals(body, params);
 
     let mut out = String::new();
