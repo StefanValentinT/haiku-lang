@@ -1,0 +1,9 @@
+
+fun get_value() F64{
+    return 1.4;
+}
+
+fun main() I32 {
+    let x: I64 = get_value()*10;
+    return a as I32;
+}

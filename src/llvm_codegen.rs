@@ -387,6 +387,7 @@ fn llvm_type(ty: &Type) -> &'static str {
         Type::I64 => "i64",
         Type::Unit => "void",
         Type::FunType { params, ret } => todo!(),
+        Type::F64 => todo!(),
     }
 }
 

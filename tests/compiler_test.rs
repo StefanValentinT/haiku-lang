@@ -1,6 +1,14 @@
 use assert_cmd::cargo;
 use std::fs;
 use std::path::{Path, PathBuf};
+use tabled::{Table, Tabled};
+
+// Constants for column widths
+const FILE_COL_WIDTH: usize = 20;
+const TYPE_COL_WIDTH: usize = 5;
+const EXPECTED_COL_WIDTH: usize = 20;
+const ACTUAL_COL_WIDTH: usize = 60;
+const PASSED_COL_WIDTH: usize = 5;
 
 fn find_hk_files(dir: &Path) -> Vec<PathBuf> {
     let mut files = Vec::new();
@@ -16,16 +24,42 @@ fn find_hk_files(dir: &Path) -> Vec<PathBuf> {
     files
 }
 
+fn extract_panic_message(stderr: &str) -> String {
+    stderr
+        .find("panicked at")
+        .and_then(|start_idx| {
+            let mut lines = &mut stderr[start_idx..].lines();
+            lines.next()?;
+            lines.next().map(|s| s.trim().to_string())
+        })
+        .unwrap_or_else(|| "<no panic>".to_string())
+}
+
 fn extract_expected_output(contents: &str) -> Option<String> {
     let start_tag = "<expect>";
     let end_tag = "</expect>";
-    let start = contents.find(start_tag)? + start_tag.len();
-    let end = contents.find(end_tag)?;
-    Some(contents[start..end].trim().to_string())
+    contents.find(start_tag).map(|start| {
+        let start = start + start_tag.len();
+        contents[start..contents.find(end_tag).unwrap()]
+            .trim()
+            .to_string()
+    })
 }
 
-fn is_expected_to_fail(contents: &str) -> bool {
-    contents.contains("<fail>")
+fn classify_test(contents: &str) -> TestKind {
+    if contents.contains("<fail>") {
+        TestKind::Fail
+    } else if let Some(expect) = extract_expected_output(contents) {
+        TestKind::Expect(expect)
+    } else {
+        TestKind::Skip
+    }
+}
+
+enum TestKind {
+    Expect(String),
+    Fail,
+    Skip,
 }
 
 fn remove_build_folders(dir: &Path) {
@@ -47,40 +81,114 @@ fn remove_build_folders(dir: &Path) {
     }
 }
 
-#[test]
-fn hk_golden_tests() {
-    let test_dir = Path::new("tests");
+#[derive(Tabled)]
+struct TestRow {
+    file: String,
+    #[tabled(rename = "Type")]
+    ty: String,
+    expected: String,
+    actual: String,
+    passed: String,
+}
 
+fn pad_truncate(s: &str, len: usize) -> String {
+    let mut res: String = s.chars().take(len).collect();
+    while res.chars().count() < len {
+        res.push(' ');
+    }
+    res
+}
+
+struct CompilerResult {
+    stdout: String,
+    stderr: String,
+    success: bool,
+}
+
+fn run_compiler(path: &Path) -> CompilerResult {
+    let mut cmd = cargo::cargo_bin_cmd!("compiler");
+    let output = cmd.arg(path).output().expect("Failed to run compiler");
+
+    let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+
+    CompilerResult {
+        stdout,
+        stderr,
+        success: output.status.success(),
+    }
+}
+
+#[test]
+fn compiler_tests() {
+    let test_dir = Path::new("tests");
     let files = find_hk_files(test_dir);
+    let mut rows = Vec::new();
 
     for path in files {
         let contents = fs::read_to_string(&path)
             .unwrap_or_else(|_| panic!("Failed to read {}", path.display()));
-        let expected_output = extract_expected_output(&contents).unwrap_or_default();
-        let should_fail = is_expected_to_fail(&contents);
 
-        let mut cmd = cargo::cargo_bin_cmd!("compiler");
-        let output = cmd.arg(&path).output().expect("Failed to run compiler");
-        let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        let test_kind = classify_test(&contents);
 
-        let passed = if should_fail {
-            !output.status.success()
-        } else {
-            output.status.success() && stdout == expected_output.clone()
+        let (ty_str, expected_str, actual_output, passed) = match &test_kind {
+            TestKind::Fail => {
+                let result = run_compiler(&path);
+                let actual = if result.stderr.is_empty() {
+                    pad_truncate("<no error message>", ACTUAL_COL_WIDTH)
+                } else {
+                    pad_truncate(&extract_panic_message(&result.stderr), ACTUAL_COL_WIDTH)
+                };
+                let expected = pad_truncate("Failure", EXPECTED_COL_WIDTH);
+                let pass = !result.success && !result.stderr.is_empty() && result.stdout.is_empty();
+                (pad_truncate("Err", TYPE_COL_WIDTH), expected, actual, pass)
+            }
+
+            TestKind::Expect(expected) => {
+                let result = run_compiler(&path);
+                let actual = pad_truncate(&result.stdout, ACTUAL_COL_WIDTH);
+                let expected_padded = pad_truncate(expected, EXPECTED_COL_WIDTH);
+                let pass = result.success && result.stderr.is_empty() && result.stdout == *expected;
+                (
+                    pad_truncate("Some", TYPE_COL_WIDTH),
+                    expected_padded,
+                    actual,
+                    pass,
+                )
+            }
+
+            TestKind::Skip => {
+                let empty = pad_truncate("", ACTUAL_COL_WIDTH);
+                (
+                    pad_truncate("", TYPE_COL_WIDTH),
+                    pad_truncate("", EXPECTED_COL_WIDTH),
+                    empty.clone(),
+                    true,
+                )
+            }
         };
 
-        print!(
-            "\nTesting {}. Expected Output: {:?}, Got: {:?}, Passed: {}",
-            path.file_name().unwrap().to_string_lossy(),
-            expected_output,
-            stdout,
-            passed
-        );
+        let passed_col = match &test_kind {
+            TestKind::Skip => pad_truncate("Skip", PASSED_COL_WIDTH),
+            TestKind::Fail | TestKind::Expect(_) => {
+                pad_truncate(if passed { "✅" } else { "❌" }, PASSED_COL_WIDTH)
+            }
+        };
 
-        assert!(passed, "Test failed for {}", path.display());
+        rows.push(TestRow {
+            file: pad_truncate(&path.file_name().unwrap().to_string_lossy(), FILE_COL_WIDTH),
+            ty: ty_str,
+            expected: expected_str,
+            actual: actual_output,
+            passed: passed_col,
+        });
+
+        if !passed && !matches!(test_kind, TestKind::Skip) {
+            panic!("Test failed: {}", path.display());
+        }
     }
 
-    println!("\nAll tests completed.");
+    println!("\n{}", Table::new(rows));
 
     remove_build_folders(test_dir);
 }

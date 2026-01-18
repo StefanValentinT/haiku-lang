@@ -5,6 +5,7 @@ pub enum Token {
     Identifier(String),
     IntLiteral32(i32),
     IntLiteral64(i64),
+    FloatLiteral64(f64),
     Keyword(String),
 
     OpenParen,
@@ -43,9 +44,9 @@ pub enum Token {
     EOF,
 }
 
-const KEYWORDS: [&str; 16] = [
-    "fun", "I32", "I64", "Unit", "return", "if", "then", "else", "while", "break", "continue",
-    "switch", "default", "let", "as", "extern",
+const KEYWORDS: [&str; 17] = [
+    "fun", "I32", "I64", "F64", "Unit", "return", "if", "then", "else", "while", "break",
+    "continue", "switch", "default", "let", "as", "extern",
 ];
 
 pub fn lex_string(input: String) -> Queue<Token> {
@@ -70,7 +71,7 @@ pub fn lex_string(input: String) -> Queue<Token> {
 
             'a'..='z' | 'A'..='Z' | '_' => tokens.add(lex_identifier(&mut input)),
 
-            '0'..='9' => tokens.add(lex_int(&mut input)),
+            '0'..='9' => tokens.add(lex_number(&mut input)),
 
             '(' => {
                 st(Token::OpenParen, &mut input, &mut tokens);
@@ -91,7 +92,7 @@ pub fn lex_string(input: String) -> Queue<Token> {
                 st(Token::Comma, &mut input, &mut tokens);
             }
             '.' => {
-                st(Token::Comma, &mut input, &mut tokens);
+                st(Token::Dot, &mut input, &mut tokens);
             }
             '~' => {
                 st(Token::Tilde, &mut input, &mut tokens);
@@ -205,19 +206,41 @@ fn lex_identifier(input: &mut Queue<char>) -> Token {
     }
 }
 
-fn lex_int(input: &mut Queue<char>) -> Token {
-    let mut digits = String::new();
+fn lex_number(input: &mut Queue<char>) -> Token {
+    let mut buf = String::new();
 
     while let Ok(c) = input.peek() {
         if c.is_ascii_digit() {
-            digits.push(input.remove().unwrap());
+            buf.push(input.remove().unwrap());
         } else {
             break;
         }
     }
 
+    if input.is_there(0, '.') {
+        input.consume();
+        let mut frac = String::new();
+
+        while let Ok(c) = input.peek() {
+            if c.is_ascii_digit() {
+                frac.push(input.remove().unwrap());
+            } else {
+                break;
+            }
+        }
+
+        if frac.is_empty() {
+            panic!("Invalid float literal");
+        }
+
+        buf.push('.');
+        buf.push_str(&frac);
+
+        let value: f64 = buf.parse().unwrap();
+        return Token::FloatLiteral64(value);
+    }
+
     let mut is_i64 = false;
-    let mut is_i32 = false;
 
     if input.is_there(0, '_') {
         input.consume();
@@ -232,17 +255,15 @@ fn lex_int(input: &mut Queue<char>) -> Token {
 
         match suffix.to_uppercase().as_str() {
             "I64" => is_i64 = true,
-            "I32" => is_i32 = true,
-            _ => panic!("Unknown integer literal suffix: {}", suffix),
+            "I32" => {}
+            _ => panic!("Unknown integer suffix: {}", suffix),
         }
     }
 
     if is_i64 {
-        let value: i64 = digits.parse().expect("Invalid i64 literal");
-        Token::IntLiteral64(value)
+        Token::IntLiteral64(buf.parse().unwrap())
     } else {
-        let value: i32 = digits.parse().expect("Invalid i32 literal");
-        Token::IntLiteral32(value)
+        Token::IntLiteral32(buf.parse().unwrap())
     }
 }
 
