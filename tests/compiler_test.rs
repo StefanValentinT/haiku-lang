@@ -40,7 +40,6 @@ fn remove_build_folders(dir: &Path) {
                 fs::remove_dir_all(&path).unwrap_or_else(|_| {
                     panic!("Failed to remove build directory: {}", path.display())
                 });
-                println!("Removed build directory: {}", path.display());
             } else {
                 remove_build_folders(&path);
             }

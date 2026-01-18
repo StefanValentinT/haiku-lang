@@ -34,7 +34,10 @@ fn parse_fun_decl(tokens: &mut Queue<Token>) -> FunDecl {
     let params = parse_param_list(tokens);
     expect(Token::CloseParen, tokens);
 
-    let ret_type = parse_type(tokens);
+    let ret_type = match tokens.peek().unwrap() {
+        Token::Semicolon => Type::Unit,
+        _ => parse_type(tokens),
+    };
 
     let body = match tokens.peek().unwrap() {
         Token::OpenBrace => {
@@ -92,7 +95,7 @@ fn parse_type(tokens: &mut Queue<Token>) -> Type {
     match tokens.remove().unwrap() {
         Token::Keyword(ref s) if s == "I32" => Type::I32,
         Token::Keyword(ref s) if s == "I64" => Type::I64,
-        Token::Keyword(ref s) if s == "Void" => Type::Void,
+        Token::Keyword(ref s) if s == "Unit" => Type::Unit,
         t => panic!("Expected type, got {:?}", t),
     }
 }

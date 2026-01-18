@@ -2,7 +2,7 @@
 pub enum Type {
     I32,
     I64,
-    Void,
+    Unit,
 
     FunType { params: Vec<Type>, ret: Box<Type> },
 }

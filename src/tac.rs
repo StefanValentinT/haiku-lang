@@ -99,7 +99,7 @@ pub fn gen_tac(program: TypedProgram) -> TacProgram {
 fn func_to_tac(func: TypedFunDecl) -> TacFuncDef {
     let mut instructions = Vec::new();
     let has_body = func.body.is_some();
-    
+
     if has_body {
         block_to_tac(func.body.clone().unwrap(), &mut instructions);
 
