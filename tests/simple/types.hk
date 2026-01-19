@@ -10,7 +10,7 @@ fun main() I32 {
 }
 
 /*
-<expect>
+<expect_ret>
 0
-</expect>
+</expect_ret>
 */

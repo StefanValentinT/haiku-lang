@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use crate::{
     ast::ast_type::Type,
-    tac::{TacBinaryOp, TacFuncDef, TacInstruction, TacProgram, TacUnaryOp, TacVal},
+    tac::{TacBinaryOp, TacConst, TacFuncDef, TacInstruction, TacProgram, TacUnaryOp, TacVal},
 };
 
 pub fn emit_llvm(program: &TacProgram) -> String {
@@ -12,9 +12,8 @@ pub fn emit_llvm(program: &TacProgram) -> String {
     let mut externs = HashSet::new();
 
     for f in funcs {
-        if let TacFuncDef::Function { name, .. } = f {
-            defined.insert(name.clone());
-        }
+        let TacFuncDef::Function { name, .. } = f;
+        defined.insert(name.clone());
     }
 
     let mut reg_counter = 0;
@@ -123,6 +122,17 @@ fn emit_function(
         );
     }
 
+    if !terminated {
+        match ret_type {
+            Type::Unit => {
+                out.push_str("  ret void\n");
+            }
+            _ => {
+                out.push_str("  unreachable\n");
+            }
+        }
+    }
+
     out.push_str("}\n");
     out
 }
@@ -134,14 +144,14 @@ fn emit_instr(
     reg_counter: &mut usize,
 ) -> String {
     match instr {
-        TacInstruction::Return(v) => match v {
-            TacVal::Var(_, Type::Unit) => "  ret void\n".to_string(),
-            _ => {
-                let (load, val, ty) = load_val(v, reg_counter);
-                format!("{}  ret {} {}\n", load, ty, val)
+        TacInstruction::Return(v_opt) => match v_opt {
+            None => "  ret void\n".to_string(),
+            Some(TacVal::Var(_, Type::Unit)) => "  ret void\n".to_string(),
+            Some(val) => {
+                let (load, val_str, ty) = load_val(val, reg_counter);
+                format!("{}  ret {} {}\n", load, ty, val_str)
             }
         },
-
         TacInstruction::Copy { src, dest } => {
             let (load, val, ty) = load_val(src, reg_counter);
             format!(
@@ -197,39 +207,106 @@ fn emit_instr(
             let (b_load, b, _) = load_val(src2, reg_counter);
             let r = fresh_reg(reg_counter);
 
-            let ir = match op {
-                TacBinaryOp::Add => format!("add {} {}, {}", ty, a, b),
-                TacBinaryOp::Subtract => format!("sub {} {}, {}", ty, a, b),
-                TacBinaryOp::Multiply => format!("mul {} {}, {}", ty, a, b),
-                TacBinaryOp::Divide => format!("sdiv {} {}, {}", ty, a, b),
-                TacBinaryOp::Remainder => format!("srem {} {}, {}", ty, a, b),
+            if matches!(op, TacBinaryOp::Divide | TacBinaryOp::Remainder) {
+                match src2 {
+                    TacVal::Constant(TacConst::I32(0))
+                    | TacVal::Constant(TacConst::I64(0))
+                    | TacVal::Constant(TacConst::F64(0.0)) => {
+                        panic!("Compile-time error: division or remainder by zero");
+                    }
+                    _ => {}
+                }
+            }
 
-                _ => {
-                    let pred = match op {
-                        TacBinaryOp::Equal => "eq",
-                        TacBinaryOp::NotEqual => "ne",
-                        TacBinaryOp::LessThan => "slt",
-                        TacBinaryOp::LessOrEqual => "sle",
-                        TacBinaryOp::GreaterThan => "sgt",
-                        TacBinaryOp::GreaterOrEqual => "sge",
-                        _ => unreachable!(),
+            let ir = match op {
+                TacBinaryOp::Add => {
+                    if ty == "double" {
+                        format!("fadd double {}, {}", a, b)
+                    } else {
+                        format!("add {} {}, {}", ty, a, b)
+                    }
+                }
+                TacBinaryOp::Subtract => {
+                    if ty == "double" {
+                        format!("fsub double {}, {}", a, b)
+                    } else {
+                        format!("sub {} {}, {}", ty, a, b)
+                    }
+                }
+                TacBinaryOp::Multiply => {
+                    if ty == "double" {
+                        format!("fmul double {}, {}", a, b)
+                    } else {
+                        format!("mul {} {}, {}", ty, a, b)
+                    }
+                }
+                TacBinaryOp::Divide => {
+                    if ty == "double" {
+                        format!("fdiv double {}, {}", a, b)
+                    } else {
+                        let trap_check = fresh_reg(reg_counter);
+                        let cont_label = format!("div_cont{}", reg_counter);
+                        let trap_ir = format!(
+                            "  {} = icmp eq {} {}, 0\n  br i1 {}, label %div_zero, label %{}\ndiv_zero:\n  call void @llvm.trap()\n  unreachable\n{}:\n",
+                            trap_check, ty, b, trap_check, cont_label, cont_label
+                        );
+                        let ir = format!("sdiv {} {}, {}", ty, a, b);
+                        let full = format!("{}{}  {}\n{}", a_load, b_load, ir, trap_ir);
+                        return full;
+                    }
+                }
+                TacBinaryOp::Remainder => {
+                    if ty == "double" {
+                        panic!("Remainder not supported for floating-point types in LLVM");
+                    } else {
+                        format!("srem {} {}, {}", ty, a, b)
+                    }
+                }
+
+                TacBinaryOp::Equal
+                | TacBinaryOp::NotEqual
+                | TacBinaryOp::LessThan
+                | TacBinaryOp::LessOrEqual
+                | TacBinaryOp::GreaterThan
+                | TacBinaryOp::GreaterOrEqual => {
+                    let r_icmp = fresh_reg(reg_counter);
+                    let cmp_ir = if ty == "double" {
+                        let pred = match op {
+                            TacBinaryOp::Equal => "oeq",
+                            TacBinaryOp::NotEqual => "one",
+                            TacBinaryOp::LessThan => "olt",
+                            TacBinaryOp::LessOrEqual => "ole",
+                            TacBinaryOp::GreaterThan => "ogt",
+                            TacBinaryOp::GreaterOrEqual => "oge",
+                            _ => unreachable!(),
+                        };
+                        format!("{} = fcmp {} double {}, {}", r_icmp, pred, a, b)
+                    } else {
+                        let pred = match op {
+                            TacBinaryOp::Equal => "eq",
+                            TacBinaryOp::NotEqual => "ne",
+                            TacBinaryOp::LessThan => "slt",
+                            TacBinaryOp::LessOrEqual => "sle",
+                            TacBinaryOp::GreaterThan => "sgt",
+                            TacBinaryOp::GreaterOrEqual => "sge",
+                            _ => unreachable!(),
+                        };
+                        format!("{} = icmp {} {} {}, {}", r_icmp, pred, ty, a, b)
                     };
-                    let c = fresh_reg(reg_counter);
+                    let zext = fresh_reg(reg_counter);
                     return format!(
-                        "{}{}  {} = icmp {} {} {}, {}\n  {} = zext i1 {} to i32\n  store i32 {}, i32* %{}\n",
+                        "{}{}  {}\n  {} = zext i1 {} to i32\n  store i32 {}, i32* %{}\n",
                         a_load,
                         b_load,
-                        c,
-                        pred,
-                        ty,
-                        a,
-                        b,
-                        r,
-                        c,
-                        r,
+                        cmp_ir,
+                        zext,
+                        r_icmp,
+                        zext,
                         var_name(dest)
                     );
                 }
+
+                _ => unreachable!(),
             };
 
             format!(
@@ -312,7 +389,6 @@ fn emit_instr(
 
             ir
         }
-
         TacInstruction::Label(_) => unreachable!(),
         TacInstruction::Truncate { src, dest } => {
             let (load, v, src_ty) = load_val(src, reg_counter);
@@ -336,7 +412,6 @@ fn emit_instr(
                 var_name(dest)
             )
         }
-
         TacInstruction::SignExtend { src, dest } => {
             let (load, v, src_ty) = load_val(src, reg_counter);
             let dst_ty = llvm_type(match dest {
@@ -359,13 +434,69 @@ fn emit_instr(
                 var_name(dest)
             )
         }
+        TacInstruction::F64ToI32 { src, dest } => {
+            let (load, v, _) = load_val(src, reg_counter);
+            let r = fresh_reg(reg_counter);
+
+            format!(
+                "{}  {} = fptosi double {} to i32\n  store i32 {}, i32* %{}\n",
+                load,
+                r,
+                v,
+                r,
+                var_name(dest)
+            )
+        }
+
+        TacInstruction::F64ToI64 { src, dest } => {
+            let (load, v, _) = load_val(src, reg_counter);
+            let r = fresh_reg(reg_counter);
+
+            format!(
+                "{}  {} = fptosi double {} to i64\n  store i64 {}, i64* %{}\n",
+                load,
+                r,
+                v,
+                r,
+                var_name(dest)
+            )
+        }
+
+        TacInstruction::I32ToF64 { src, dest } => {
+            let (load, v, _) = load_val(src, reg_counter);
+            let r = fresh_reg(reg_counter);
+
+            format!(
+                "{}  {} = sitofp i32 {} to double\n  store double {}, double* %{}\n",
+                load,
+                r,
+                v,
+                r,
+                var_name(dest)
+            )
+        }
+
+        TacInstruction::I64ToF64 { src, dest } => {
+            let (load, v, _) = load_val(src, reg_counter);
+            let r = fresh_reg(reg_counter);
+
+            format!(
+                "{}  {} = sitofp i64 {} to double\n  store double {}, double* %{}\n",
+                load,
+                r,
+                v,
+                r,
+                var_name(dest)
+            )
+        }
     }
 }
 
 fn load_val(v: &TacVal, reg_counter: &mut usize) -> (String, String, &'static str) {
     match v {
-        TacVal::I32(c) => ("".into(), c.to_string(), "i32"),
-        TacVal::I64(c) => ("".into(), c.to_string(), "i64"),
+        TacVal::Constant(TacConst::I32(c)) => ("".into(), c.to_string(), "i32"),
+        TacVal::Constant(TacConst::I64(c)) => ("".into(), c.to_string(), "i64"),
+        TacVal::Constant(TacConst::F64(c)) => ("".into(), format!("{:.6e}", c), "double"),
 
         TacVal::Var(_, Type::Unit) => ("".into(), "".into(), "void"),
 
@@ -385,9 +516,9 @@ fn llvm_type(ty: &Type) -> &'static str {
     match ty {
         Type::I32 => "i32",
         Type::I64 => "i64",
+        Type::F64 => "double",
         Type::Unit => "void",
-        Type::FunType { params, ret } => todo!(),
-        Type::F64 => todo!(),
+        Type::FunType { .. } => unreachable!("function types not first-class in LLVM IR here"),
     }
 }
 
@@ -438,8 +569,8 @@ fn collect_locals(body: &[TacInstruction], params: &[String]) -> HashSet<(String
                 collect_val(dest, &mut vars);
             }
 
-            TacInstruction::Return(v)
-            | TacInstruction::JumpIfZero { condition: v, .. }
+            TacInstruction::Return(None) => (),
+            TacInstruction::JumpIfZero { condition: v, .. }
             | TacInstruction::JumpIfNotZero { condition: v, .. } => {
                 collect_val(v, &mut vars);
             }

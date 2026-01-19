@@ -1,4 +1,4 @@
-use crate::ast::ast_type::{BinaryOp, Type, UnaryOp};
+use crate::ast::ast_type::{BinaryOp, Const, Type, UnaryOp};
 
 #[derive(Debug)]
 pub enum Program {
@@ -66,8 +66,7 @@ pub struct Expr {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ExprKind {
-    Int32(i32),
-    Int64(i64),
+    Constant(Const),
     Var(String),
 
     Unary(UnaryOp, Box<Expr>),

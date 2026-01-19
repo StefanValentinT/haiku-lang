@@ -1,7 +1,4 @@
-use crate::ast::{
-    ast_type::Type,
-    ast_type::{BinaryOp, UnaryOp},
-};
+use crate::ast::ast_type::{BinaryOp, Const, Type, UnaryOp};
 
 #[derive(Debug)]
 pub struct TypedProgram {
@@ -69,8 +66,7 @@ pub struct TypedExpr {
 
 #[derive(Debug, Clone)]
 pub enum TypedExprKind {
-    Int32(i32),
-    Int64(i64),
+    Constant(Const),
 
     Var(String),
 

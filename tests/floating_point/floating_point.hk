@@ -1,0 +1,16 @@
+
+fun get_value() F64{
+    return 1.4;
+}
+
+fun main() I32 {
+    let x: I64 = (get_value()*10.0) as I64;
+    return x as I32;
+}
+
+
+/*
+<expect>
+14
+</expect>
+*/

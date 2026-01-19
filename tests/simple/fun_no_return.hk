@@ -1,0 +1,19 @@
+extern fun putchar(i: I32);
+
+fun output_something(){
+    putchar(72);
+}
+
+fun main() I32{
+    output_something();
+    return 0;
+}
+
+/*
+<expect_out>
+H
+</expect_out>
+<expect_ret>
+0
+</expect_ret>
+*/

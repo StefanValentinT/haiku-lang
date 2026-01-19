@@ -1,0 +1,18 @@
+
+fun bad() I32{
+    return 12;
+}
+
+
+fun bad() I32{
+    return 12;
+}
+
+
+fun main() I32{
+    return bad;
+}
+
+/*
+<fail>
+*/

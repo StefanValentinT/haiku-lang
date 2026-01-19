@@ -11,7 +11,7 @@ fun main() I32 {
 }
 
 /*
-<expect>
+<expect_ret>
 55
-</expect>
+</expect_ret>
 */

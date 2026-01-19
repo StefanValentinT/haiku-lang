@@ -1,6 +1,7 @@
 use std::{
     fs,
     io::Write,
+    os::unix::process::ExitStatusExt,
     path::Path,
     process::{Command, exit},
 };
@@ -158,13 +159,13 @@ fn main() {
 
     if !args.c {
         vprintln!("Running executable...");
-        let status = std::process::Command::new(&output_file)
-            .status()
+        let output = std::process::Command::new(&output_file)
+            .output()
             .expect("Failed to execute program");
+        
+        std::io::stdout().write_all(&output.stdout).unwrap();
+        std::io::stderr().write_all(&output.stderr).unwrap();
 
-        match status.code() {
-            Some(code) => println!("{}", code),
-            None => println!("Program terminated by signal"),
-        }
+        std::process::exit(output.status.code().unwrap_or(1));
     }
 }

@@ -19,12 +19,28 @@ pub enum TacFuncDef {
 
 #[derive(Debug)]
 pub enum TacInstruction {
-    Return(TacVal),
+    Return(Option<TacVal>),
     Truncate {
         src: TacVal,
         dest: TacVal,
     },
     SignExtend {
+        src: TacVal,
+        dest: TacVal,
+    },
+    F64ToI32 {
+        src: TacVal,
+        dest: TacVal,
+    },
+    F64ToI64 {
+        src: TacVal,
+        dest: TacVal,
+    },
+    I32ToF64 {
+        src: TacVal,
+        dest: TacVal,
+    },
+    I64ToF64 {
         src: TacVal,
         dest: TacVal,
     },
@@ -64,9 +80,15 @@ pub enum TacInstruction {
 
 #[derive(Debug, Clone)]
 pub enum TacVal {
+    Constant(TacConst),
+    Var(String, Type),
+}
+
+#[derive(Debug, Clone)]
+pub enum TacConst {
     I32(i32),
     I64(i64),
-    Var(String, Type),
+    F64(f64),
 }
 
 #[derive(Debug, PartialEq)]
@@ -102,12 +124,6 @@ fn func_to_tac(func: TypedFunDecl) -> TacFuncDef {
 
     if has_body {
         block_to_tac(func.body.clone().unwrap(), &mut instructions);
-
-        instructions.push(match func.ret_type {
-            Type::I32 => TacInstruction::Return(TacVal::I32(0)),
-            Type::I64 => TacInstruction::Return(TacVal::I64(0)),
-            _ => panic!("Unsupported return type"),
-        });
     }
 
     TacFuncDef::Function {
@@ -147,7 +163,7 @@ fn stmt_to_tac(stmt: TypedStmt, instructions: &mut Vec<TacInstruction>) {
     match stmt {
         TypedStmt::Return(expr) => {
             let val = expr_to_tac(expr, instructions);
-            instructions.push(TacInstruction::Return(val));
+            instructions.push(TacInstruction::Return(Some(val)));
         }
         TypedStmt::Expr(expr) => {
             expr_to_tac(expr, instructions);
@@ -191,8 +207,10 @@ fn stmt_to_tac(stmt: TypedStmt, instructions: &mut Vec<TacInstruction>) {
 
 fn expr_to_tac(expr: TypedExpr, instructions: &mut Vec<TacInstruction>) -> TacVal {
     match expr.kind {
-        TypedExprKind::Int32(v) => TacVal::I32(v),
-        TypedExprKind::Int64(v) => TacVal::I64(v),
+        TypedExprKind::Constant(Const::I32(v)) => TacVal::Constant(TacConst::I32(v)),
+        TypedExprKind::Constant(Const::I64(v)) => TacVal::Constant(TacConst::I64(v)),
+        TypedExprKind::Constant(Const::F64(v)) => TacVal::Constant(TacConst::F64(v)),
+
         TypedExprKind::Var(name) => TacVal::Var(name, expr.ty),
         TypedExprKind::Unary { op, expr: inner } => {
             let src = expr_to_tac(*inner, instructions);
@@ -210,6 +228,19 @@ fn expr_to_tac(expr: TypedExpr, instructions: &mut Vec<TacInstruction>) -> TacVa
             }
             let src1 = expr_to_tac(*lhs, instructions);
             let src2 = expr_to_tac(*rhs, instructions);
+
+            if let BinaryOp::Divide | BinaryOp::Remainder = op {
+                if let TacVal::Constant(TacConst::I32(0))
+                | TacVal::Constant(TacConst::I64(0))
+                | TacVal::Constant(TacConst::F64(0.0)) = src2
+                {
+                    panic!(
+                        "Compile-time error: Division or remainder by zero detected in expression {:?} / {:?}",
+                        src1, src2
+                    );
+                }
+            }
+
             let dst = TacVal::Var(make_temporary(), expr.ty);
             instructions.push(TacInstruction::Binary {
                 op: convert_binop(op),
@@ -219,6 +250,7 @@ fn expr_to_tac(expr: TypedExpr, instructions: &mut Vec<TacInstruction>) -> TacVa
             });
             dst
         }
+
         TypedExprKind::Assign { lhs, rhs } => {
             let r = expr_to_tac(*rhs, instructions);
             match lhs.kind {
@@ -279,33 +311,64 @@ fn expr_to_tac(expr: TypedExpr, instructions: &mut Vec<TacInstruction>) -> TacVa
             });
             dst
         }
+
         TypedExprKind::Cast {
             expr: inner,
             target,
         } => {
             let src = expr_to_tac(*inner, instructions);
             let dst = TacVal::Var(make_temporary(), target.clone());
+
             match (&src, &target) {
-                (TacVal::I64(_) | TacVal::Var(_, Type::I64), Type::I32) => {
+                (TacVal::Var(_, Type::I64) | TacVal::Constant(TacConst::I64(_)), Type::I32) => {
                     instructions.push(TacInstruction::Truncate {
                         src,
                         dest: dst.clone(),
                     });
                 }
-                (TacVal::I32(_) | TacVal::Var(_, Type::I32), Type::I64) => {
+                (TacVal::Var(_, Type::I32) | TacVal::Constant(TacConst::I32(_)), Type::I64) => {
                     instructions.push(TacInstruction::SignExtend {
                         src,
                         dest: dst.clone(),
                     });
                 }
+
+                (TacVal::Var(_, Type::F64) | TacVal::Constant(TacConst::F64(_)), Type::I32) => {
+                    instructions.push(TacInstruction::F64ToI32 {
+                        src,
+                        dest: dst.clone(),
+                    });
+                }
+                (TacVal::Var(_, Type::F64) | TacVal::Constant(TacConst::F64(_)), Type::I64) => {
+                    instructions.push(TacInstruction::F64ToI64 {
+                        src,
+                        dest: dst.clone(),
+                    });
+                }
+
+                (TacVal::Var(_, Type::I32) | TacVal::Constant(TacConst::I32(_)), Type::F64) => {
+                    instructions.push(TacInstruction::I32ToF64 {
+                        src,
+                        dest: dst.clone(),
+                    });
+                }
+                (TacVal::Var(_, Type::I64) | TacVal::Constant(TacConst::I64(_)), Type::F64) => {
+                    instructions.push(TacInstruction::I64ToF64 {
+                        src,
+                        dest: dst.clone(),
+                    });
+                }
+
                 (TacVal::Var(_, t1), t2) if t1 == t2 => {
                     instructions.push(TacInstruction::Copy {
                         src,
                         dest: dst.clone(),
                     });
                 }
-                _ => panic!("Unsupported cast"),
+
+                _ => panic!("Unsupported cast {:?} → {:?}", src, target),
             }
+
             dst
         }
     }
@@ -336,7 +399,7 @@ fn short_circuit_logic(
             });
 
             instructions.push(TacInstruction::Copy {
-                src: TacVal::I32(1),
+                src: TacVal::Constant(TacConst::I32(1)),
                 dest: result.clone(),
             });
             instructions.push(TacInstruction::Jump {
@@ -344,7 +407,7 @@ fn short_circuit_logic(
             });
             instructions.push(TacInstruction::Label(false_label));
             instructions.push(TacInstruction::Copy {
-                src: TacVal::I32(0),
+                src: TacVal::Constant(TacConst::I32(0)),
                 dest: result.clone(),
             });
             instructions.push(TacInstruction::Label(end_label));
@@ -365,7 +428,7 @@ fn short_circuit_logic(
             });
 
             instructions.push(TacInstruction::Copy {
-                src: TacVal::I32(0),
+                src: TacVal::Constant(TacConst::I32(0)),
                 dest: result.clone(),
             });
             instructions.push(TacInstruction::Jump {
@@ -373,7 +436,7 @@ fn short_circuit_logic(
             });
             instructions.push(TacInstruction::Label(true_label));
             instructions.push(TacInstruction::Copy {
-                src: TacVal::I32(1),
+                src: TacVal::Constant(TacConst::I32(1)),
                 dest: result.clone(),
             });
             instructions.push(TacInstruction::Label(end_label));

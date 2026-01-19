@@ -1,6 +1,7 @@
+use crate::ast::ast_type::Const;
 use crate::ast::untyped_ast::*;
 use crate::{
-    ast::ast_type::{BinaryOp, Type, UnaryOp},
+    ast::ast_type::*,
     lexer::Token,
     queue::{IsQueue, Queue},
 };
@@ -35,7 +36,7 @@ fn parse_fun_decl(tokens: &mut Queue<Token>) -> FunDecl {
     expect(Token::CloseParen, tokens);
 
     let ret_type = match tokens.peek().unwrap() {
-        Token::Semicolon => Type::Unit,
+        Token::Semicolon | Token::OpenBrace => Type::Unit,
         _ => parse_type(tokens),
     };
 
@@ -95,6 +96,7 @@ fn parse_type(tokens: &mut Queue<Token>) -> Type {
     match tokens.remove().unwrap() {
         Token::Keyword(ref s) if s == "I32" => Type::I32,
         Token::Keyword(ref s) if s == "I64" => Type::I64,
+        Token::Keyword(ref s) if s == "F64" => Type::F64,
         Token::Keyword(ref s) if s == "Unit" => Type::Unit,
         t => panic!("Expected type, got {:?}", t),
     }
@@ -153,7 +155,7 @@ fn parse_statement(tokens: &mut Queue<Token>) -> Stmt {
         Token::Keyword(ref s) => match s.as_str() {
             "return" => {
                 tokens.consume();
-                let mut expr = parse_expr(tokens, 0);
+                let expr = parse_expr(tokens, 0);
                 expect(Token::Semicolon, tokens);
                 Stmt::Return(expr)
             }
@@ -233,11 +235,15 @@ fn parse_factor(tokens: &mut Queue<Token>) -> Expr {
 
         Token::IntLiteral32(v) => Expr {
             ty: Some(Type::I32),
-            kind: ExprKind::Int32(v),
+            kind: ExprKind::Constant(Const::I32(v)),
         },
         Token::IntLiteral64(v) => Expr {
             ty: Some(Type::I64),
-            kind: ExprKind::Int64(v),
+            kind: ExprKind::Constant(Const::I64(v)),
+        },
+        Token::FloatLiteral64(v) => Expr {
+            ty: Some(Type::F64),
+            kind: ExprKind::Constant(Const::F64(v)),
         },
 
         Token::Identifier(name) => {

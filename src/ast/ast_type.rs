@@ -10,6 +10,13 @@ pub enum Type {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub enum Const {
+    I32(i32),
+    I64(i64),
+    F64(f64),
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum UnaryOp {
     Complement,
     Negate,

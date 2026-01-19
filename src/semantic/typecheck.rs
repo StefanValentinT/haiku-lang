@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use crate::ast::ast_type::Const;
 use crate::ast::ast_type::Type;
 use crate::ast::typed_ast::*;
 use crate::ast::untyped_ast::*;
@@ -178,14 +179,19 @@ fn typecheck_stmt(stmt: &Stmt, symbols: &mut SymbolTable, expected_ret: &Type) -
 
 fn typecheck_expr(expr: &Expr, symbols: &mut SymbolTable) -> TypedExpr {
     match &expr.kind {
-        ExprKind::Int32(v) => TypedExpr {
+        ExprKind::Constant(Const::I32(v)) => TypedExpr {
             ty: Type::I32,
-            kind: TypedExprKind::Int32(*v),
+            kind: TypedExprKind::Constant(Const::I32(*v)),
         },
 
-        ExprKind::Int64(v) => TypedExpr {
+        ExprKind::Constant(Const::I64(v)) => TypedExpr {
             ty: Type::I64,
-            kind: TypedExprKind::Int64(*v),
+            kind: TypedExprKind::Constant(Const::I64(*v)),
+        },
+
+        ExprKind::Constant(Const::F64(v)) => TypedExpr {
+            ty: Type::F64,
+            kind: TypedExprKind::Constant(Const::F64(*v)),
         },
 
         ExprKind::Var(name) => {

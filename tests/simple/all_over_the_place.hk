@@ -1,0 +1,14 @@
+fun main() I32 {
+    return something();
+}
+
+fun something() I32 {
+    return 5;
+}
+
+
+/*
+<expect_ret>
+5
+</expect_ret>
+*/

@@ -7,13 +7,28 @@ use std::collections::HashMap;
 struct MapEntry {
     unique_name: String,
     from_current_scope: bool,
-    has_linkage: bool,
 }
 
 pub fn identifier_resolution_pass(program: Program) -> Program {
     match program {
         Program::Program(funcs) => {
-            let mut global_map = HashMap::new();
+            let mut global_map: HashMap<String, MapEntry> = HashMap::new();
+
+            for f in &funcs {
+                if let Some(prev) = global_map.get(&f.name) {
+                    if prev.from_current_scope {
+                        panic!("Duplicate function definition: {}", f.name);
+                    }
+                }
+
+                global_map.insert(
+                    f.name.clone(),
+                    MapEntry {
+                        unique_name: f.name.clone(),
+                        from_current_scope: true,
+                    },
+                );
+            }
 
             let funcs = funcs
                 .into_iter()
@@ -72,7 +87,6 @@ fn resolve_var_decl(var_decl: VarDecl, identifier_map: &mut HashMap<String, MapE
         MapEntry {
             unique_name: unique_name.clone(),
             from_current_scope: true,
-            has_linkage: false,
         },
     );
 
@@ -86,23 +100,6 @@ fn resolve_var_decl(var_decl: VarDecl, identifier_map: &mut HashMap<String, MapE
 }
 
 fn resolve_fun_decl(decl: FunDecl, identifier_map: &mut HashMap<String, MapEntry>) -> FunDecl {
-    if let Some(prev) = identifier_map.get(&decl.name) {
-        if prev.from_current_scope && !prev.has_linkage {
-            panic!("Duplicate function definition: {}", decl.name);
-        }
-    }
-
-    let has_body = decl.body.is_some();
-
-    identifier_map.insert(
-        decl.name.clone(),
-        MapEntry {
-            unique_name: decl.name.clone(),
-            from_current_scope: true,
-            has_linkage: !has_body,
-        },
-    );
-
     let mut local_map = copy_identifier_map(identifier_map);
 
     let new_params: Vec<(String, Type)> = decl
@@ -137,7 +134,6 @@ fn resolve_param(param_name: String, identifier_map: &mut HashMap<String, MapEnt
         MapEntry {
             unique_name: unique_name.clone(),
             from_current_scope: true,
-            has_linkage: false,
         },
     );
 
@@ -171,7 +167,7 @@ fn resolve_stmt(stmt: Stmt, identifier_map: &mut HashMap<String, MapEntry>) -> S
 fn resolve_expr(expr: Expr, identifier_map: &mut HashMap<String, MapEntry>) -> Expr {
     let ty = expr.ty.clone();
     match expr.kind {
-        ExprKind::Int32(_) | ExprKind::Int64(_) => expr,
+        ExprKind::Constant(_) => expr,
         ExprKind::Var(v) => {
             if let Some(entry) = identifier_map.get(&v) {
                 Expr {
@@ -262,7 +258,6 @@ fn copy_identifier_map(identifier_map: &HashMap<String, MapEntry>) -> HashMap<St
                 MapEntry {
                     unique_name: v.unique_name.clone(),
                     from_current_scope: false,
-                    has_linkage: v.has_linkage,
                 },
             )
         })
