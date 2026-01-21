@@ -1,11 +1,42 @@
-# My Little Compiler
+# Haiku
 
-I guess this language will at some point be called Haiku, but I am still looking for names.
+This is the *Standard Haiku Compiler* or short *SHC*.
+It may be regarded as the default implementation of Haiku.
+At this point of time no other implementation has been reported.
 
-Haiku should be a baeutiful and elegant, expressive language, inspired by:
-- simplicity of C
-- minimalism of Go
-- safety of Rust
-- theory from Haskell
+# Warning: SHC is still a Work-In-Progress
+Expect breaking changes.
 
-Next I will have to write a llvm-backend, which I guess will replace the handwritten assembly gen.
+# About Haiku
+
+Haiku strives to be a language for century, just one compiler can not be enough for this.
+It lays in the very spirit of a language to be nothing more than a way to communicate,
+the compiler is the mere receifer of these words of truth and beauty, unworthy of any further
+consideration. Therefore Haiku as a language is defined by its standard which is currently still
+in work. Every compiler that fulfills this specification may be regarded as the same, meaning
+that there should be no apparent difference for the user. This includes necessary changes in the language.
+All things have to decay, all water has to flow indefinitely. To assume a standard can be superior to this,
+stay unwavering atop the ocean of rot is nothing but neglience for a language's health.
+
+Haiku will change, its standard will progress, but for it to remain Haiku it needs to restrain itself
+to a set of ideals, shiny icons of hope for what it shall become. These axioms do not require perfection,
+but they will instead enable it. Haiku does not have to created to be better than anything that will ever come
+thereafter; instead I want it to be able to flow with the river and always transform itself.
+
+These axioms are:
+- Simplicity: Haiku is a language of the water, it is like the river bed. Thus it is centered around functions,
+the very act of transforming data into anaother representation of itself. The concept of simplicity extends into
+the code as a whole too, it should be both easy to write and to read. This is achieved by having a minimal
+amount of obligatory code and a coherent style in which the language is designed. One of its requirements is the absence
+of requirements unless strictly needed, thus being basically everything allowed in function definition or in types.
+- Elegance: Not all languages are created equally, some where made to already rot in some corporate office
+from the moment of their inception. But Haiku wants to be a passionate, even manicial language.
+- Safety: Haiiku is a language to build safe, reliable and scalable systems in.
+- Performance: Haiku follows the flow. Why should it impose barriers in its way?
+
+Now go ahead and look at a piece of Haiku code in the samples folder or read the *Haiku Book* (Not made yet!).
+
+# How to install
+
+Install this compiler simply by cloning the repository and then executing `cargo run`.
+This should just about work on any computer thanks to the cross-platform support of Rust’s toolchain and this project's minimal external dependencies.
