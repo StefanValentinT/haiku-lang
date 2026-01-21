@@ -97,6 +97,9 @@ pub enum TypedExprKind {
         args: Vec<TypedExpr>,
     },
 
+    Dereference(Box<TypedExpr>),
+    AddrOf(Box<TypedExpr>),
+
     Cast {
         expr: Box<TypedExpr>,
         target: Type,

@@ -11,7 +11,7 @@ pub enum TacProgram {
 pub enum TacFuncDef {
     Function {
         name: String,
-        params: Vec<String>,
+        params: Vec<(String, Type)>,
         ret_type: Type,
         body: Vec<TacInstruction>,
     },
@@ -76,12 +76,29 @@ pub enum TacInstruction {
         args: Vec<TacVal>,
         dest: TacVal,
     },
+    GetAddress {
+        src: TacVal,
+        dest: TacVal,
+    },
+    Load {
+        src_ptr: TacVal,
+        dest: TacVal,
+    },
+    Store {
+        src: TacVal,
+        dest_ptr: TacVal,
+    },
 }
 
 #[derive(Debug, Clone)]
 pub enum TacVal {
     Constant(TacConst),
     Var(String, Type),
+}
+
+enum ExpResult {
+    PlainOperand(TacVal),
+    DereferencedPointer(TacVal),
 }
 
 #[derive(Debug, Clone)]
@@ -120,15 +137,14 @@ pub fn gen_tac(program: TypedProgram) -> TacProgram {
 
 fn func_to_tac(func: TypedFunDecl) -> TacFuncDef {
     let mut instructions = Vec::new();
-    let has_body = func.body.is_some();
 
-    if has_body {
-        block_to_tac(func.body.clone().unwrap(), &mut instructions);
+    if let Some(body) = func.body.clone() {
+        block_to_tac(body, &mut instructions);
     }
 
     TacFuncDef::Function {
         name: func.name,
-        params: func.params.into_iter().map(|(n, _)| n).collect(),
+        params: func.params,
         ret_type: func.ret_type,
         body: instructions,
     }
@@ -205,12 +221,79 @@ fn stmt_to_tac(stmt: TypedStmt, instructions: &mut Vec<TacInstruction>) {
     }
 }
 
+fn expr_to_exp_result(expr: TypedExpr, instructions: &mut Vec<TacInstruction>) -> ExpResult {
+    match expr.kind {
+        TypedExprKind::Dereference(inner) => {
+            let ptr = expr_to_tac_and_convert(*inner, instructions);
+            ExpResult::DereferencedPointer(ptr)
+        }
+        TypedExprKind::AddrOf(inner) => {
+            let inner_res = expr_to_exp_result(*inner, instructions);
+            match inner_res {
+                ExpResult::PlainOperand(obj) => {
+                    let dst = TacVal::Var(make_temporary(), expr.ty);
+                    instructions.push(TacInstruction::GetAddress {
+                        src: obj,
+                        dest: dst.clone(),
+                    });
+                    ExpResult::PlainOperand(dst)
+                }
+                ExpResult::DereferencedPointer(ptr) => ExpResult::PlainOperand(ptr),
+            }
+        }
+        _ => ExpResult::PlainOperand(expr_to_tac(expr, instructions)),
+    }
+}
+
+fn expr_to_tac_and_convert(expr: TypedExpr, instructions: &mut Vec<TacInstruction>) -> TacVal {
+    match expr_to_exp_result(expr.clone(), instructions) {
+        ExpResult::PlainOperand(val) => val,
+        ExpResult::DereferencedPointer(ptr) => {
+            let dst = TacVal::Var(make_temporary(), get_type_of_expr(&expr));
+            instructions.push(TacInstruction::Load {
+                src_ptr: ptr,
+                dest: dst.clone(),
+            });
+            dst
+        }
+    }
+}
+
+fn get_type_of_expr(expr: &TypedExpr) -> Type {
+    expr.ty.clone()
+}
+
+fn assign_expr_to_tac(
+    lhs: TypedExpr,
+    rhs: TypedExpr,
+    instructions: &mut Vec<TacInstruction>,
+) -> TacVal {
+    let lval_res = expr_to_exp_result(lhs, instructions);
+    let rval_val = expr_to_tac_and_convert(rhs, instructions);
+
+    match lval_res {
+        ExpResult::PlainOperand(obj) => {
+            instructions.push(TacInstruction::Copy {
+                src: rval_val.clone(),
+                dest: obj.clone(),
+            });
+            rval_val
+        }
+        ExpResult::DereferencedPointer(ptr) => {
+            instructions.push(TacInstruction::Store {
+                src: rval_val.clone(),
+                dest_ptr: ptr.clone(),
+            });
+            rval_val
+        }
+    }
+}
+
 fn expr_to_tac(expr: TypedExpr, instructions: &mut Vec<TacInstruction>) -> TacVal {
     match expr.kind {
         TypedExprKind::Constant(Const::I32(v)) => TacVal::Constant(TacConst::I32(v)),
         TypedExprKind::Constant(Const::I64(v)) => TacVal::Constant(TacConst::I64(v)),
         TypedExprKind::Constant(Const::F64(v)) => TacVal::Constant(TacConst::F64(v)),
-
         TypedExprKind::Var(name) => TacVal::Var(name, expr.ty),
         TypedExprKind::Unary { op, expr: inner } => {
             let src = expr_to_tac(*inner, instructions);
@@ -249,20 +332,6 @@ fn expr_to_tac(expr: TypedExpr, instructions: &mut Vec<TacInstruction>) -> TacVa
                 dest: dst.clone(),
             });
             dst
-        }
-
-        TypedExprKind::Assign { lhs, rhs } => {
-            let r = expr_to_tac(*rhs, instructions);
-            match lhs.kind {
-                TypedExprKind::Var(name) => {
-                    instructions.push(TacInstruction::Copy {
-                        src: r.clone(),
-                        dest: TacVal::Var(name.clone(), lhs.ty.clone()),
-                    });
-                    TacVal::Var(name, lhs.ty)
-                }
-                _ => panic!("Invalid lvalue in assignment"),
-            }
         }
         TypedExprKind::IfThenElse {
             cond,
@@ -311,7 +380,6 @@ fn expr_to_tac(expr: TypedExpr, instructions: &mut Vec<TacInstruction>) -> TacVa
             });
             dst
         }
-
         TypedExprKind::Cast {
             expr: inner,
             target,
@@ -371,6 +439,22 @@ fn expr_to_tac(expr: TypedExpr, instructions: &mut Vec<TacInstruction>) -> TacVa
 
             dst
         }
+        TypedExprKind::Dereference(inner) => expr_to_tac_and_convert(
+            TypedExpr {
+                ty: expr.ty,
+                kind: TypedExprKind::Dereference(inner),
+            },
+            instructions,
+        ),
+        TypedExprKind::AddrOf(inner) => expr_to_tac_and_convert(
+            TypedExpr {
+                ty: expr.ty,
+                kind: TypedExprKind::AddrOf(inner),
+            },
+            instructions,
+        ),
+
+        TypedExprKind::Assign { lhs, rhs } => assign_expr_to_tac(*lhs, *rhs, instructions),
     }
 }
 

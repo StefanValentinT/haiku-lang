@@ -193,17 +193,14 @@ fn resolve_expr(expr: Expr, identifier_map: &mut HashMap<String, MapEntry>) -> E
                 kind: ExprKind::Binary(op, Box::new(left), Box::new(right)),
             }
         }
-        ExprKind::Assign(left, right) => match left.kind {
-            ExprKind::Var(_) => {
-                let left = resolve_expr(*left, identifier_map);
-                let right = resolve_expr(*right, identifier_map);
-                Expr {
-                    ty,
-                    kind: ExprKind::Assign(Box::new(left), Box::new(right)),
-                }
+        ExprKind::Assign(left, right) => {
+            let left = resolve_expr(*left, identifier_map);
+            let right = resolve_expr(*right, identifier_map);
+            Expr {
+                ty,
+                kind: ExprKind::Assign(Box::new(left), Box::new(right)),
             }
-            _ => panic!("Invalid lvalue in assignment"),
-        },
+        }
         ExprKind::IfThenElse(cond, then_expr, else_expr) => {
             let cond = resolve_expr(*cond, identifier_map);
             let then_expr = resolve_expr(*then_expr, identifier_map);
@@ -232,7 +229,6 @@ fn resolve_expr(expr: Expr, identifier_map: &mut HashMap<String, MapEntry>) -> E
                 panic!("Undeclared function: {}", name);
             }
         }
-
         ExprKind::Cast {
             expr: inner,
             target,
@@ -244,6 +240,21 @@ fn resolve_expr(expr: Expr, identifier_map: &mut HashMap<String, MapEntry>) -> E
                     expr: Box::new(inner),
                     target,
                 },
+            }
+        }
+        ExprKind::Dereference(inner) => {
+            let inner_resolved = resolve_expr(*inner, identifier_map);
+            Expr {
+                ty: ty,
+                kind: ExprKind::Dereference(Box::new(inner_resolved)),
+            }
+        }
+
+        ExprKind::AddrOf(inner) => {
+            let inner_resolved = resolve_expr(*inner, identifier_map);
+            Expr {
+                ty: ty,
+                kind: ExprKind::AddrOf(Box::new(inner_resolved)),
             }
         }
     }

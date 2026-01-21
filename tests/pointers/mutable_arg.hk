@@ -1,0 +1,15 @@
+fun set_to_99(p: *I32) {
+    *p = 99;
+}
+
+fun main() I32 {
+    let x: I32 = 0;
+    set_to_99(&x);
+    return x;
+}
+
+/*
+<expect_ret>
+99
+</expect_ret>
+*/

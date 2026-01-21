@@ -17,9 +17,10 @@ pub enum Token {
     Tilde,
     Minus,
     Decrement,
+    Ampersand,
 
     Plus,
-    Multiply,
+    Star,
     Divide,
     Remainder,
 
@@ -103,6 +104,9 @@ pub fn lex_string(input: String) -> Queue<Token> {
             ':' => {
                 st(Token::Colon, &mut input, &mut tokens);
             }
+            '&' => {
+                st(Token::Ampersand, &mut input, &mut tokens);
+            }
 
             '-' => tok_alt(
                 &mut input,
@@ -111,7 +115,7 @@ pub fn lex_string(input: String) -> Queue<Token> {
             ),
 
             '+' => tok_alt(&mut input, &mut tokens, &[("+", Token::Plus)]),
-            '*' => tok_alt(&mut input, &mut tokens, &[("*", Token::Multiply)]),
+            '*' => tok_alt(&mut input, &mut tokens, &[("*", Token::Star)]),
             '%' => tok_alt(&mut input, &mut tokens, &[("%", Token::Remainder)]),
 
             '!' => tok_alt(

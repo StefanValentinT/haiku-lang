@@ -100,13 +100,21 @@ pub fn compile_ir(input_path: &str, asm_text: &str, object_only: bool) -> String
     }
     cmd.arg("-o").arg(&output_file);
 
-    let status = cmd.status().unwrap_or_else(|e| {
-        vprintln!("Failed to invoke compiler: {}", e);
+    let output = cmd.output().unwrap_or_else(|e| {
+        eprintln!("Failed to invoke compiler: {}", e);
         std::process::exit(1);
     });
 
-    if !status.success() {
-        vprintln!("Compilation failed with status: {}", status);
+    if !output.status.success() {
+        eprintln!("Compilation failed with status: {}", output.status);
+        eprintln!(
+            "=== Compiler stdout ===\n{}",
+            String::from_utf8_lossy(&output.stdout)
+        );
+        eprintln!(
+            "=== Compiler stderr ===\n{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
         std::process::exit(1);
     }
 
@@ -162,7 +170,7 @@ fn main() {
         let output = std::process::Command::new(&output_file)
             .output()
             .expect("Failed to execute program");
-        
+
         std::io::stdout().write_all(&output.stdout).unwrap();
         std::io::stderr().write_all(&output.stderr).unwrap();
 

@@ -1,0 +1,14 @@
+fun main() I32 {
+    let x: I32 = 10;
+    let p: *I32 = &x;
+
+    *p = 42;
+
+    return x;
+}
+
+/*
+<expect_ret>
+42
+</expect_ret>
+*/

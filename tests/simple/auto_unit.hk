@@ -1,0 +1,17 @@
+fun something(n: I32){
+    let x: I32 = n +1;
+    
+}
+
+fun main() I32{
+    something(3);
+    return 0;
+}
+
+
+/*
+
+<expect_ret>
+0
+</expect_ret>
+*/

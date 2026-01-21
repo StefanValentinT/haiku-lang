@@ -1,7 +1,7 @@
 use std::collections::HashMap;
+use std::fmt::Pointer;
 
-use crate::ast::ast_type::Const;
-use crate::ast::ast_type::Type;
+use crate::ast::ast_type::*;
 use crate::ast::typed_ast::*;
 use crate::ast::untyped_ast::*;
 
@@ -177,18 +177,27 @@ fn typecheck_stmt(stmt: &Stmt, symbols: &mut SymbolTable, expected_ret: &Type) -
     }
 }
 
+fn convert_by_assignment(e: TypedExpr, target: &Type) -> TypedExpr {
+    if &e.ty == target {
+        e
+    } else {
+        panic!(
+            "Cannot convert type {:?} to {:?} as if by assignment",
+            e.ty, target
+        );
+    }
+}
+
 fn typecheck_expr(expr: &Expr, symbols: &mut SymbolTable) -> TypedExpr {
     match &expr.kind {
         ExprKind::Constant(Const::I32(v)) => TypedExpr {
             ty: Type::I32,
             kind: TypedExprKind::Constant(Const::I32(*v)),
         },
-
         ExprKind::Constant(Const::I64(v)) => TypedExpr {
             ty: Type::I64,
             kind: TypedExprKind::Constant(Const::I64(*v)),
         },
-
         ExprKind::Constant(Const::F64(v)) => TypedExpr {
             ty: Type::F64,
             kind: TypedExprKind::Constant(Const::F64(*v)),
@@ -205,12 +214,21 @@ fn typecheck_expr(expr: &Expr, symbols: &mut SymbolTable) -> TypedExpr {
         }
 
         ExprKind::Unary(op, e) => {
-            let inner = typecheck_expr(e, symbols);
+            let typed_inner = typecheck_expr(e, symbols);
+
+            match (&op, &typed_inner.ty) {
+                (UnaryOp::Negate, Type::Pointer { .. })
+                | (UnaryOp::Complement, Type::Pointer { .. }) => {
+                    panic!("Cannot apply {:?} to a pointer type", op);
+                }
+                _ => {}
+            }
+
             TypedExpr {
-                ty: inner.ty.clone(),
+                ty: typed_inner.ty.clone(),
                 kind: TypedExprKind::Unary {
                     op: op.clone(),
-                    expr: Box::new(inner),
+                    expr: Box::new(typed_inner),
                 },
             }
         }
@@ -219,12 +237,22 @@ fn typecheck_expr(expr: &Expr, symbols: &mut SymbolTable) -> TypedExpr {
             let l = typecheck_expr(lhs, symbols);
             let r = typecheck_expr(rhs, symbols);
 
-            if l.ty != r.ty {
-                panic!("Binary op type mismatch: {:?} vs {:?}", l.ty, r.ty);
+            match (&l.ty, &r.ty) {
+                (Type::Pointer { .. }, Type::Pointer { .. }) => match op {
+                    BinaryOp::Equal | BinaryOp::NotEqual | BinaryOp::And | BinaryOp::Or => {}
+                    _ => panic!("Illegal operation on pointer types: {:?}", op),
+                },
+                _ if l.ty == r.ty => {}
+                _ => panic!("Binary op type mismatch: {:?} vs {:?}", l.ty, r.ty),
             }
 
             TypedExpr {
-                ty: l.ty.clone(),
+                ty: match op {
+                    BinaryOp::Equal | BinaryOp::NotEqual | BinaryOp::And | BinaryOp::Or => {
+                        Type::I32
+                    }
+                    _ => l.ty.clone(),
+                },
                 kind: TypedExprKind::Binary {
                     op: op.clone(),
                     lhs: Box::new(l),
@@ -235,17 +263,19 @@ fn typecheck_expr(expr: &Expr, symbols: &mut SymbolTable) -> TypedExpr {
 
         ExprKind::Assign(lhs, rhs) => {
             let l = typecheck_expr(lhs, symbols);
-            let r = typecheck_expr(rhs, symbols);
 
-            if l.ty != r.ty {
-                panic!("Assignment type mismatch: {:?} vs {:?}", l.ty, r.ty);
+            if !is_lvalue(lhs) {
+                panic!("Left-hand side of assignment is not an lvalue");
             }
+
+            let r = typecheck_expr(rhs, symbols);
+            let r_conv = convert_by_assignment(r, &l.ty);
 
             TypedExpr {
                 ty: l.ty.clone(),
                 kind: TypedExprKind::Assign {
                     lhs: Box::new(l),
-                    rhs: Box::new(r),
+                    rhs: Box::new(r_conv),
                 },
             }
         }
@@ -256,7 +286,10 @@ fn typecheck_expr(expr: &Expr, symbols: &mut SymbolTable) -> TypedExpr {
             let e = typecheck_expr(e, symbols);
 
             if t.ty != e.ty {
-                panic!("If branches must have same type");
+                panic!(
+                    "Conditional branches must have same type, got {:?} vs {:?}",
+                    t.ty, e.ty
+                );
             }
 
             TypedExpr {
@@ -304,14 +337,57 @@ fn typecheck_expr(expr: &Expr, symbols: &mut SymbolTable) -> TypedExpr {
         }
 
         ExprKind::Cast { expr, target } => {
-            let inner = typecheck_expr(expr, symbols);
+            let typed_inner = typecheck_expr(expr, symbols);
+
+            match (&typed_inner.ty, target) {
+                (Type::Pointer { .. }, Type::I32 | Type::I64 | Type::F64)
+                | (Type::I32 | Type::I64 | Type::F64, Type::Pointer { .. }) => {
+                    panic!(
+                        "Invalid cast from {:?} to pointer/non-pointer {:?}",
+                        typed_inner.ty, target
+                    );
+                }
+                _ => {}
+            }
+
             TypedExpr {
                 ty: target.clone(),
                 kind: TypedExprKind::Cast {
-                    expr: Box::new(inner),
+                    expr: Box::new(typed_inner),
                     target: target.clone(),
                 },
             }
         }
+
+        ExprKind::Dereference(inner) => {
+            let typed_inner = typecheck_expr(inner, symbols);
+
+            match &typed_inner.ty {
+                Type::Pointer { referenced } => TypedExpr {
+                    ty: (**referenced).clone(),
+                    kind: TypedExprKind::Dereference(Box::new(typed_inner)),
+                },
+                _ => panic!("Cannot dereference non-pointer."),
+            }
+        }
+
+        ExprKind::AddrOf(inner) => {
+            if !is_lvalue(inner) {
+                panic!("Can't take the address of a non-lvalue!");
+            }
+
+            let typed_inner = typecheck_expr(inner, symbols);
+
+            TypedExpr {
+                ty: Type::Pointer {
+                    referenced: Box::new(typed_inner.ty.clone()),
+                },
+                kind: TypedExprKind::AddrOf(Box::new(typed_inner)),
+            }
+        }
     }
+}
+
+fn is_lvalue(expr: &Expr) -> bool {
+    matches!(expr.kind, ExprKind::Var(_) | ExprKind::Dereference(_))
 }

@@ -7,6 +7,7 @@ pub enum Type {
     Unit,
 
     FunType { params: Vec<Type>, ret: Box<Type> },
+    Pointer { referenced: Box<Type> },
 }
 
 #[derive(Debug, Clone, PartialEq)]

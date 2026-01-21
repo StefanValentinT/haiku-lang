@@ -58,7 +58,7 @@ fn emit_function(
             name,
             params
                 .iter()
-                .map(|_| "i32".to_string())
+                .map(|(_, ty)| llvm_type(ty))
                 .collect::<Vec<_>>()
                 .join(", ")
         );
@@ -67,7 +67,6 @@ fn emit_function(
     let locals = collect_locals(body, params);
 
     let mut out = String::new();
-
     let ret_llvm_ty = llvm_type(ret_type);
 
     out.push_str(&format!(
@@ -76,7 +75,7 @@ fn emit_function(
         name,
         params
             .iter()
-            .map(|p| format!("{} %arg_{}", "i32", p))
+            .map(|(p, ty)| format!("{} %arg_{}", llvm_type(ty), p))
             .collect::<Vec<_>>()
             .join(", ")
     ));
@@ -84,18 +83,16 @@ fn emit_function(
     out.push_str("entry:\n");
 
     for (v, ty) in &locals {
-        if !params.contains(v) {
-            if *ty != Type::Unit {
-                let llvm_ty = llvm_type(ty);
-                out.push_str(&format!("  %{} = alloca {}\n", v, llvm_ty));
-            }
+        if !params.iter().any(|(p, _)| p == v) && *ty != Type::Unit {
+            out.push_str(&format!("  %{} = alloca {}\n", v, llvm_type(ty)));
         }
     }
 
-    for p in params {
+    for (p, ty) in params {
+        let llvm_ty = llvm_type(ty);
         out.push_str(&format!(
-            "  %{} = alloca i32\n  store i32 %arg_{}, i32* %{}\n",
-            p, p, p
+            "  %{} = alloca {}\n  store {} %arg_{}, {}* %{}\n",
+            p, llvm_ty, llvm_ty, p, llvm_ty, p
         ));
     }
 
@@ -124,12 +121,8 @@ fn emit_function(
 
     if !terminated {
         match ret_type {
-            Type::Unit => {
-                out.push_str("  ret void\n");
-            }
-            _ => {
-                out.push_str("  unreachable\n");
-            }
+            Type::Unit => out.push_str("  ret void\n"),
+            _ => out.push_str("  unreachable\n"),
         }
     }
 
@@ -447,7 +440,6 @@ fn emit_instr(
                 var_name(dest)
             )
         }
-
         TacInstruction::F64ToI64 { src, dest } => {
             let (load, v, _) = load_val(src, reg_counter);
             let r = fresh_reg(reg_counter);
@@ -461,7 +453,6 @@ fn emit_instr(
                 var_name(dest)
             )
         }
-
         TacInstruction::I32ToF64 { src, dest } => {
             let (load, v, _) = load_val(src, reg_counter);
             let r = fresh_reg(reg_counter);
@@ -475,7 +466,6 @@ fn emit_instr(
                 var_name(dest)
             )
         }
-
         TacInstruction::I64ToF64 { src, dest } => {
             let (load, v, _) = load_val(src, reg_counter);
             let r = fresh_reg(reg_counter);
@@ -489,17 +479,69 @@ fn emit_instr(
                 var_name(dest)
             )
         }
+        TacInstruction::GetAddress { src, dest } => {
+            let llvm_ty = llvm_type(&match src {
+                TacVal::Var(_, t) => t.clone(),
+                _ => panic!("GetAddress source must be a variable"),
+            });
+            let dst_ty = llvm_type(&match dest {
+                TacVal::Var(_, t) => t.clone(),
+                _ => unreachable!(),
+            });
+
+            let r = fresh_reg(reg_counter);
+            format!(
+                "  {} = getelementptr {}, {}* %{}, i32 0\n  store {} {}, {}* %{}\n",
+                r,
+                llvm_ty,
+                llvm_ty,
+                var_name(src),
+                dst_ty,
+                r,
+                dst_ty,
+                var_name(dest)
+            )
+        }
+
+        TacInstruction::Load { src_ptr, dest } => {
+            let (load_ir, v, ty) = load_val(src_ptr, reg_counter);
+            let dst_ty = llvm_type(&match dest {
+                TacVal::Var(_, t) => t.clone(),
+                _ => unreachable!(),
+            });
+
+            let r = fresh_reg(reg_counter);
+            format!(
+                "{}  {} = load {}, {}* {}\n  store {} {}, {}* %{}\n",
+                load_ir,
+                r,
+                dst_ty,
+                dst_ty,
+                v,
+                dst_ty,
+                r,
+                dst_ty,
+                var_name(dest)
+            )
+        }
+
+        TacInstruction::Store { src, dest_ptr } => {
+            let (src_load, val, ty) = load_val(src, reg_counter);
+            let (ptr_load, ptr_val, ptr_ty) = load_val(dest_ptr, reg_counter);
+            format!(
+                "{}{}  store {} {}, {}* {}\n",
+                src_load, ptr_load, ty, val, ty, ptr_val
+            )
+        }
     }
 }
 
-fn load_val(v: &TacVal, reg_counter: &mut usize) -> (String, String, &'static str) {
+fn load_val(v: &TacVal, reg_counter: &mut usize) -> (String, String, String) {
     match v {
-        TacVal::Constant(TacConst::I32(c)) => ("".into(), c.to_string(), "i32"),
-        TacVal::Constant(TacConst::I64(c)) => ("".into(), c.to_string(), "i64"),
-        TacVal::Constant(TacConst::F64(c)) => ("".into(), format!("{:.6e}", c), "double"),
-
-        TacVal::Var(_, Type::Unit) => ("".into(), "".into(), "void"),
-
+        TacVal::Constant(TacConst::I32(c)) => ("".into(), c.to_string(), "i32".into()),
+        TacVal::Constant(TacConst::I64(c)) => ("".into(), c.to_string(), "i64".into()),
+        TacVal::Constant(TacConst::F64(c)) => ("".into(), format!("{:.6e}", c), "double".into()),
+        TacVal::Var(_, Type::Unit) => ("".into(), "".into(), "void".into()),
         TacVal::Var(name, ty) => {
             let r = fresh_reg(reg_counter);
             let llvm_ty = llvm_type(ty);
@@ -512,13 +554,14 @@ fn load_val(v: &TacVal, reg_counter: &mut usize) -> (String, String, &'static st
     }
 }
 
-fn llvm_type(ty: &Type) -> &'static str {
+fn llvm_type(ty: &Type) -> String {
     match ty {
-        Type::I32 => "i32",
-        Type::I64 => "i64",
-        Type::F64 => "double",
-        Type::Unit => "void",
-        Type::FunType { .. } => unreachable!("function types not first-class in LLVM IR here"),
+        Type::I32 => "i32".into(),
+        Type::I64 => "i64".into(),
+        Type::F64 => "double".into(),
+        Type::Unit => "void".into(),
+        Type::Pointer { referenced } => format!("{}*", llvm_type(referenced)),
+        Type::FunType { .. } => unreachable!("Function types are not first-class in LLVM"),
     }
 }
 
@@ -535,16 +578,25 @@ fn var_name(v: &TacVal) -> &str {
     }
 }
 
-fn collect_locals(body: &[TacInstruction], params: &[String]) -> HashSet<(String, Type)> {
+fn collect_locals(body: &[TacInstruction], params: &[(String, Type)]) -> HashSet<(String, Type)> {
     let mut vars = HashSet::new();
 
-    for p in params {
-        vars.insert((p.clone(), Type::I32));
+    for (p, ty) in params {
+        vars.insert((p.clone(), ty.clone()));
+    }
+
+    fn collect_val(v: &TacVal, vars: &mut HashSet<(String, Type)>) {
+        if let TacVal::Var(name, ty) = v {
+            vars.insert((name.clone(), ty.clone()));
+        }
     }
 
     for instr in body {
         match instr {
-            TacInstruction::Copy { src, dest } | TacInstruction::Unary { src, dest, .. } => {
+            TacInstruction::Copy { src, dest }
+            | TacInstruction::Unary { src, dest, .. }
+            | TacInstruction::Truncate { src, dest }
+            | TacInstruction::SignExtend { src, dest } => {
                 collect_val(src, &mut vars);
                 collect_val(dest, &mut vars);
             }
@@ -564,15 +616,28 @@ fn collect_locals(body: &[TacInstruction], params: &[String]) -> HashSet<(String
                 collect_val(dest, &mut vars);
             }
 
-            TacInstruction::Truncate { src, dest } | TacInstruction::SignExtend { src, dest } => {
+            TacInstruction::Load { src_ptr, dest } => {
+                collect_val(src_ptr, &mut vars);
+                collect_val(dest, &mut vars);
+            }
+
+            TacInstruction::Store { src, dest_ptr } => {
+                collect_val(src, &mut vars);
+                collect_val(dest_ptr, &mut vars);
+            }
+
+            TacInstruction::GetAddress { src, dest } => {
                 collect_val(src, &mut vars);
                 collect_val(dest, &mut vars);
             }
 
-            TacInstruction::Return(None) => (),
-            TacInstruction::JumpIfZero { condition: v, .. }
-            | TacInstruction::JumpIfNotZero { condition: v, .. } => {
+            TacInstruction::Return(Some(v)) => {
                 collect_val(v, &mut vars);
+            }
+
+            TacInstruction::JumpIfZero { condition, .. }
+            | TacInstruction::JumpIfNotZero { condition, .. } => {
+                collect_val(condition, &mut vars);
             }
 
             _ => {}

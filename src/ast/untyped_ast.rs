@@ -78,5 +78,8 @@ pub enum ExprKind {
 
     FunctionCall(String, Vec<Expr>),
 
+    Dereference(Box<Expr>),
+    AddrOf(Box<Expr>),
+
     Cast { expr: Box<Expr>, target: Type },
 }
