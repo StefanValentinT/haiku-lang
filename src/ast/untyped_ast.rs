@@ -13,8 +13,14 @@ pub enum Decl {
 #[derive(Debug, Clone)]
 pub struct VarDecl {
     pub name: String,
-    pub init_expr: Expr,
+    pub initializer: Initializer,
     pub var_type: Type,
+}
+
+#[derive(Debug, Clone)]
+pub enum Initializer {
+    SingleInit(Expr),
+    CompoundInit(Vec<Initializer>),
 }
 
 #[derive(Debug, Clone)]

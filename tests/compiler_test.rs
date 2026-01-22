@@ -129,6 +129,18 @@ fn compiler_tests() {
             .unwrap_or_else(|_| panic!("Failed to read {}", path.display()));
 
         let test_kind = classify_test(&contents);
+
+        if matches!(test_kind, TestKind::Skip) {
+            rows.push(TestRow {
+                file: pad_truncate(&path.file_name().unwrap().to_string_lossy(), FILE_COL_WIDTH),
+                ty: pad_truncate("Skip", TYPE_COL_WIDTH),
+                expected: "".to_string(),
+                actual: "".to_string(),
+                passed: pad_truncate("✅", PASSED_COL_WIDTH),
+            });
+            continue;
+        }
+
         let result = run_compiler(&path);
 
         let (ty, expected, actual, passed) = match &test_kind {
@@ -185,7 +197,7 @@ fn compiler_tests() {
                 )
             }
 
-            TestKind::Skip => ("Skip".to_string(), "".to_string(), "".to_string(), true),
+            TestKind::Skip => unreachable!(),
         };
 
         rows.push(TestRow {
@@ -196,7 +208,7 @@ fn compiler_tests() {
             passed: pad_truncate(if passed { "✅" } else { "❌" }, PASSED_COL_WIDTH),
         });
 
-        if !passed && !matches!(test_kind, TestKind::Skip) {
+        if !passed {
             eprintln!("==== Test failed: {} ====", path.display());
             eprintln!("stdout:\n{}", result.stdout);
             eprintln!("stderr:\n{}", result.stderr);

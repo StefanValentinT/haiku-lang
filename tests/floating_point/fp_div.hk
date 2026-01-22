@@ -8,7 +8,7 @@ fun main() I32 {
 }
 
 /*
-<expect>
+<expect_ret>
 1
-</expect>
+</expect_ret>
 */

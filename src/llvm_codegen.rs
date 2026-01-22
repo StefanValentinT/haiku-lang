@@ -298,8 +298,6 @@ fn emit_instr(
                         var_name(dest)
                     );
                 }
-
-                _ => unreachable!(),
             };
 
             format!(
@@ -562,6 +560,7 @@ fn llvm_type(ty: &Type) -> String {
         Type::Unit => "void".into(),
         Type::Pointer { referenced } => format!("{}*", llvm_type(referenced)),
         Type::FunType { .. } => unreachable!("Function types are not first-class in LLVM"),
+        Type::Array { element, size } => todo!(),
     }
 }
 
@@ -645,10 +644,4 @@ fn collect_locals(body: &[TacInstruction], params: &[(String, Type)]) -> HashSet
     }
 
     vars
-}
-
-fn collect_val(v: &TacVal, vars: &mut HashSet<(String, Type)>) {
-    if let TacVal::Var(name, ty) = v {
-        vars.insert((name.clone(), ty.clone()));
-    }
 }

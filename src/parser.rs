@@ -146,12 +146,13 @@ fn parse_declaration(tokens: &mut Queue<Token>) -> Decl {
     expect(Token::Assign, tokens);
     let mut init_expr = parse_expr(tokens, 0);
     init_expr.ty = Some(var_type.clone());
+    let initializer = Initializer::SingleInit(init_expr);
 
     expect(Token::Semicolon, tokens);
 
     Decl::Variable(VarDecl {
         name,
-        init_expr,
+        initializer,
         var_type,
     })
 }

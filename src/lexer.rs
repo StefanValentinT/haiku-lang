@@ -10,8 +10,13 @@ pub enum Token {
 
     OpenParen,
     CloseParen,
+
     OpenBrace,
     CloseBrace,
+
+    OpenBracket,
+    CloseBracket,
+
     Semicolon,
 
     Tilde,
@@ -83,6 +88,12 @@ pub fn lex_string(input: String) -> Queue<Token> {
             '{' => {
                 st(Token::OpenBrace, &mut input, &mut tokens);
             }
+            '[' => {
+                st(Token::OpenBracket, &mut input, &mut tokens);
+            }
+            ']' => {
+                st(Token::CloseBracket, &mut input, &mut tokens);
+            }
             '}' => {
                 st(Token::CloseBrace, &mut input, &mut tokens);
             }
@@ -103,9 +114,6 @@ pub fn lex_string(input: String) -> Queue<Token> {
             }
             ':' => {
                 st(Token::Colon, &mut input, &mut tokens);
-            }
-            '&' => {
-                st(Token::Ampersand, &mut input, &mut tokens);
             }
 
             '-' => tok_alt(
@@ -144,7 +152,11 @@ pub fn lex_string(input: String) -> Queue<Token> {
 
             '|' => tok_alt(&mut input, &mut tokens, &[("||", Token::Or)]),
 
-            '&' => tok_alt(&mut input, &mut tokens, &[("&&", Token::And)]),
+            '&' => tok_alt(
+                &mut input,
+                &mut tokens,
+                &[("&", Token::Ampersand), ("&&", Token::And)],
+            ),
 
             _ => panic!("Lexer error: unexpected character '{}'", c),
         }

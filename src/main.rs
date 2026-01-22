@@ -1,11 +1,3 @@
-use std::{
-    fs,
-    io::Write,
-    os::unix::process::ExitStatusExt,
-    path::Path,
-    process::{Command, exit},
-};
-
 mod ast;
 mod gen_names;
 mod lexer;
@@ -16,12 +8,13 @@ mod semantic;
 mod tac;
 mod utils;
 
-use clap::Parser;
-
 use crate::{
     lexer::lex_string, llvm_codegen::emit_llvm, parser::parse, semantic::semantic_analysis,
     tac::gen_tac,
 };
+use clap::Parser;
+use std::process::Stdio;
+use std::{fs, io::Write, path::Path, process::Command};
 
 static mut VERBOSE: bool = false;
 
@@ -61,7 +54,6 @@ struct Args {
 
     filename: String,
 }
-use std::process::Stdio;
 
 pub fn compile_ir(input_path: &str, asm_text: &str, object_only: bool) -> String {
     let input_path = Path::new(input_path);

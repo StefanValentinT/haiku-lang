@@ -22,16 +22,6 @@ impl<T: Clone + PartialEq> Queue<T> {
 }
 
 impl<T: Clone> Queue<T> {
-    pub fn peek_n(&self, n: usize) -> Result<T, &str> {
-        if n < self.queue.len() {
-            Ok(self.queue[n].clone())
-        } else {
-            Err("The queue does not have that many elements")
-        }
-    }
-}
-
-impl<T: Clone> Queue<T> {
     pub fn new() -> Queue<T> {
         Queue { queue: vec![] }
     }
@@ -67,18 +57,6 @@ impl<T: Clone> IsQueue<T> for Queue<T> {
     }
 }
 
-pub fn to_queue<T, I>(iter: I) -> Queue<T>
-where
-    I: IntoIterator<Item = T>,
-    T: Clone,
-{
-    let mut q = Queue::new();
-    for item in iter {
-        q.add(item);
-    }
-    q
-}
-
 pub fn str_to_queue<S>(s: S) -> Queue<char>
 where
     S: AsRef<str>,
@@ -88,14 +66,4 @@ where
         q.add(c);
     }
     q
-}
-
-trait QueueExt {
-    fn starts_with(&self, s: &str) -> bool;
-}
-
-impl QueueExt for Queue<char> {
-    fn starts_with(&self, s: &str) -> bool {
-        s.chars().enumerate().all(|(i, c)| self.is_there(i, c))
-    }
 }

@@ -71,10 +71,13 @@ fn resolve_decl(decl: Decl, identifier_map: &mut HashMap<String, MapEntry>) -> D
 fn resolve_var_decl(var_decl: VarDecl, identifier_map: &mut HashMap<String, MapEntry>) -> VarDecl {
     let VarDecl {
         name,
-        init_expr,
+        initializer,
         var_type,
     } = var_decl;
-
+    let init_expr = match initializer {
+        Initializer::SingleInit(expr) => expr,
+        Initializer::CompoundInit(_exprs) => todo!(),
+    };
     if let Some(prev) = identifier_map.get(&name) {
         if prev.from_current_scope {
             panic!("Duplicate variable declaration: {}", name);
@@ -90,11 +93,11 @@ fn resolve_var_decl(var_decl: VarDecl, identifier_map: &mut HashMap<String, MapE
         },
     );
 
-    let resolved_expr = resolve_expr(init_expr, identifier_map);
+    let resolved_expr = Initializer::SingleInit(resolve_expr(init_expr, identifier_map));
 
     VarDecl {
         name: unique_name,
-        init_expr: resolved_expr,
+        initializer: resolved_expr,
         var_type,
     }
 }

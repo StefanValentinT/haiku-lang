@@ -18,14 +18,6 @@ pub fn make_loop_label() -> String {
     format!("Label{}", make_temporary())
 }
 
-pub fn make_if_end() -> String {
-    format!("if_end{}", next_number())
-}
-
-pub fn make_if_else() -> String {
-    format!("if_else{}", next_number())
-}
-
 pub fn make_cond_else() -> String {
     format!("cond_else{}", next_number())
 }
@@ -48,8 +40,4 @@ pub fn make_or_true() -> String {
 
 pub fn make_or_end() -> String {
     format!("or_end{}", next_number())
-}
-
-pub fn make_fun_exit() -> String {
-    format!("__fun_exit{}", next_number())
 }

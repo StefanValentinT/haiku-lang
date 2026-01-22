@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::fmt::Pointer;
 
 use crate::ast::ast_type::*;
 use crate::ast::typed_ast::*;
@@ -97,7 +96,11 @@ fn typecheck_block(
 fn typecheck_decl(decl: &Decl, symbols: &mut SymbolTable) -> TypedDecl {
     match decl {
         Decl::Variable(v) => {
-            let init = typecheck_expr(&v.init_expr, symbols);
+            let init_expr = match &v.initializer {
+                Initializer::SingleInit(expr) => expr,
+                Initializer::CompoundInit(_exprs) => todo!(),
+            };
+            let init = typecheck_expr(&init_expr, symbols);
             if init.ty != v.var_type {
                 panic!(
                     "Type mismatch in variable '{}': expected {:?}, got {:?}",
