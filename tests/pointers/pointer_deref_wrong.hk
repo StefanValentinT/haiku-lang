@@ -4,6 +4,6 @@ fun main() I32 {
     return y;
 }
 
-/*
+#[
 <fail>
-*/
+]#

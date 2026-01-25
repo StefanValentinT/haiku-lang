@@ -2,28 +2,28 @@ extern fun putchar(i: I32);
 extern fun getchar() I32;
 
 fun main() I32{
-    putchar(72);   // H
-    putchar(101);  // e
-    putchar(108);  // l
-    putchar(108);  // l
-    putchar(111);  // o
-    putchar(32);   // space
-    putchar(87);   // W
-    putchar(111);  // o
-    putchar(114);  // r
-    putchar(108);  // l
-    putchar(100);  // d
-    putchar(33);   // !
-    putchar(10);   // \n
+    putchar(72);   # H
+    putchar(101);  # e
+    putchar(108);  # l
+    putchar(108);  # l
+    putchar(111);  # o
+    putchar(32);   # space
+    putchar(87);   # W
+    putchar(111);  # o
+    putchar(114);  # r
+    putchar(108);  # l
+    putchar(100);  # d
+    putchar(33);   # !
+    putchar(10);   # \n
 
     return 0;
 }
 
-/*
+#[
 <expect_out>
 Hello World!
 </expect_out>
 <expect_ret>
 0
 </expect_ret>
-*/
+]#

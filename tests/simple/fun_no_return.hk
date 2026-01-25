@@ -9,11 +9,11 @@ fun main() I32{
     return 0;
 }
 
-/*
+#[
 <expect_out>
 H
 </expect_out>
 <expect_ret>
 0
 </expect_ret>
-*/
+]#

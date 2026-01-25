@@ -69,10 +69,7 @@ pub fn lex_string(input: String) -> Queue<Token> {
 
         match c {
             '/' => {
-                input.consume();
-                if !skip_if_comment(&mut input) {
-                    tokens.add(Token::Divide);
-                }
+                st(Token::Divide, &mut input, &mut tokens);
             }
 
             'a'..='z' | 'A'..='Z' | '_' => tokens.add(lex_identifier(&mut input)),
@@ -280,27 +277,5 @@ fn lex_number(input: &mut Queue<char>) -> Token {
         Token::IntLiteral64(buf.parse().unwrap())
     } else {
         Token::IntLiteral32(buf.parse().unwrap())
-    }
-}
-
-fn skip_if_comment(input: &mut Queue<char>) -> bool {
-    match input.peek() {
-        Ok('/') => {
-            input.consume();
-            consume_while(input, |c| c != '\n');
-            true
-        }
-        Ok('*') => {
-            input.consume();
-            let mut prev = '\0';
-            while let Ok(c) = input.remove() {
-                if prev == '*' && c == '/' {
-                    break;
-                }
-                prev = c;
-            }
-            true
-        }
-        _ => false,
     }
 }

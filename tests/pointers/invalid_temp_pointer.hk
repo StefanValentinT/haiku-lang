@@ -3,6 +3,6 @@ fun main() I32 {
     return 0;
 }
 
-/*
+#[
 <fail>
-*/
+]#

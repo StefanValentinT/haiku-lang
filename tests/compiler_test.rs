@@ -78,7 +78,7 @@ fn classify_test(contents: &str) -> TestKind {
 }
 
 fn run_compiler(path: &Path) -> CompilerResult {
-    let mut cmd = cargo::cargo_bin_cmd!("compiler");
+    let mut cmd = cargo::cargo_bin_cmd!("haiku");
     let output = cmd.arg(path).output().expect("Failed to run compiler");
 
     #[cfg(unix)]

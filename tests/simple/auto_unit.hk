@@ -9,9 +9,9 @@ fun main() I32{
 }
 
 
-/*
+#[
 
 <expect_ret>
 0
 </expect_ret>
-*/
+]#

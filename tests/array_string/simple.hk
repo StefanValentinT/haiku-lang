@@ -3,8 +3,8 @@ fun main() I32 {
     return list[2];
 }
 
-/*
+#[
 <expect_not_yet>
 3
 </expect_not_yet>
-*/
+]#

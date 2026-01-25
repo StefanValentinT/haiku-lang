@@ -13,6 +13,6 @@ fun main() I32{
     return bad;
 }
 
-/*
+#[
 <fail>
-*/
+]#

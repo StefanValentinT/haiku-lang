@@ -5,6 +5,6 @@ fun main() I32 {
     return x;
 }
 
-/*
+#[
 <fail>
-*/
+]#

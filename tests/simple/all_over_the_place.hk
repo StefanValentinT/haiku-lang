@@ -7,8 +7,8 @@ fun something() I32 {
 }
 
 
-/*
+#[
 <expect_ret>
 5
 </expect_ret>
-*/
+]#

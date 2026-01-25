@@ -8,8 +8,8 @@ fun main() I32 {
     return x;
 }
 
-/*
+#[
 <expect_ret>
 99
 </expect_ret>
-*/
+]#

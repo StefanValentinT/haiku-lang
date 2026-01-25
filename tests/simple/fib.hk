@@ -10,8 +10,8 @@ fun main() I32 {
     return ex;
 }
 
-/*
+#[
 <expect_ret>
 55
 </expect_ret>
-*/
+]#

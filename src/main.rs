@@ -2,7 +2,9 @@ mod ast;
 mod gen_names;
 mod lexer;
 mod llvm_codegen;
+mod lsp;
 mod parser;
+mod preprocess;
 mod queue;
 mod semantic;
 mod tac;
@@ -16,8 +18,6 @@ use clap::Parser;
 use std::process::Stdio;
 use std::{fs, io::Write, path::Path, process::Command};
 
-static mut VERBOSE: bool = false;
-
 macro_rules! vprintln {
     ($($arg:tt)*) => {
         unsafe {
@@ -27,6 +27,9 @@ macro_rules! vprintln {
         }
     }
 }
+
+const DEV_BUILD: &str = env!("DEV_BUILD");
+static mut VERBOSE: bool = false;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about)]
@@ -52,7 +55,10 @@ struct Args {
     #[arg(short, long)]
     verbose: bool,
 
-    filename: String,
+    #[arg(long)]
+    lsp: bool,
+
+    filename: Option<String>,
 }
 
 pub fn compile_ir(input_path: &str, asm_text: &str, object_only: bool) -> String {
@@ -114,18 +120,30 @@ pub fn compile_ir(input_path: &str, asm_text: &str, object_only: bool) -> String
     output_file
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let args = Args::parse();
 
     unsafe {
         VERBOSE = args.verbose;
     }
 
-    let content = fs::read_to_string(&args.filename).expect("Failed to read the input file");
+    vprintln!("{}", DEV_BUILD);
 
-    vprintln!("Processing file: {}", args.filename);
+    if args.lsp {
+        lsp::run_language_server().await;
+        return;
+    }
 
-    let lexeme = lex_string(content);
+    let filename = args.filename.as_ref().expect("No input file provided");
+
+    let content = fs::read_to_string(&filename).expect("Failed to read the input file");
+
+    vprintln!("Processing file: {}", &filename);
+
+    let cleaned = preprocess::preprocess(&content);
+
+    let lexeme = lex_string(cleaned);
     vprintln!("Lexeme: {:?}", lexeme);
     if args.lex {
         return;
@@ -155,7 +173,7 @@ fn main() {
         return;
     }
 
-    let output_file = compile_ir(&args.filename, &llvm_ir, args.c);
+    let output_file = compile_ir(&filename, &llvm_ir, args.c);
 
     if !args.c {
         vprintln!("Running executable...");

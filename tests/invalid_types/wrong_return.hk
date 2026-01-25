@@ -6,6 +6,6 @@ fun main() I32{
     return wrong();
 }
 
-/*
+#[
 <fail>
-*/
+]#
