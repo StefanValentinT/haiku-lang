@@ -1,0 +1,9 @@
+fun main() I32 {
+    let list: [I32;6] = [1,2,3,4];
+    return list[2];
+}
+
+#[
+<fail>
+]#
+

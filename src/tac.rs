@@ -88,6 +88,17 @@ pub enum TacInstruction {
         src: TacVal,
         dest_ptr: TacVal,
     },
+    AddPtr {
+        ptr: TacVal,
+        index: TacVal,
+        scale: i32,
+        dest: TacVal,
+    },
+    CopyToOffset {
+        src: TacVal,
+        dest: TacVal,
+        offset: i32,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -454,8 +465,76 @@ fn expr_to_tac(expr: TypedExpr, instructions: &mut Vec<TacInstruction>) -> TacVa
             instructions,
         ),
         TypedExprKind::Assign { lhs, rhs } => assign_expr_to_tac(*lhs, *rhs, instructions),
-        TypedExprKind::ArrayLiteral(typed_exprs) => todo!(),
-        TypedExprKind::ArrayIndex(typed_expr, typed_expr1) => todo!(),
+        TypedExprKind::ArrayLiteral(elems) => {
+            let base = TacVal::Var(make_temporary(), expr.ty.clone());
+            emit_array_init(&base, &expr.ty, elems, 0, instructions);
+            base
+        }
+
+        TypedExprKind::ArrayIndex(array, index) => {
+            let array_val = expr_to_tac(*array, instructions);
+            let index_val = expr_to_tac(*index, instructions);
+
+            let Type::Array { element_type, .. } = array_val_type(&array_val) else {
+                unreachable!()
+            };
+
+            let elem_size = sizeof(&element_type);
+
+            let ptr = TacVal::Var(
+                make_temporary(),
+                Type::Pointer {
+                    referenced: element_type.clone(),
+                },
+            );
+
+            instructions.push(TacInstruction::AddPtr {
+                ptr: array_val,
+                index: index_val,
+                scale: elem_size,
+                dest: ptr.clone(),
+            });
+
+            match &*element_type {
+                Type::Array { .. } => ptr,
+                _ => {
+                    let dst = TacVal::Var(make_temporary(), *element_type);
+                    instructions.push(TacInstruction::Load {
+                        src_ptr: ptr,
+                        dest: dst.clone(),
+                    });
+                    dst
+                }
+            }
+        }
+    }
+}
+
+fn emit_array_init(
+    base: &TacVal,
+    ty: &Type,
+    elems: Vec<TypedExpr>,
+    base_offset: i32,
+    instructions: &mut Vec<TacInstruction>,
+) {
+    let Type::Array { element_type, .. } = ty else {
+        unreachable!()
+    };
+    let elem_size = sizeof(element_type);
+    for (i, elem) in elems.into_iter().enumerate() {
+        let offset = base_offset + (i as i32) * elem_size;
+        if let Type::Array { .. } = &**element_type {
+            if let TypedExprKind::ArrayLiteral(inner) = elem.kind {
+                emit_array_init(base, element_type, inner, offset, instructions);
+                continue;
+            }
+        }
+        let val = expr_to_tac(elem, instructions);
+        instructions.push(TacInstruction::CopyToOffset {
+            src: val,
+            dest: base.clone(),
+            offset,
+        });
     }
 }
 
@@ -553,5 +632,23 @@ fn convert_binop(op: BinaryOp) -> TacBinaryOp {
         BinaryOp::GreaterThan => TacBinaryOp::GreaterThan,
         BinaryOp::GreaterOrEqual => TacBinaryOp::GreaterOrEqual,
         BinaryOp::And | BinaryOp::Or => unreachable!(),
+    }
+}
+
+fn array_val_type(val: &TacVal) -> Type {
+    match val {
+        TacVal::Var(_, ty) => ty.clone(),
+        _ => panic!("Expected array base to be a variable"),
+    }
+}
+
+fn sizeof(ty: &Type) -> i32 {
+    match ty {
+        Type::I32 => 4,
+        Type::I64 => 8,
+        Type::F64 => 8,
+        Type::Pointer { .. } => 8,
+        Type::Array { element_type, size } => size * sizeof(element_type),
+        _ => panic!("Unsupported type for sizeof"),
     }
 }

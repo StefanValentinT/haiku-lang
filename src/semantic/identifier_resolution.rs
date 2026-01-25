@@ -258,8 +258,26 @@ fn resolve_expr(expr: Expr, identifier_map: &mut HashMap<String, MapEntry>) -> E
                 kind: ExprKind::AddrOf(Box::new(inner_resolved)),
             }
         }
-        ExprKind::ArrayLiteral(exprs) => todo!(),
-        ExprKind::ArrayIndex(expr, expr1) => todo!(),
+
+        ExprKind::ArrayLiteral(exprs) => {
+            let resolved_exprs = exprs
+                .into_iter()
+                .map(|e| resolve_expr(e, identifier_map))
+                .collect();
+            Expr {
+                ty,
+                kind: ExprKind::ArrayLiteral(resolved_exprs),
+            }
+        }
+
+        ExprKind::ArrayIndex(array_expr, index_expr) => {
+            let array_resolved = resolve_expr(*array_expr, identifier_map);
+            let index_resolved = resolve_expr(*index_expr, identifier_map);
+            Expr {
+                ty,
+                kind: ExprKind::ArrayIndex(Box::new(array_resolved), Box::new(index_resolved)),
+            }
+        }
     }
 }
 

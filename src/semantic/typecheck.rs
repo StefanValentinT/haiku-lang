@@ -378,11 +378,57 @@ fn typecheck_expr(expr: &Expr, symbols: &mut SymbolTable) -> TypedExpr {
                 kind: TypedExprKind::AddrOf(Box::new(typed_inner)),
             }
         }
-        ExprKind::ArrayLiteral(exprs) => todo!(),
-        ExprKind::ArrayIndex(expr, expr1) => todo!(),
+
+        ExprKind::ArrayLiteral(exprs) => {
+            if exprs.is_empty() {
+                panic!("Cannot infer type of empty array literal");
+            }
+
+            let typed_exprs: Vec<_> = exprs.iter().map(|e| typecheck_expr(e, symbols)).collect();
+
+            let first_ty = &typed_exprs[0].ty;
+            for e in &typed_exprs[1..] {
+                if &e.ty != first_ty {
+                    panic!(
+                        "Array literal elements must have the same type, got {:?} and {:?}",
+                        first_ty, e.ty
+                    );
+                }
+            }
+
+            TypedExpr {
+                ty: Type::Array {
+                    element_type: Box::new(first_ty.clone()),
+                    size: typed_exprs.len() as i32,
+                },
+                kind: TypedExprKind::ArrayLiteral(typed_exprs),
+            }
+        }
+
+        ExprKind::ArrayIndex(array_expr, index_expr) => {
+            let typed_array = typecheck_expr(array_expr, symbols);
+            let typed_index = typecheck_expr(index_expr, symbols);
+
+            if typed_index.ty != Type::I32 {
+                panic!("Array index must be I32, got {:?}", typed_index.ty);
+            }
+
+            let element_ty = match &typed_array.ty {
+                Type::Array { element_type, .. } => (**element_type).clone(),
+                other => panic!("Cannot index non-array type {:?}", other),
+            };
+
+            TypedExpr {
+                ty: element_ty,
+                kind: TypedExprKind::ArrayIndex(Box::new(typed_array), Box::new(typed_index)),
+            }
+        }
     }
 }
 
 fn is_lvalue(expr: &Expr) -> bool {
-    matches!(expr.kind, ExprKind::Var(_) | ExprKind::Dereference(_))
+    matches!(
+        expr.kind,
+        ExprKind::Var(_) | ExprKind::Dereference(_) | ExprKind::ArrayIndex(_, _)
+    )
 }

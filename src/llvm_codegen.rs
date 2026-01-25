@@ -500,7 +500,6 @@ fn emit_instr(
                 var_name(dest)
             )
         }
-
         TacInstruction::Load { src_ptr, dest } => {
             let (load_ir, v, ty) = load_val(src_ptr, reg_counter);
             let dst_ty = llvm_type(&match dest {
@@ -522,13 +521,83 @@ fn emit_instr(
                 var_name(dest)
             )
         }
-
         TacInstruction::Store { src, dest_ptr } => {
             let (src_load, val, ty) = load_val(src, reg_counter);
             let (ptr_load, ptr_val, ptr_ty) = load_val(dest_ptr, reg_counter);
             format!(
                 "{}{}  store {} {}, {}* {}\n",
                 src_load, ptr_load, ty, val, ty, ptr_val
+            )
+        }
+
+        TacInstruction::AddPtr {
+            ptr,
+            index,
+            scale: _,
+            dest,
+        } => {
+            let (idx_load, idx_val, _) = load_val(index, reg_counter);
+
+            let (array_ty, array_size) = match ptr {
+                TacVal::Var(_, Type::Array { element_type, size }) => {
+                    (llvm_type(element_type), *size)
+                }
+                _ => unreachable!("AddPtr ptr must be an array variable"),
+            };
+
+            let r = fresh_reg(reg_counter);
+
+            format!(
+                "{}  {} = getelementptr inbounds [{} x {}], [{} x {}]* %{}, i64 0, i64 {}\n  store {}* {}, {}** %{}\n",
+                idx_load,
+                r,
+                array_size,
+                array_ty,
+                array_size,
+                array_ty,
+                var_name(ptr),
+                idx_val,
+                array_ty,
+                r,
+                array_ty,
+                var_name(dest)
+            )
+        }
+        TacInstruction::CopyToOffset { src, dest, offset } => {
+            let (load, v, elem_ty) = load_val(src, reg_counter);
+
+            let (array_ty, array_size) = match dest {
+                TacVal::Var(_, Type::Array { element_type, size }) => {
+                    (llvm_type(element_type), *size)
+                }
+                _ => panic!("CopyToOffset destination must be an array variable"),
+            };
+
+            let elem_ptr = fresh_reg(reg_counter);
+
+            let elem_size = match elem_ty.as_str() {
+                "i32" => 4,
+                "i64" => 8,
+                "double" => 8,
+                _ => panic!("unsupported element size"),
+            };
+
+            let index = offset / elem_size;
+
+            format!(
+                "{}  {} = getelementptr inbounds [{} x {}], [{} x {}]* %{}, i64 0, i64 {}\n  store {} {}, {}* {}\n",
+                load,
+                elem_ptr,
+                array_size,
+                array_ty,
+                array_size,
+                array_ty,
+                var_name(dest),
+                index,
+                elem_ty,
+                v,
+                elem_ty,
+                elem_ptr
             )
         }
     }
@@ -559,11 +628,10 @@ fn llvm_type(ty: &Type) -> String {
         Type::F64 => "double".into(),
         Type::Unit => "void".into(),
         Type::Pointer { referenced } => format!("{}*", llvm_type(referenced)),
+
+        Type::Array { element_type, size } => format!("[{} x {}]", size, llvm_type(element_type)),
+
         Type::FunType { .. } => unreachable!("Function types are not first-class in LLVM"),
-        Type::Array {
-            element_type: element,
-            size,
-        } => todo!(),
     }
 }
 
