@@ -19,8 +19,7 @@ pub struct VarDecl {
 
 #[derive(Debug, Clone)]
 pub enum Initializer {
-    SingleInit(Expr),
-    CompoundInit(Vec<Initializer>),
+    InitExpr(Expr),
 }
 
 #[derive(Debug, Clone)]
@@ -86,6 +85,9 @@ pub enum ExprKind {
 
     Dereference(Box<Expr>),
     AddrOf(Box<Expr>),
+
+    ArrayLiteral(Vec<Expr>),
+    ArrayIndex(Box<Expr>, Box<Expr>),
 
     Cast { expr: Box<Expr>, target: Type },
 }

@@ -100,6 +100,9 @@ pub enum TypedExprKind {
     Dereference(Box<TypedExpr>),
     AddrOf(Box<TypedExpr>),
 
+    ArrayLiteral(Vec<TypedExpr>),
+    ArrayIndex(Box<TypedExpr>, Box<TypedExpr>),
+
     Cast {
         expr: Box<TypedExpr>,
         target: Type,

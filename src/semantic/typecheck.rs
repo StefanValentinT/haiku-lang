@@ -97,8 +97,7 @@ fn typecheck_decl(decl: &Decl, symbols: &mut SymbolTable) -> TypedDecl {
     match decl {
         Decl::Variable(v) => {
             let init_expr = match &v.initializer {
-                Initializer::SingleInit(expr) => expr,
-                Initializer::CompoundInit(_exprs) => todo!(),
+                Initializer::InitExpr(expr) => expr,
             };
             let init = typecheck_expr(&init_expr, symbols);
             if init.ty != v.var_type {
@@ -205,7 +204,6 @@ fn typecheck_expr(expr: &Expr, symbols: &mut SymbolTable) -> TypedExpr {
             ty: Type::F64,
             kind: TypedExprKind::Constant(Const::F64(*v)),
         },
-
         ExprKind::Var(name) => {
             let entry = symbols
                 .get(name)
@@ -215,7 +213,6 @@ fn typecheck_expr(expr: &Expr, symbols: &mut SymbolTable) -> TypedExpr {
                 kind: TypedExprKind::Var(name.clone()),
             }
         }
-
         ExprKind::Unary(op, e) => {
             let typed_inner = typecheck_expr(e, symbols);
 
@@ -235,7 +232,6 @@ fn typecheck_expr(expr: &Expr, symbols: &mut SymbolTable) -> TypedExpr {
                 },
             }
         }
-
         ExprKind::Binary(op, lhs, rhs) => {
             let l = typecheck_expr(lhs, symbols);
             let r = typecheck_expr(rhs, symbols);
@@ -263,7 +259,6 @@ fn typecheck_expr(expr: &Expr, symbols: &mut SymbolTable) -> TypedExpr {
                 },
             }
         }
-
         ExprKind::Assign(lhs, rhs) => {
             let l = typecheck_expr(lhs, symbols);
 
@@ -282,7 +277,6 @@ fn typecheck_expr(expr: &Expr, symbols: &mut SymbolTable) -> TypedExpr {
                 },
             }
         }
-
         ExprKind::IfThenElse(cond, t, e) => {
             let c = typecheck_expr(cond, symbols);
             let t = typecheck_expr(t, symbols);
@@ -304,7 +298,6 @@ fn typecheck_expr(expr: &Expr, symbols: &mut SymbolTable) -> TypedExpr {
                 },
             }
         }
-
         ExprKind::FunctionCall(name, args) => {
             let entry = symbols
                 .get(name)
@@ -338,7 +331,6 @@ fn typecheck_expr(expr: &Expr, symbols: &mut SymbolTable) -> TypedExpr {
                 },
             }
         }
-
         ExprKind::Cast { expr, target } => {
             let typed_inner = typecheck_expr(expr, symbols);
 
@@ -361,7 +353,6 @@ fn typecheck_expr(expr: &Expr, symbols: &mut SymbolTable) -> TypedExpr {
                 },
             }
         }
-
         ExprKind::Dereference(inner) => {
             let typed_inner = typecheck_expr(inner, symbols);
 
@@ -373,7 +364,6 @@ fn typecheck_expr(expr: &Expr, symbols: &mut SymbolTable) -> TypedExpr {
                 _ => panic!("Cannot dereference non-pointer."),
             }
         }
-
         ExprKind::AddrOf(inner) => {
             if !is_lvalue(inner) {
                 panic!("Can't take the address of a non-lvalue!");
@@ -388,6 +378,8 @@ fn typecheck_expr(expr: &Expr, symbols: &mut SymbolTable) -> TypedExpr {
                 kind: TypedExprKind::AddrOf(Box::new(typed_inner)),
             }
         }
+        ExprKind::ArrayLiteral(exprs) => todo!(),
+        ExprKind::ArrayIndex(expr, expr1) => todo!(),
     }
 }
 

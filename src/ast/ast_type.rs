@@ -8,7 +8,7 @@ pub enum Type {
 
     FunType { params: Vec<Type>, ret: Box<Type> },
     Pointer { referenced: Box<Type> },
-    Array { element: Box<Type>, size: i32 },
+    Array { element_type: Box<Type>, size: i32 },
 }
 
 #[derive(Debug, Clone, PartialEq)]

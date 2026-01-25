@@ -560,7 +560,10 @@ fn llvm_type(ty: &Type) -> String {
         Type::Unit => "void".into(),
         Type::Pointer { referenced } => format!("{}*", llvm_type(referenced)),
         Type::FunType { .. } => unreachable!("Function types are not first-class in LLVM"),
-        Type::Array { element, size } => todo!(),
+        Type::Array {
+            element_type: element,
+            size,
+        } => todo!(),
     }
 }
 

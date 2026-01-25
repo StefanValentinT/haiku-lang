@@ -453,8 +453,9 @@ fn expr_to_tac(expr: TypedExpr, instructions: &mut Vec<TacInstruction>) -> TacVa
             },
             instructions,
         ),
-
         TypedExprKind::Assign { lhs, rhs } => assign_expr_to_tac(*lhs, *rhs, instructions),
+        TypedExprKind::ArrayLiteral(typed_exprs) => todo!(),
+        TypedExprKind::ArrayIndex(typed_expr, typed_expr1) => todo!(),
     }
 }
 

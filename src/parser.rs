@@ -104,6 +104,20 @@ fn parse_type(tokens: &mut Queue<Token>) -> Type {
         Token::Keyword(ref s) if s == "I64" => Type::I64,
         Token::Keyword(ref s) if s == "F64" => Type::F64,
         Token::Keyword(ref s) if s == "Unit" => Type::Unit,
+        Token::OpenBracket => {
+            let inner = parse_type(tokens);
+            expect(Token::Semicolon, tokens);
+            let len = match tokens.remove().unwrap() {
+                Token::IntLiteral32(v) => v as usize,
+                Token::IntLiteral64(v) => v as usize,
+                t => panic!("Expected array length, got {:?}", t),
+            };
+            expect(Token::CloseBracket, tokens);
+            Type::Array {
+                element_type: Box::new(inner),
+                size: len as i32,
+            }
+        }
         t => panic!("Expected type, got {:?}", t),
     }
 }
@@ -146,7 +160,7 @@ fn parse_declaration(tokens: &mut Queue<Token>) -> Decl {
     expect(Token::Assign, tokens);
     let mut init_expr = parse_expr(tokens, 0);
     init_expr.ty = Some(var_type.clone());
-    let initializer = Initializer::SingleInit(init_expr);
+    let initializer = Initializer::InitExpr(init_expr);
 
     expect(Token::Semicolon, tokens);
 
@@ -256,6 +270,27 @@ fn parse_factor(tokens: &mut Queue<Token>) -> Expr {
             }
         }
 
+        Token::OpenBracket => {
+            let mut elements = Vec::new();
+
+            if tokens.peek().unwrap() != Token::CloseBracket {
+                loop {
+                    elements.push(parse_expr(tokens, 0));
+                    if tokens.peek().unwrap() == Token::Comma {
+                        tokens.consume();
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            expect(Token::CloseBracket, tokens);
+            Expr {
+                ty: None,
+                kind: ExprKind::ArrayLiteral(elements),
+            }
+        }
+
         Token::IntLiteral32(v) => Expr {
             ty: Some(Type::I32),
             kind: ExprKind::Constant(Const::I32(v)),
@@ -323,6 +358,21 @@ fn parse_argument_list(tokens: &mut Queue<Token>) -> Vec<Expr> {
 
 fn parse_expr(tokens: &mut Queue<Token>, min_prec: i32) -> Expr {
     let mut left = parse_factor(tokens);
+
+    loop {
+        match tokens.peek().unwrap() {
+            Token::OpenBracket => {
+                tokens.consume();
+                let index = parse_expr(tokens, 0);
+                expect(Token::CloseBracket, tokens);
+                left = Expr {
+                    ty: None,
+                    kind: ExprKind::ArrayIndex(Box::new(left), Box::new(index)),
+                };
+            }
+            _ => break,
+        }
+    }
 
     while let Ok(Token::Keyword(ref kw)) = tokens.peek() {
         if kw == "as" {

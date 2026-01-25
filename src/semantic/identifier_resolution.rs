@@ -75,8 +75,7 @@ fn resolve_var_decl(var_decl: VarDecl, identifier_map: &mut HashMap<String, MapE
         var_type,
     } = var_decl;
     let init_expr = match initializer {
-        Initializer::SingleInit(expr) => expr,
-        Initializer::CompoundInit(_exprs) => todo!(),
+        Initializer::InitExpr(expr) => expr,
     };
     if let Some(prev) = identifier_map.get(&name) {
         if prev.from_current_scope {
@@ -93,7 +92,7 @@ fn resolve_var_decl(var_decl: VarDecl, identifier_map: &mut HashMap<String, MapE
         },
     );
 
-    let resolved_expr = Initializer::SingleInit(resolve_expr(init_expr, identifier_map));
+    let resolved_expr = Initializer::InitExpr(resolve_expr(init_expr, identifier_map));
 
     VarDecl {
         name: unique_name,
@@ -252,7 +251,6 @@ fn resolve_expr(expr: Expr, identifier_map: &mut HashMap<String, MapEntry>) -> E
                 kind: ExprKind::Dereference(Box::new(inner_resolved)),
             }
         }
-
         ExprKind::AddrOf(inner) => {
             let inner_resolved = resolve_expr(*inner, identifier_map);
             Expr {
@@ -260,6 +258,8 @@ fn resolve_expr(expr: Expr, identifier_map: &mut HashMap<String, MapEntry>) -> E
                 kind: ExprKind::AddrOf(Box::new(inner_resolved)),
             }
         }
+        ExprKind::ArrayLiteral(exprs) => todo!(),
+        ExprKind::ArrayIndex(expr, expr1) => todo!(),
     }
 }
 
