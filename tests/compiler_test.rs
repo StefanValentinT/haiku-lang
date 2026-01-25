@@ -79,8 +79,8 @@ fn classify_test(contents: &str) -> TestKind {
 
 fn run_compiler(path: &Path) -> CompilerResult {
     let mut cmd = cargo::cargo_bin_cmd!("haiku");
-    let output = cmd.arg(path).output().expect("Failed to run compiler");
-
+    let abs = path.canonicalize().expect("Failed to canonicalize path");
+    let output = cmd.arg(&abs).output().expect("Failed to run compiler");
     #[cfg(unix)]
     use std::os::unix::process::ExitStatusExt;
 

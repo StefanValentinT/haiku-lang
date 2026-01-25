@@ -1,0 +1,15 @@
+fun return_list() [I32; 4]{
+    return  [1,2,3,4];
+}
+
+
+fun main() I32 {
+    let list: [I32;4] = return_list();
+    return list[2];
+}
+
+#[
+<expect_ret>
+3
+</expect_ret>
+]#
