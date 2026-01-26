@@ -1,11 +1,21 @@
 # Haiku
 
-This is the *Standard Haiku Compiler* or short *SHC*.
-It may be regarded as the default implementation of Haiku.
-At this point of time no other implementation has been reported.
+This is the _Haiku Compiler_.
 
-# Warning: SHC is still a Work-In-Progress
-Expect breaking changes.
+# Roadmap to 0.1
+
+Soon I want to release 0.1. That will be the first release. At this point the language will not be stable,
+but it will have most of its features and be usable for other people. Also I want to write raylib-bindings and make a
+little game to prove the capabilities of Haiku. Until the release the following features have to be implemented.
+
+[ ] Strings and Vectors,
+[ ] First class functions,
+[ ] Module and imports,
+[ ] Project based compiler,
+[ ] a little stdlib,
+[ ] totality checker,
+[ ] Algebraic datatypes,
+[ ] memory allocation
 
 # About Haiku
 
@@ -31,7 +41,7 @@ amount of obligatory code and a coherent style in which the language is designed
 of requirements unless strictly needed, thus being basically everything allowed in function definition or in types.
 - Elegance: Not all languages are created equally, some where made to already rot in some corporate office
 from the moment of their inception. But Haiku wants to be a passionate, even manicial language.
-- Safety: Haiiku is a language to build safe, reliable and scalable systems in.
+- Safety: Haiku is a language to build safe, reliable and scalable systems in.
 - Performance: Haiku follows the flow. Why should it impose barriers in its way?
 
 Now go ahead and look at a piece of Haiku code in the samples folder or read the *Haiku Book* (Not made yet!).
