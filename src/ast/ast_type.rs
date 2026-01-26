@@ -3,12 +3,14 @@ pub enum Type {
     I32,
     I64,
     F64,
+    Char,
 
     Unit,
 
     FunType { params: Vec<Type>, ret: Box<Type> },
     Pointer { referenced: Box<Type> },
     Array { element_type: Box<Type>, size: i32 },
+    Slice { element_type: Box<Type> },
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -16,6 +18,7 @@ pub enum Const {
     I32(i32),
     I64(i64),
     F64(f64),
+    Char(char),
 }
 
 #[derive(Debug, Clone, PartialEq)]

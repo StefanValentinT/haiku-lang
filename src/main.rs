@@ -7,6 +7,7 @@ mod parser;
 mod preprocess;
 mod queue;
 mod semantic;
+mod stdlib;
 mod tac;
 mod utils;
 
@@ -44,7 +45,7 @@ struct Args {
     codegen: bool,
 
     #[arg(long)]
-    tacky: bool,
+    tac: bool,
 
     #[arg(long)]
     validate: bool,
@@ -163,7 +164,7 @@ async fn main() {
 
     let tac_ast = gen_tac(transformed_ast);
     vprintln!("TAC-AST:\n{:#?}", tac_ast);
-    if args.tacky {
+    if args.tac {
         return;
     }
 

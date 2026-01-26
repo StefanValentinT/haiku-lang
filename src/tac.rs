@@ -99,6 +99,11 @@ pub enum TacInstruction {
         dest: TacVal,
         offset: i32,
     },
+    SetField {
+        struct_var: TacVal,
+        field_index: i32,
+        src: TacVal,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -117,6 +122,7 @@ pub enum TacConst {
     I32(i32),
     I64(i64),
     F64(f64),
+    Char(char),
 }
 
 #[derive(Debug, PartialEq)]
@@ -305,6 +311,7 @@ fn expr_to_tac(expr: TypedExpr, instructions: &mut Vec<TacInstruction>) -> TacVa
         TypedExprKind::Constant(Const::I32(v)) => TacVal::Constant(TacConst::I32(v)),
         TypedExprKind::Constant(Const::I64(v)) => TacVal::Constant(TacConst::I64(v)),
         TypedExprKind::Constant(Const::F64(v)) => TacVal::Constant(TacConst::F64(v)),
+        TypedExprKind::Constant(Const::Char(v)) => TacVal::Constant(TacConst::Char(v)),
         TypedExprKind::Var(name) => TacVal::Var(name, expr.ty),
         TypedExprKind::Unary { op, expr: inner } => {
             let src = expr_to_tac(*inner, instructions);
@@ -444,6 +451,19 @@ fn expr_to_tac(expr: TypedExpr, instructions: &mut Vec<TacInstruction>) -> TacVa
                         dest: dst.clone(),
                     });
                 }
+                (TacVal::Var(_, Type::Char) | TacVal::Constant(TacConst::Char(_)), Type::I32) => {
+                    instructions.push(TacInstruction::Copy {
+                        src,
+                        dest: dst.clone(),
+                    });
+                }
+
+                (TacVal::Var(_, Type::I32) | TacVal::Constant(TacConst::I32(_)), Type::Char) => {
+                    instructions.push(TacInstruction::Copy {
+                        src,
+                        dest: dst.clone(),
+                    });
+                }
 
                 _ => panic!("Unsupported cast {:?} → {:?}", src, target),
             }
@@ -475,11 +495,37 @@ fn expr_to_tac(expr: TypedExpr, instructions: &mut Vec<TacInstruction>) -> TacVa
             let array_val = expr_to_tac(*array, instructions);
             let index_val = expr_to_tac(*index, instructions);
 
-            let Type::Array { element_type, .. } = array_val_type(&array_val) else {
-                unreachable!()
+            let element_type = match array_val_type(&array_val) {
+                Type::Array { element_type, .. } => element_type,
+                Type::Slice { element_type } => element_type,
+                _ => unreachable!("Expected array or slice"),
             };
 
             let elem_size = sizeof(&element_type);
+
+            let base_ptr = match array_val_type(&array_val) {
+                Type::Array { .. } => array_val.clone(),
+                Type::Slice { .. } => {
+                    let ptr = TacVal::Var(
+                        make_temporary(),
+                        Type::Pointer {
+                            referenced: element_type.clone(),
+                        },
+                    );
+                    instructions.push(TacInstruction::Load {
+                        src_ptr: TacVal::Var(
+                            match &array_val {
+                                TacVal::Var(name, _) => name.clone(),
+                                _ => panic!("Slice must be a var"),
+                            },
+                            array_val_type(&array_val),
+                        ),
+                        dest: ptr.clone(),
+                    });
+                    ptr
+                }
+                _ => unreachable!("Expected array or slice"),
+            };
 
             let ptr = TacVal::Var(
                 make_temporary(),
@@ -489,7 +535,7 @@ fn expr_to_tac(expr: TypedExpr, instructions: &mut Vec<TacInstruction>) -> TacVa
             );
 
             instructions.push(TacInstruction::AddPtr {
-                ptr: array_val,
+                ptr: base_ptr,
                 index: index_val,
                 scale: elem_size,
                 dest: ptr.clone(),
@@ -506,6 +552,67 @@ fn expr_to_tac(expr: TypedExpr, instructions: &mut Vec<TacInstruction>) -> TacVa
                     dst
                 }
             }
+        }
+
+        TypedExprKind::SliceFromArray(inner) => {
+            let array_val = expr_to_tac(*inner, instructions);
+
+            let Type::Array { element_type, size } = array_val_type(&array_val) else {
+                unreachable!()
+            };
+
+            let slice_ty = expr.ty.clone();
+            let slice_val = TacVal::Var(make_temporary(), slice_ty.clone());
+
+            let ptr_field = TacVal::Var(
+                make_temporary(),
+                Type::Pointer {
+                    referenced: element_type.clone(),
+                },
+            );
+            let len_field = TacVal::Var(make_temporary(), Type::I32);
+
+            instructions.push(TacInstruction::GetAddress {
+                src: array_val.clone(),
+                dest: ptr_field.clone(),
+            });
+
+            instructions.push(TacInstruction::Copy {
+                src: TacVal::Constant(TacConst::I32(size)),
+                dest: len_field.clone(),
+            });
+
+            instructions.push(TacInstruction::SetField {
+                struct_var: slice_val.clone(),
+                field_index: 0,
+                src: ptr_field,
+            });
+            instructions.push(TacInstruction::SetField {
+                struct_var: slice_val.clone(),
+                field_index: 1,
+                src: len_field,
+            });
+
+            slice_val
+        }
+
+        TypedExprKind::SliceLen(slice_expr) => {
+            let slice_val = expr_to_tac(*slice_expr, instructions);
+
+            let len_val = TacVal::Var(make_temporary(), Type::I32);
+
+            instructions.push(TacInstruction::Load {
+                src_ptr: TacVal::Var(
+                    match &slice_val {
+                        TacVal::Var(name, _) => name.clone(),
+                        _ => panic!("Slice must be a var"),
+                    },
+                    array_val_type(&slice_val),
+                ),
+                dest: len_val.clone(),
+            });
+
+            len_val
         }
     }
 }
@@ -647,8 +754,10 @@ fn sizeof(ty: &Type) -> i32 {
         Type::I32 => 4,
         Type::I64 => 8,
         Type::F64 => 8,
+        Type::Char => 4,
         Type::Pointer { .. } => 8,
         Type::Array { element_type, size } => size * sizeof(element_type),
+        Type::Slice { .. } => 16,
         _ => panic!("Unsupported type for sizeof"),
     }
 }

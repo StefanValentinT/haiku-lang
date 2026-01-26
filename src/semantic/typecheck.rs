@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use crate::ast::ast_type::*;
 use crate::ast::typed_ast::*;
 use crate::ast::untyped_ast::*;
+use crate::stdlib::builtin_functions;
 
 #[derive(Clone)]
 struct SymbolEntry {
@@ -14,6 +15,14 @@ type SymbolTable = HashMap<String, SymbolEntry>;
 pub fn typecheck(program: Program) -> TypedProgram {
     let mut symbols = SymbolTable::new();
     let Program::Program(funcs) = program;
+
+    for (name, fun) in builtin_functions() {
+        let fun_ty = Type::FunType {
+            params: fun.params.iter().map(|(_, t)| t.clone()).collect(),
+            ret: Box::new(fun.ret_type.clone()),
+        };
+        symbols.insert(name, SymbolEntry { ty: fun_ty });
+    }
 
     for f in &funcs {
         declare_function(f, &mut symbols);
@@ -203,6 +212,10 @@ fn typecheck_expr(expr: &Expr, symbols: &mut SymbolTable) -> TypedExpr {
         ExprKind::Constant(Const::F64(v)) => TypedExpr {
             ty: Type::F64,
             kind: TypedExprKind::Constant(Const::F64(*v)),
+        },
+        ExprKind::Constant(Const::Char(v)) => TypedExpr {
+            ty: Type::Char,
+            kind: TypedExprKind::Constant(Const::Char(*v)),
         },
         ExprKind::Var(name) => {
             let entry = symbols
@@ -415,12 +428,40 @@ fn typecheck_expr(expr: &Expr, symbols: &mut SymbolTable) -> TypedExpr {
 
             let element_ty = match &typed_array.ty {
                 Type::Array { element_type, .. } => (**element_type).clone(),
-                other => panic!("Cannot index non-array type {:?}", other),
+                Type::Slice { element_type } => (**element_type).clone(),
+                other => panic!("Cannot index non-array/slice type {:?}", other),
             };
 
             TypedExpr {
                 ty: element_ty,
                 kind: TypedExprKind::ArrayIndex(Box::new(typed_array), Box::new(typed_index)),
+            }
+        }
+        ExprKind::SliceFromArray(inner) => {
+            let typed_inner = typecheck_expr(inner, symbols);
+
+            let element_ty = match &typed_inner.ty {
+                Type::Array { element_type, .. } => (**element_type).clone(),
+                Type::Slice { element_type } => (**element_type).clone(),
+                other => panic!("slice() expects an array or slice, got {:?}", other),
+            };
+
+            TypedExpr {
+                ty: Type::Slice {
+                    element_type: Box::new(element_ty),
+                },
+                kind: TypedExprKind::SliceFromArray(Box::new(typed_inner)),
+            }
+        }
+        ExprKind::SliceLen(inner) => {
+            let typed_inner = typecheck_expr(inner, symbols);
+
+            match typed_inner.ty {
+                Type::Slice { .. } => TypedExpr {
+                    ty: Type::I32,
+                    kind: TypedExprKind::SliceLen(Box::new(typed_inner)),
+                },
+                other => panic!("len() expects a slice, got {:?}", other),
             }
         }
     }

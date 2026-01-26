@@ -9,8 +9,6 @@ pub fn emit_llvm(program: &TacProgram) -> String {
     let TacProgram::Program(funcs) = program;
 
     let mut defined = HashSet::new();
-    let mut externs = HashSet::new();
-
     for f in funcs {
         let TacFuncDef::Function { name, .. } = f;
         defined.insert(name.clone());
@@ -20,26 +18,24 @@ pub fn emit_llvm(program: &TacProgram) -> String {
     let mut out = String::new();
 
     for f in funcs {
-        out.push_str(&emit_function(f, &defined, &mut externs, &mut reg_counter));
+        out.push_str(&emit_function(
+            f,
+            &defined,
+            &mut HashSet::new(),
+            &mut reg_counter,
+        ));
         out.push('\n');
     }
 
-    let mut header = String::new();
-    for e in externs {
-        header.push_str(&format!("declare i32 @{}(...)\n", e));
-    }
+    out.push_str(&llvm_mini_stdlib());
 
-    if !header.is_empty() {
-        header.push('\n');
-    }
-
-    header + &out
+    out
 }
 
 fn emit_function(
     func: &TacFuncDef,
     defined: &HashSet<String>,
-    externs: &mut HashSet<String>,
+    _externs: &mut HashSet<String>,
     reg_counter: &mut usize,
 ) -> String {
     *reg_counter = 0;
@@ -108,7 +104,12 @@ fn emit_function(
             continue;
         }
 
-        out.push_str(&emit_instr(instr, defined, externs, reg_counter));
+        out.push_str(&emit_instr(
+            instr,
+            defined,
+            &mut HashSet::new(),
+            reg_counter,
+        ));
 
         terminated = matches!(
             instr,
@@ -125,11 +126,59 @@ fn emit_function(
             _ => out.push_str("  unreachable\n"),
         }
     }
-
     out.push_str("}\n");
     out
 }
+pub fn llvm_mini_stdlib() -> String {
+    r#"
+declare i32 @puts(i8*)
 
+define i32 @print({ i32*, i32 } %s) {
+entry:
+  ; extract pointer and length from slice
+  %ptr_i32 = extractvalue { i32*, i32 } %s, 0
+  %len_i32 = extractvalue { i32*, i32 } %s, 1
+  %len = sext i32 %len_i32 to i64
+
+  ; allocate temporary buffer and index
+  %buf = alloca [1024 x i8]
+  %i = alloca i64
+  store i64 0, i64* %i
+  br label %loop
+
+loop:
+  %idx = load i64, i64* %i
+  %cmp = icmp ult i64 %idx, %len
+  br i1 %cmp, label %body, label %end
+
+body:
+  ; load i32 character
+  %char32_ptr = getelementptr inbounds i32, i32* %ptr_i32, i64 %idx
+  %c32 = load i32, i32* %char32_ptr
+  %c8 = trunc i32 %c32 to i8
+
+  ; store in buffer
+  %buf_ptr = getelementptr [1024 x i8], [1024 x i8]* %buf, i64 0, i64 %idx
+  store i8 %c8, i8* %buf_ptr
+
+  ; increment
+  %next = add i64 %idx, 1
+  store i64 %next, i64* %i
+  br label %loop
+
+end:
+  ; null-terminate
+  %buf_end = getelementptr [1024 x i8], [1024 x i8]* %buf, i64 0, i64 %len
+  store i8 0, i8* %buf_end
+
+  ; call puts
+  %buf_ptr0 = getelementptr [1024 x i8], [1024 x i8]* %buf, i64 0, i64 0
+  call i32 @puts(i8* %buf_ptr0)
+  ret i32 0
+}
+"#
+    .into()
+}
 fn emit_instr(
     instr: &TacInstruction,
     defined: &HashSet<String>,
@@ -380,7 +429,7 @@ fn emit_instr(
 
             ir
         }
-        TacInstruction::Label(_) => unreachable!(),
+        TacInstruction::Label(label) => format!("{}:\n", label),
         TacInstruction::Truncate { src, dest } => {
             let (load, v, src_ty) = load_val(src, reg_counter);
             let dst_ty = llvm_type(match dest {
@@ -529,7 +578,6 @@ fn emit_instr(
                 src_load, ptr_load, ty, val, ty, ptr_val
             )
         }
-
         TacInstruction::AddPtr {
             ptr,
             index,
@@ -600,6 +648,39 @@ fn emit_instr(
                 elem_ptr
             )
         }
+        TacInstruction::SetField {
+            struct_var,
+            field_index,
+            src,
+        } => {
+            let struct_name = match struct_var {
+                TacVal::Var(name, _) => name,
+                _ => panic!("SetField struct_var must be a variable"),
+            };
+
+            let (load, val, val_ty) = load_val(src, reg_counter);
+            let r = fresh_reg(reg_counter);
+
+            format!(
+                "{}  {} = getelementptr inbounds {}, {}* %{}, i32 0, i32 {}\n  store {} {}, {}* {}\n",
+                load,
+                r,
+                llvm_type(&match struct_var {
+                    TacVal::Var(_, t) => t.clone(),
+                    _ => unreachable!(),
+                }),
+                llvm_type(&match struct_var {
+                    TacVal::Var(_, t) => t.clone(),
+                    _ => unreachable!(),
+                }),
+                struct_name,
+                field_index,
+                val_ty,
+                val,
+                val_ty,
+                r
+            )
+        }
     }
 }
 
@@ -608,6 +689,7 @@ fn load_val(v: &TacVal, reg_counter: &mut usize) -> (String, String, String) {
         TacVal::Constant(TacConst::I32(c)) => ("".into(), c.to_string(), "i32".into()),
         TacVal::Constant(TacConst::I64(c)) => ("".into(), c.to_string(), "i64".into()),
         TacVal::Constant(TacConst::F64(c)) => ("".into(), format!("{:.6e}", c), "double".into()),
+        TacVal::Constant(TacConst::Char(c)) => ("".into(), (*c as u32).to_string(), "i32".into()),
         TacVal::Var(_, Type::Unit) => ("".into(), "".into(), "void".into()),
         TacVal::Var(name, ty) => {
             let r = fresh_reg(reg_counter);
@@ -626,12 +708,15 @@ fn llvm_type(ty: &Type) -> String {
         Type::I32 => "i32".into(),
         Type::I64 => "i64".into(),
         Type::F64 => "double".into(),
+        Type::Char => "i32".into(),
         Type::Unit => "void".into(),
         Type::Pointer { referenced } => format!("{}*", llvm_type(referenced)),
-
         Type::Array { element_type, size } => format!("[{} x {}]", size, llvm_type(element_type)),
-
         Type::FunType { .. } => unreachable!("Function types are not first-class in LLVM"),
+        Type::Slice { element_type } => {
+            let elem = llvm_type(element_type);
+            format!("{{ {}*, i32 }}", elem)
+        }
     }
 }
 

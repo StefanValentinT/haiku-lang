@@ -103,6 +103,9 @@ pub enum TypedExprKind {
     ArrayLiteral(Vec<TypedExpr>),
     ArrayIndex(Box<TypedExpr>, Box<TypedExpr>),
 
+    SliceFromArray(Box<TypedExpr>),
+    SliceLen(Box<TypedExpr>),
+
     Cast {
         expr: Box<TypedExpr>,
         target: Type,

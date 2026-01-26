@@ -1,6 +1,7 @@
 use crate::ast::ast_type::Type;
 use crate::ast::untyped_ast::*;
 use crate::gen_names::make_temporary;
+use crate::stdlib::builtin_functions;
 use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
@@ -13,6 +14,16 @@ pub fn identifier_resolution_pass(program: Program) -> Program {
     match program {
         Program::Program(funcs) => {
             let mut global_map: HashMap<String, MapEntry> = HashMap::new();
+
+            for (name, fun_decl) in builtin_functions() {
+                global_map.insert(
+                    name.clone(),
+                    MapEntry {
+                        unique_name: fun_decl.name.clone(),
+                        from_current_scope: false,
+                    },
+                );
+            }
 
             for f in &funcs {
                 if let Some(prev) = global_map.get(&f.name) {
@@ -258,7 +269,6 @@ fn resolve_expr(expr: Expr, identifier_map: &mut HashMap<String, MapEntry>) -> E
                 kind: ExprKind::AddrOf(Box::new(inner_resolved)),
             }
         }
-
         ExprKind::ArrayLiteral(exprs) => {
             let resolved_exprs = exprs
                 .into_iter()
@@ -269,13 +279,27 @@ fn resolve_expr(expr: Expr, identifier_map: &mut HashMap<String, MapEntry>) -> E
                 kind: ExprKind::ArrayLiteral(resolved_exprs),
             }
         }
-
         ExprKind::ArrayIndex(array_expr, index_expr) => {
             let array_resolved = resolve_expr(*array_expr, identifier_map);
             let index_resolved = resolve_expr(*index_expr, identifier_map);
             Expr {
                 ty,
                 kind: ExprKind::ArrayIndex(Box::new(array_resolved), Box::new(index_resolved)),
+            }
+        }
+        ExprKind::SliceFromArray(expr) => {
+            let resolved = resolve_expr(*expr, identifier_map);
+            Expr {
+                ty,
+                kind: ExprKind::SliceFromArray(Box::new(resolved)),
+            }
+        }
+
+        ExprKind::SliceLen(expr) => {
+            let resolved = resolve_expr(*expr, identifier_map);
+            Expr {
+                ty,
+                kind: ExprKind::SliceLen(Box::new(resolved)),
             }
         }
     }

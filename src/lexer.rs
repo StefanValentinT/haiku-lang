@@ -6,6 +6,8 @@ pub enum Token {
     IntLiteral32(i32),
     IntLiteral64(i64),
     FloatLiteral64(f64),
+    CharLiteral(char),
+    StringLiteral(String),
     Keyword(String),
 
     OpenParen,
@@ -50,8 +52,8 @@ pub enum Token {
     EOF,
 }
 
-const KEYWORDS: [&str; 17] = [
-    "fun", "I32", "I64", "F64", "Unit", "return", "if", "then", "else", "while", "break",
+const KEYWORDS: [&str; 18] = [
+    "fun", "I32", "I64", "F64", "Char", "Unit", "return", "if", "then", "else", "while", "break",
     "continue", "switch", "default", "let", "as", "extern",
 ];
 
@@ -154,6 +156,9 @@ pub fn lex_string(input: String) -> Queue<Token> {
                 &mut tokens,
                 &[("&", Token::Ampersand), ("&&", Token::And)],
             ),
+
+            '"' => tokens.add(lex_string_literal(&mut input)),
+            '\'' => tokens.add(lex_char_literal(&mut input)),
 
             _ => panic!("Lexer error: unexpected character '{}'", c),
         }
@@ -277,5 +282,58 @@ fn lex_number(input: &mut Queue<char>) -> Token {
         Token::IntLiteral64(buf.parse().unwrap())
     } else {
         Token::IntLiteral32(buf.parse().unwrap())
+    }
+}
+
+fn lex_char_literal(input: &mut Queue<char>) -> Token {
+    input.consume();
+    let ch = match input.remove() {
+        Ok('\\') => lex_escape(input),
+        Ok(c) => c,
+        Err(_) => panic!("Unterminated char literal"),
+    };
+
+    match input.remove() {
+        Ok('\'') => Token::CharLiteral(ch),
+        Ok(_) => panic!("Char literal must contain exactly one character"),
+        Err(_) => panic!("Unterminated char literal"),
+    }
+}
+
+fn lex_string_literal(input: &mut Queue<char>) -> Token {
+    input.consume();
+    let mut result = String::new();
+
+    while let Ok(c) = input.peek() {
+        match c {
+            '"' => {
+                input.consume();
+                return Token::StringLiteral(result);
+            }
+            '\\' => {
+                input.consume();
+                result.push(lex_escape(input));
+            }
+            '\n' => panic!("Unterminated string literal"),
+            _ => {
+                result.push(input.remove().unwrap());
+            }
+        }
+    }
+
+    panic!("Unterminated string literal");
+}
+
+fn lex_escape(input: &mut Queue<char>) -> char {
+    let c = input.remove().unwrap();
+    match c {
+        'n' => '\n',
+        't' => '\t',
+        'r' => '\r',
+        '0' => '\0',
+        '\\' => '\\',
+        '\'' => '\'',
+        '"' => '"',
+        _ => panic!("Invalid escape sequence: \\{}", c),
     }
 }

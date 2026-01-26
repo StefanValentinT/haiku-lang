@@ -104,18 +104,44 @@ fn parse_type(tokens: &mut Queue<Token>) -> Type {
         Token::Keyword(ref s) if s == "I64" => Type::I64,
         Token::Keyword(ref s) if s == "F64" => Type::F64,
         Token::Keyword(ref s) if s == "Unit" => Type::Unit,
+        Token::Keyword(ref s) if s == "Char" => Type::Char,
         Token::OpenBracket => {
-            let inner = parse_type(tokens);
-            expect(Token::Semicolon, tokens);
-            let len = match tokens.remove().unwrap() {
-                Token::IntLiteral32(v) => v as usize,
-                Token::IntLiteral64(v) => v as usize,
-                t => panic!("Expected array length, got {:?}", t),
+            let element_type = match tokens.remove().unwrap() {
+                Token::Keyword(ref s) if s == "I32" => Type::I32,
+                Token::Keyword(ref s) if s == "I64" => Type::I64,
+                Token::Keyword(ref s) if s == "F64" => Type::F64,
+                Token::Keyword(ref s) if s == "Char" => Type::Char,
+                Token::Star => {
+                    let inner = parse_type(tokens);
+                    Type::Pointer {
+                        referenced: Box::new(inner),
+                    }
+                }
+                t => panic!("Expected type inside array, got {:?}", t),
             };
-            expect(Token::CloseBracket, tokens);
-            Type::Array {
-                element_type: Box::new(inner),
-                size: len as i32,
+
+            match tokens.peek().unwrap() {
+                Token::Semicolon => {
+                    tokens.consume();
+                    let len = match tokens.remove().unwrap() {
+                        Token::IntLiteral32(v) => v as usize,
+                        Token::IntLiteral64(v) => v as usize,
+                        t => panic!("Expected array length, got {:?}", t),
+                    };
+                    expect(Token::CloseBracket, tokens);
+
+                    Type::Array {
+                        element_type: Box::new(element_type),
+                        size: len as i32,
+                    }
+                }
+                Token::CloseBracket => {
+                    tokens.consume();
+                    Type::Slice {
+                        element_type: Box::new(element_type),
+                    }
+                }
+                t => panic!("Expected ; or ] after array type, got {:?}", t),
             }
         }
         t => panic!("Expected type, got {:?}", t),
@@ -291,6 +317,26 @@ fn parse_factor(tokens: &mut Queue<Token>) -> Expr {
             }
         }
 
+        Token::StringLiteral(s) => {
+            let len = s.chars().count() as i32;
+
+            let elements = s
+                .chars()
+                .map(|c| Expr {
+                    ty: Some(Type::Char),
+                    kind: ExprKind::Constant(Const::Char(c)),
+                })
+                .collect::<Vec<_>>();
+
+            Expr {
+                ty: Some(Type::Array {
+                    element_type: Box::new(Type::Char),
+                    size: len,
+                }),
+                kind: ExprKind::ArrayLiteral(elements),
+            }
+        }
+
         Token::IntLiteral32(v) => Expr {
             ty: Some(Type::I32),
             kind: ExprKind::Constant(Const::I32(v)),
@@ -309,9 +355,30 @@ fn parse_factor(tokens: &mut Queue<Token>) -> Expr {
                 tokens.consume();
                 let args = parse_argument_list(tokens);
                 expect(Token::CloseParen, tokens);
-                Expr {
-                    ty: None,
-                    kind: ExprKind::FunctionCall(name, args),
+
+                if name == "slice" {
+                    if args.len() != 1 {
+                        panic!("slice() expects exactly one argument");
+                    }
+
+                    Expr {
+                        ty: None,
+                        kind: ExprKind::SliceFromArray(Box::new(args.into_iter().next().unwrap())),
+                    }
+                } else if name == "len" {
+                    if args.len() != 1 {
+                        panic!("len() expects exactly one argument");
+                    }
+
+                    Expr {
+                        ty: None,
+                        kind: ExprKind::SliceLen(Box::new(args.into_iter().next().unwrap())),
+                    }
+                } else {
+                    Expr {
+                        ty: None,
+                        kind: ExprKind::FunctionCall(name, args),
+                    }
                 }
             } else {
                 Expr {
