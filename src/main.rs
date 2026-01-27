@@ -1,4 +1,5 @@
 mod ast;
+mod ctfe;
 mod gen_names;
 mod lexer;
 mod llvm_codegen;
@@ -11,6 +12,7 @@ mod stdlib;
 mod tac;
 mod utils;
 
+use crate::ctfe::perform_ctfe_pass;
 use crate::{
     lexer::lex_string, llvm_codegen::emit_llvm, parser::parse, semantic::semantic_analysis,
     tac::gen_tac,
@@ -162,7 +164,19 @@ async fn main() {
         return;
     }
 
-    let tac_ast = gen_tac(transformed_ast);
+    let ctfe_ast = match perform_ctfe_pass(transformed_ast) {
+        Ok(ast) => {
+            vprintln!("AST after CTFE:\n{:#?}", ast);
+            ast
+        }
+        Err(e) => {
+            eprintln!("CTFE error: {}", e);
+            std::process::exit(1);
+        }
+    };
+    vprintln!("AST after CTFE:\n{:#?}", ctfe_ast);
+
+    let tac_ast = gen_tac(ctfe_ast);
     vprintln!("TAC-AST:\n{:#?}", tac_ast);
     if args.tac {
         return;

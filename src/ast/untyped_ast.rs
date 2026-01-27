@@ -1,4 +1,4 @@
-use crate::ast::ast_type::{BinaryOp, Const, Type, UnaryOp};
+use crate::ast::ast_type::{BinaryOp, Const, ExecTime, Type, UnaryOp};
 
 #[derive(Debug)]
 pub enum Program {
@@ -28,6 +28,7 @@ pub struct FunDecl {
     pub params: Vec<(String, Type)>,
     pub body: Option<Block>,
     pub ret_type: Type,
+    pub exec_time: ExecTime,
 }
 
 #[derive(Debug, Clone)]

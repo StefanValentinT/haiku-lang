@@ -24,7 +24,14 @@ fn parse_fun_decl(tokens: &mut Queue<Token>) -> FunDecl {
     } else {
         false
     };
-    expect(Token::Keyword("fun".to_string()), tokens);
+    let exec_time = match tokens.remove().unwrap() {
+        Token::Keyword(ref s) if s == "fun" => ExecTime::Runtime,
+        Token::Keyword(ref s) if s == "cofun" => ExecTime::CompileTime,
+        v => panic!(
+            "Expected fun or cofun keyword at start of of function declaration, but got {:#?}",
+            v
+        ),
+    };
 
     let name = match tokens.remove().unwrap() {
         Token::Identifier(n) => n,
@@ -62,6 +69,7 @@ fn parse_fun_decl(tokens: &mut Queue<Token>) -> FunDecl {
         params,
         body,
         ret_type,
+        exec_time,
     }
 }
 

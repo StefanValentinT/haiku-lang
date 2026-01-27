@@ -14,6 +14,12 @@ pub enum Type {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub enum ExecTime {
+    Runtime,
+    CompileTime,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Const {
     I32(i32),
     I64(i64),

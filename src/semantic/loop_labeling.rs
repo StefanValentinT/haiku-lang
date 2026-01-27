@@ -16,6 +16,7 @@ fn label_func_decl(func: FunDecl) -> FunDecl {
         params,
         body,
         ret_type,
+        exec_time,
     } = func;
 
     let body = body.map(|b| label_block(b, None));
@@ -25,6 +26,7 @@ fn label_func_decl(func: FunDecl) -> FunDecl {
         params,
         body,
         ret_type,
+        exec_time,
     }
 }
 

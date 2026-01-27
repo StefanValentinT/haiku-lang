@@ -1,3 +1,4 @@
+use crate::ast::ast_type::ExecTime;
 use crate::ast::ast_type::Type;
 use crate::ast::typed_ast::TypedFunDecl;
 use std::collections::HashMap;
@@ -17,6 +18,7 @@ pub fn builtin_functions() -> HashMap<String, TypedFunDecl> {
             )],
             ret_type: Type::I32,
             body: None,
+            exec_time: ExecTime::Runtime,
         },
     );
 

@@ -131,6 +131,7 @@ fn resolve_fun_decl(decl: FunDecl, identifier_map: &mut HashMap<String, MapEntry
         params: new_params,
         body: new_body,
         ret_type: decl.ret_type,
+        exec_time: decl.exec_time,
     }
 }
 

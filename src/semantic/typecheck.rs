@@ -64,6 +64,12 @@ fn typecheck_fun_decl(decl: FunDecl, globals: &SymbolTable) -> TypedFunDecl {
 
     let mut locals = globals.clone();
 
+    if decl.exec_time == ExecTime::CompileTime && decl.params.len() > 0 {
+        panic!(
+            "Compile time function must be constant, thus can not be parametric over any input the compiler can not substitute."
+        );
+    }
+
     let typed_params: Vec<(String, Type)> = decl
         .params
         .into_iter()
@@ -83,6 +89,7 @@ fn typecheck_fun_decl(decl: FunDecl, globals: &SymbolTable) -> TypedFunDecl {
         params: typed_params,
         ret_type: ret_ty,
         body,
+        exec_time: decl.exec_time,
     }
 }
 
