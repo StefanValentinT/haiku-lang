@@ -62,8 +62,8 @@ impl LanguageServerBackend {
     async fn publish_dummy(&self, uri: Url) {
         let diagnostic = Diagnostic {
             range: Range::new(Position::new(0, 0), Position::new(0, 1)),
-            severity: Some(DiagnosticSeverity::INFORMATION), // fixed here
-            message: "Haiku LSP says Hello".to_string(),
+            severity: Some(DiagnosticSeverity::INFORMATION),
+            message: "Hello from the LSP.".to_string(),
             source: Some("haiku".to_string()),
             ..Default::default()
         };

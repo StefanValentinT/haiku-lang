@@ -4,14 +4,15 @@ use std::sync::atomic::Ordering;
 static TEMP_VAR_COUNTER: AtomicI32 = AtomicI32::new(0);
 
 fn next_number() -> i32 {
-    let c = TEMP_VAR_COUNTER.load(Ordering::SeqCst);
-    TEMP_VAR_COUNTER.fetch_add(1, Ordering::SeqCst);
-    c
+    TEMP_VAR_COUNTER.fetch_add(1, Ordering::SeqCst)
 }
-
 pub fn make_temporary() -> String {
     let c = next_number();
     format!("tmp.{c}")
+}
+pub fn make_named_temporary(func_name: &str) -> String {
+    let tmp = make_temporary();
+    format!("{}.{tmp}", func_name)
 }
 
 pub fn make_loop_label() -> String {

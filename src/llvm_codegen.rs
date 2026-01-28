@@ -5,11 +5,11 @@ use crate::{
     tac::{TacBinaryOp, TacConst, TacFuncDef, TacInstruction, TacProgram, TacUnaryOp, TacVal},
 };
 
-pub fn emit_llvm(program: &TacProgram) -> String {
+pub fn emit_llvm(program: TacProgram) -> String {
     let TacProgram::Program(funcs) = program;
 
     let mut defined = HashSet::new();
-    for f in funcs {
+    for f in &funcs {
         let TacFuncDef::Function { name, .. } = f;
         defined.insert(name.clone());
     }
@@ -19,7 +19,7 @@ pub fn emit_llvm(program: &TacProgram) -> String {
 
     for f in funcs {
         out.push_str(&emit_function(
-            f,
+            &f,
             &defined,
             &mut HashSet::new(),
             &mut reg_counter,
@@ -91,7 +91,6 @@ fn emit_function(
             p, llvm_ty, llvm_ty, p, llvm_ty, p
         ));
     }
-
     let mut terminated = false;
 
     for instr in body {

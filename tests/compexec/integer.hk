@@ -1,0 +1,11 @@
+cofun f() I32 {
+    return 42;
+}
+
+fun main() I32 {
+    let x: I32 = f();
+    return x;
+}
+#[
+<expect_ret> 42 </expect_ret>    
+]#

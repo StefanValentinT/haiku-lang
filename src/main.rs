@@ -182,7 +182,7 @@ async fn main() {
         return;
     }
 
-    let llvm_ir = emit_llvm(&tac_ast);
+    let llvm_ir = emit_llvm(tac_ast);
     vprintln!("LLVM IR:\n{}", llvm_ir);
     if args.codegen {
         return;

@@ -1,11 +1,11 @@
 use crate::ast::ast_type::{BinaryOp, Const, ExecTime, Type, UnaryOp};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct TypedProgram {
     pub functions: Vec<TypedFunDecl>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct TypedFunDecl {
     pub name: String,
     pub params: Vec<(String, Type)>,
@@ -14,30 +14,30 @@ pub struct TypedFunDecl {
     pub exec_time: ExecTime,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum TypedDecl {
     Variable(TypedVarDecl),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct TypedVarDecl {
     pub name: String,
     pub init_expr: TypedExpr,
     pub var_type: Type,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum TypedBlock {
     Block(Vec<TypedBlockItem>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum TypedBlockItem {
     S(TypedStmt),
     D(TypedDecl),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum TypedStmt {
     Return(TypedExpr),
     Expr(TypedExpr),
@@ -59,13 +59,13 @@ pub enum TypedStmt {
     Null,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct TypedExpr {
     pub ty: Type,
     pub kind: TypedExprKind,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum TypedExprKind {
     Constant(Const),
 

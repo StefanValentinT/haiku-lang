@@ -557,8 +557,10 @@ fn expr_to_tac(expr: TypedExpr, instructions: &mut Vec<TacInstruction>) -> TacVa
         TypedExprKind::SliceFromArray(inner) => {
             let array_val = expr_to_tac(*inner, instructions);
 
-            let Type::Array { element_type, size } = array_val_type(&array_val) else {
-                unreachable!()
+            let (element_type, length_val) = match array_val_type(&array_val) {
+                Type::Array { element_type, size } => (element_type, Some(size)),
+                Type::Slice { element_type } => (element_type, None),
+                _ => panic!("SliceFromArray expects Array or Slice"),
             };
 
             let slice_ty = expr.ty.clone();
@@ -577,8 +579,20 @@ fn expr_to_tac(expr: TypedExpr, instructions: &mut Vec<TacInstruction>) -> TacVa
                 dest: ptr_field.clone(),
             });
 
+            let len_src = if let Some(size) = length_val {
+                TacVal::Constant(TacConst::I32(size))
+            } else {
+                TacVal::Var(
+                    match &array_val {
+                        TacVal::Var(name, _) => name.clone(),
+                        _ => panic!("Slice must be a var"),
+                    },
+                    Type::I32,
+                )
+            };
+
             instructions.push(TacInstruction::Copy {
-                src: TacVal::Constant(TacConst::I32(size)),
+                src: len_src,
                 dest: len_field.clone(),
             });
 
