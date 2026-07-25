@@ -31,8 +31,9 @@ data UnificationProblem = UnificationProblem
 
 initialEnv :: Env
 initialEnv = M.fromList
-  [ ("+",     TForall ["t"] ((TInt --> TInt --> TInt) /\ (TInt --> TRef (TVar "t") --> TRef (TVar "t")) /\ (TRef (TVar "t") --> TInt --> TRef (TVar "t"))))
+  [ ("+",     TForall ["t"] ((TInt --> TInt --> TInt) /\ (TBool --> TBool --> TBool) /\ (TInt --> TRef (TVar "t") --> TRef (TVar "t")) /\ (TRef (TVar "t") --> TInt --> TRef (TVar "t"))))
   , ("-",     TArr TInt (TArr TInt TInt))
+  , ("<",     TArr TInt (TArr TInt TBool))
   , ("suc",   TArr TInt TInt)
   , ("pred",  TArr TInt TInt)
   , ("not",   TArr TBool TBool)
@@ -40,7 +41,6 @@ initialEnv = M.fromList
   , ("true",  TBool)
   , ("false", TBool)
   , ("0",     TInt)
-  , ("add",   (TInt --> TInt --> TInt) /\(TBool --> TBool --> TBool) )
   ]
 
 ftvType :: Type -> S.Set String
@@ -273,7 +273,30 @@ pp env (Rec x n) = case pp env n of
                 resType   = gen mergedEnv (applySubst u s)
             in Right (mergedEnv, resType)
 
+simplifyType :: Type -> Type
+simplifyType (TAnd ts) =
+  let ts' = map simplifyType ts
+      uniqueTs = S.toList (S.fromList ts')
+  in case uniqueTs of
+       [single] -> single
+       multiple -> TAnd (concatMap flattenAnd multiple)
+simplifyType (TArr t1 t2)   = TArr (simplifyType t1) (simplifyType t2)
+simplifyType (TForall xs t) = TForall xs (simplifyType t)
+simplifyType (TRef t)       = TRef (simplifyType t)
+simplifyType t              = t
+
 inferTopLevel :: Env -> Term -> Either String (Env, Type)
-inferTopLevel env ast = do
-  (reqEnv, ty) <- pp env ast
-  pure (addEnv env reqEnv, gen env ty)
+inferTopLevel globalEnv ast = do
+  (reqEnv, ty) <- pp globalEnv ast
+  let unboundReqs = M.difference reqEnv globalEnv
+  if not (M.null unboundReqs)
+    then Left $ "Undefined variables referenced: " ++ unwords (M.keys unboundReqs)
+    else do
+      let overlap = M.intersectionWith (,) globalEnv reqEnv
+      let compatConstraints = [ CSub globalTy reqTy | (globalTy, reqTy) <- M.elems overlap ]
+      
+      case mgs compatConstraints of
+        Left err -> Left $ "Type mismatch: " ++ err
+        Right subst -> 
+          let finalTy = simplifyType $ applySubst subst ty
+          in Right (globalEnv, gen globalEnv finalTy)

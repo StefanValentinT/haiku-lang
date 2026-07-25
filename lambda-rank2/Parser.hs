@@ -8,7 +8,7 @@ trim :: String -> String
 trim = dropWhile isSpace
 
 isIdChar :: Char -> Bool
-isIdChar c = isAlphaNum c || c `elem` ("+-" :: String)
+isIdChar c = isAlphaNum c || c `elem` ("+-<>" :: String)
 
 parseAtom :: String -> Either String (Term, String)
 parseAtom s = case trim s of

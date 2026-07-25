@@ -17,7 +17,7 @@ data Type
   | TInt
   | TBool
   | TRef Type
-  deriving (Eq)
+  deriving (Eq, Ord)
 
 instance Show Type where
   show (TVar x)       = x

@@ -41,7 +41,6 @@ handleAssign env input
       let (varPart, rest) = break (== '=') input
           varName         = trim varPart
           termStr         = trim (drop 1 rest)
-
       if null varName
         then putStrLn "  [Error]: Missing variable name before '='" >> return env
         else case parseTerm termStr of
