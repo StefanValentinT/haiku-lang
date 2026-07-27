@@ -41,6 +41,7 @@ object LoopLabeler {
 
     def labelExpression(exp: Expression, currentLabel: Option[String]): Expression = {
         exp match {
+            case TypedExpr(exp, typ)   => TypedExpr(labelExpression(exp, currentLabel), typ)
             case Cast(exp, targetType) => Cast(labelExpression(exp, currentLabel), targetType)
 
             case While(cond, body, _) => {
@@ -65,9 +66,8 @@ object LoopLabeler {
                 }
             }
 
-            case Function(params, retType, body) =>
-                Function(params, retType, labelExpression(body, currentLabel))
-
+            case Function(recBinder, params, retType, body) =>
+                Function(recBinder, params, retType, labelExpression(body, None))
             case ArrayLit(values, typ) =>
                 ArrayLit(values.map(e => labelExpression(e, currentLabel)), typ)
 
@@ -90,23 +90,19 @@ object LoopLabeler {
                 Assignment(labeledTarget, labeledValue)
             }
 
-            case Unary(op, e) =>
-                Unary(op, labelExpression(e, currentLabel))
-
-            case Binary(op, exp1, exp2) =>
-                Binary(op, labelExpression(exp1, currentLabel), labelExpression(exp2, currentLabel))
-
             case Return(e) =>
                 Return(labelExpression(e, currentLabel))
             case Ref(e) =>
                 Ref(labelExpression(e, currentLabel))
             case Deref(e) =>
                 Deref(labelExpression(e, currentLabel))
-            case FunctionCall(target, args) => FunctionCall(target, args.map(labelExpression(_, currentLabel)))
-            case c @ Constant(_)            => c
-            case v @ Var(_)                 => v
-            case t @ TrueExpr()             => t
-            case f @ FalseExpr()            => f
+            case FunctionCall(target, args) =>
+                FunctionCall(labelExpression(target, currentLabel), args.map(labelExpression(_, currentLabel)))
+            case b @ BuiltinVar(_) => b
+            case c @ Constant(_)   => c
+            case v @ Var(_)        => v
+            case t @ TrueExpr()    => t
+            case f @ FalseExpr()   => f
         }
     }
 }

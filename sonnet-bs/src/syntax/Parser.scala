@@ -27,8 +27,8 @@ class Parser(tokenizer: Tokenizer) {
                     case _ =>
                         Linkage.Public
                 }
-                tokenizer.peek() match {
-                    case Some(TokIdent(_)) =>
+                tokenizer.next() match {
+                    case Some(KwVal()) =>
                         items += parseDeclaration(linkage)
                     case Some(other) =>
                         throw ParserError(s"Expected top-level declaration, got: $other")
@@ -252,6 +252,28 @@ class Parser(tokenizer: Tokenizer) {
         case OpAs() | OpColon()                                                                                                                                                                                                      => 85
     }
 
+    def binaryToBuiltin(t: Token): String = t match {
+        case OpPlus()           => "add"
+        case OpMinus()          => "sub"
+        case OpStar()           => "mul"
+        case OpDiv()            => "div"
+        case OpRem()            => "rem"
+        case OpOr()             => "or"
+        case OpAnd()            => "and"
+        case OpEqual()          => "eq"
+        case OpNotEqual()       => "ne"
+        case OpLessThan()       => "lt"
+        case OpGreaterThan()    => "gt"
+        case OpLessOrEqual()    => "le"
+        case OpGreaterOrEqual() => "ge"
+        case OpBitAnd()         => "bit_and"
+        case OpBitOr()          => "bit_or"
+        case OpBitXor()         => "bit_xor"
+        case OpLShift()         => "shl"
+        case OpRShift()         => "shr"
+        case _                  => throw ParserError(s"Unknown binary operator token: $t")
+    }
+
     def parseExpression(minPrec: Int): Expression = {
         var left = parseFactor()
 
@@ -274,8 +296,21 @@ class Parser(tokenizer: Tokenizer) {
                     tokenizer.consume()
                     val indexExpr = parseExpression(0)
                     expect(RBracket())
-                    val addition = Binary(BinaryOp.Add, left, indexExpr)
+                    val addition = FunctionCall(BuiltinVar("add"), List(left, indexExpr))
                     left = Deref(addition)
+                }
+                case Some(LParen()) => {
+                    tokenizer.consume()
+                    val args = new ListBuffer[Expression]()
+                    if (tokenizer.peek() != Some(RParen())) {
+                        args += parseExpression(0)
+                        while (tokenizer.peek() == Some(OpComma())) {
+                            tokenizer.consume()
+                            args += parseExpression(0)
+                        }
+                    }
+                    expect(RParen())
+                    left = FunctionCall(left, args.toList)
                 }
                 case _ =>
                     parsingPostfix = false
@@ -296,55 +331,39 @@ class Parser(tokenizer: Tokenizer) {
                 left = Cast(left, targetType)
             } else if (opToken == OpColon()) {
                 val targetType = parseType()
-                left = Typed(left, targetType)
+                left = TypedExpr(left, targetType)
             } else if (cPrec == 10) { // it is an assignment
-                // right-assoicative meaning a = b = c is possible
+                // right-associative, meaning a = b = c is possible
                 val right = parseExpression(cPrec)
 
                 if (opToken == OpAssign()) {
                     left = Assignment(left, right)
                 } else {
-                    val binaryOp = opToken match {
-                        case OpAddAssign()    => BinaryOp.Add
-                        case OpSubAssign()    => BinaryOp.Subtract
-                        case OpMulAssign()    => BinaryOp.Multiply
-                        case OpDivAssign()    => BinaryOp.Divide
-                        case OpRemAssign()    => BinaryOp.Remainder
-                        case OpAndAssign()    => BinaryOp.And
-                        case OpOrAssign()     => BinaryOp.Or
-                        case OpBitAndAssign() => BinaryOp.BitAnd
-                        case OpBitOrAssign()  => BinaryOp.BitOr
-                        case OpBitXorAssign() => BinaryOp.BitXor
-                        case OpLShiftAssign() => BinaryOp.LShift
-                        case OpRShiftAssign() => BinaryOp.RShift
+                    val binaryTok = opToken match {
+                        case OpAddAssign()    => OpPlus()
+                        case OpSubAssign()    => OpMinus()
+                        case OpMulAssign()    => OpStar()
+                        case OpDivAssign()    => OpDiv()
+                        case OpRemAssign()    => OpRem()
+                        case OpAndAssign()    => OpAnd()
+                        case OpOrAssign()     => OpOr()
+                        case OpBitAndAssign() => OpBitAnd()
+                        case OpBitOrAssign()  => OpBitOr()
+                        case OpBitXorAssign() => OpBitXor()
+                        case OpLShiftAssign() => OpLShift()
+                        case OpRShiftAssign() => OpRShift()
                         case _                => throw ParserError("Unknown compound assignment operator.")
                     }
-                    // x += y  =>  x = x + y
-                    left = Assignment(left, Binary(binaryOp, left, right))
+
+                    // x += y  =>  x = add(x, y)
+                    val builtinName = binaryToBuiltin(binaryTok)
+                    val rhs         = FunctionCall(BuiltinVar(builtinName), List(left, right))
+                    left = Assignment(left, rhs)
                 }
             } else {
-                val op = opToken match {
-                    case OpPlus()           => BinaryOp.Add
-                    case OpMinus()          => BinaryOp.Subtract
-                    case OpStar()           => BinaryOp.Multiply
-                    case OpDiv()            => BinaryOp.Divide
-                    case OpRem()            => BinaryOp.Remainder
-                    case OpOr()             => BinaryOp.Or
-                    case OpAnd()            => BinaryOp.And
-                    case OpEqual()          => BinaryOp.Equal
-                    case OpNotEqual()       => BinaryOp.NotEqual
-                    case OpLessThan()       => BinaryOp.LessThan
-                    case OpGreaterThan()    => BinaryOp.GreaterThan
-                    case OpLessOrEqual()    => BinaryOp.LessOrEqual
-                    case OpGreaterOrEqual() => BinaryOp.GreaterOrEqual
-                    case OpBitAnd()         => BinaryOp.BitAnd
-                    case OpBitOr()          => BinaryOp.BitOr
-                    case OpBitXor()         => BinaryOp.BitXor
-                    case OpLShift()         => BinaryOp.LShift
-                    case OpRShift()         => BinaryOp.RShift
-                }
-                val right = parseExpression(cPrec + 1)
-                left = Binary(op, left, right)
+                val builtinName = binaryToBuiltin(opToken)
+                val right       = parseExpression(cPrec + 1)
+                left = FunctionCall(BuiltinVar(builtinName), List(left, right))
             }
 
             nextTokenOpt = tokenizer.peek()
@@ -452,28 +471,12 @@ class Parser(tokenizer: Tokenizer) {
                 case Some(KwContinue()) =>
                     Continue("")
                 case Some(TokIdent(value)) => {
-                    tokenizer.peek() match {
-                        case Some(LParen()) => {
-                            tokenizer.consume()
-                            val args = new ListBuffer[Expression]()
-                            if (tokenizer.peek() != Some(RParen())) {
-                                args += parseExpression(0)
-
-                                while (tokenizer.peek() == Some(OpComma())) {
-                                    tokenizer.consume()
-                                    args += parseExpression(0)
-                                }
-                            }
-
-                            expect(RParen())
-                            FunctionCall(value, args.toList)
-                        }
-                        case _ => {
-                            Var(value)
-                        }
-                    }
+                    Var(value)
                 }
-                case Some(OpTilde()) => Unary(UnaryOp.Complement, parseFactor())
+                case Some(TokBuiltinIdent(value)) => {
+                    BuiltinVar(value)
+                }
+                case Some(OpTilde()) => FunctionCall(BuiltinVar("bit_not"), List(parseFactor()))
                 case Some(OpMinus()) => {
                     val fac = parseFactor(true)
                     fac match {
@@ -481,13 +484,21 @@ class Parser(tokenizer: Tokenizer) {
                         case Constant(Const.I16Lit(v)) => Constant(Const.I16Lit(-v))
                         case Constant(Const.I32Lit(v)) => Constant(Const.I32Lit(-v))
                         case Constant(Const.I64Lit(v)) => Constant(Const.I64Lit(-v))
-                        case _                         => Unary(UnaryOp.Negate, fac)
+                        case _                         => FunctionCall(BuiltinVar("neg"), List(fac))
                     }
                 }
-                case Some(OpNot()) => Unary(UnaryOp.Not, parseFactor())
-                case Some(LParen()) => {
-                    val elements = new ListBuffer[Expression]()
+                case Some(OpNot()) => FunctionCall(BuiltinVar("not"), List(parseFactor()))
 
+                case Some(KwFun()) => {
+                    val recBinder = tokenizer.next() match {
+                        case Some(TokIdent(x)) => {
+                            expect(LParen())
+                            Some(x)
+                        }
+                        case Some(LParen()) => None
+                        case other          => throw ParserError(s"Expected a recursive binding or the start of the parameter list, but got $other")
+                    }
+                    val elements = new ListBuffer[Expression]()
                     if (tokenizer.peek() != Some(RParen())) {
                         elements += parseExpression(0)
                         while (tokenizer.peek() == Some(OpComma())) {
@@ -496,30 +507,25 @@ class Parser(tokenizer: Tokenizer) {
                         }
                     }
                     expect(RParen())
-
                     val explicitReturnType = if (tokenizer.peek() == Some(OpColon())) {
                         tokenizer.consume()
                         Some(parseType())
                     } else None
+                    expect(OpArrow())
 
-                    if (tokenizer.peek() == Some(OpArrow())) {
-                        tokenizer.consume()
-
-                        val params = elements.toList.map {
-                            case f: Formal => f
-                            case other =>
-                                throw ParserError(s"Invalid formals in function. Got: $other")
-                        }
-
-                        val body = parseExpression(0)
-                        Function(params, explicitReturnType, body)
-                    } else {
-
-                        if (elements.size != 1 || explicitReturnType.isDefined) {
-                            throw ParserError("This is not a parentheted expression.")
-                        }
-                        elements.head
+                    val params = elements.toList.map {
+                        case f: Formal => f
+                        case other =>
+                            throw ParserError(s"Invalid formals in function. Got: $other")
                     }
+                    val body = parseExpression(0)
+                    Function(recBinder, params, explicitReturnType, body)
+                }
+
+                case Some(LParen()) => {
+                    val expr = parseExpression(0)
+                    expect(RParen())
+                    expr
                 }
                 case other => throw ParserError(s"Malformed Factor. Found unexpected token: $other")
             }

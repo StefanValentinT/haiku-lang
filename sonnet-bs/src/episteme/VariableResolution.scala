@@ -20,22 +20,21 @@ object VariableResolver {
 
     def resolveProgram(p: Program): Program = {
         val globalVariableMap = Map[String, MapEntry]()
-        val resolvedItems = p.items.map { case d: Declaration =>
-            resolveGlobalDeclaration(d, globalVariableMap)
+        val resolvedItems = p.items.map {
+            case d: Declaration => {
+                if (globalVariableMap.contains(d.name)) {
+                    val prevEntry = globalVariableMap(d.name)
+                    if (prevEntry.fromCurrentBlock && !prevEntry.hasLinkage) {
+                        throw EpistemicError(s"Duplicate declaration of name: ${d.name}")
+                    }
+                }
+                val resolvedInit = d.init.map(e => resolveExpression(e, globalVariableMap))
+                globalVariableMap.put(d.name, MapEntry(d.name, true, true))
+                Declaration(d.name, d.typ, resolvedInit, d.linkage)
+            }
+            case other => other
         }
         Program(resolvedItems)
-    }
-
-    def resolveGlobalDeclaration(decl: Declaration, variableMap: Map[String, MapEntry]): TopLevelItem = {
-        if (variableMap.contains(decl.name)) {
-            val prevEntry = variableMap(decl.name)
-            if (prevEntry.fromCurrentBlock && !prevEntry.hasLinkage) {
-                throw EpistemicError(s"Duplicate declaration of name: ${decl.name}")
-            }
-        }
-        variableMap.put(decl.name, MapEntry(decl.name, true, true))
-        val resolvedInit = decl.init.map(e => resolveExpression(e, variableMap))
-        decl
     }
 
     def resolveStatement(stmt: Statement, variableMap: Map[String, MapEntry]): Statement = {
@@ -56,27 +55,33 @@ object VariableResolver {
 
     def resolveExpression(exp: Expression, variableMap: Map[String, MapEntry]): Expression = {
         exp match {
+            case TypedExpr(exp, typ) => TypedExpr(resolveExpression(exp, variableMap), typ)
             case Block(stmts, exp) => {
                 val innerMap      = copyVariableMap(variableMap)
                 val resolvedStmts = stmts.map(s => resolveStatement(s, innerMap))
                 val resolvedExp   = if exp.isDefined then Some(resolveExpression(exp.get, innerMap)) else None
                 Block(resolvedStmts, resolvedExp)
             }
-            case Function(params, retType, body) => {
+            case Function(recBinder, params, retType, body) => {
                 val globalOnlyMap = Map[String, MapEntry]()
                 variableMap.foreach { case (key, entry) =>
                     if (entry.hasLinkage) {
                         globalOnlyMap.put(key, entry.copy(fromCurrentBlock = false))
                     }
                 }
+                val uniqueRecBinderOpt = recBinder.map { binder =>
+                    val uniqueName = makeUnique(binder)
+                    globalOnlyMap.put(binder, MapEntry(uniqueName, true, false))
+                    uniqueName
+                }
 
                 val resolvedParams = new ListBuffer[Formal]()
 
                 for (param <- params) {
                     val (paramName, paramTypeOpt) = param match {
-                        case Var(name)             => (name, None)
-                        case Typed(Var(name), typ) => (name, Some(typ))
-                        case other                 => throw EpistemicError(s"Invalid formals in function: $other")
+                        case Var(name)                 => (name, None)
+                        case TypedExpr(Var(name), typ) => (name, Some(typ))
+                        case other                     => throw EpistemicError(s"Invalid formals in function: $other")
                     }
                     if (globalOnlyMap.contains(paramName) && globalOnlyMap(paramName).fromCurrentBlock) {
                         throw EpistemicError(s"Duplicate parameter declaration: $paramName")
@@ -84,15 +89,17 @@ object VariableResolver {
                     val uniqueParamName = makeUnique(paramName)
                     globalOnlyMap.put(paramName, MapEntry(uniqueParamName, true, false))
                     val resolvedFormal = paramTypeOpt match {
-                        case Some(typ) => Typed(Var(uniqueParamName), typ)
+                        case Some(typ) => TypedExpr(Var(uniqueParamName), typ)
                         case None      => Var(uniqueParamName)
                     }
                     resolvedParams.append(resolvedFormal)
                 }
 
                 val resolvedBody = resolveExpression(body, globalOnlyMap)
-                Function(resolvedParams.toList, retType, resolvedBody)
+                Function(uniqueRecBinderOpt, resolvedParams.toList, retType, resolvedBody)
             }
+
+            case b @ BuiltinVar(_)      => b
             case e @ Continue(_)        => e
             case e @ Break(_)           => e
             case t @ TrueExpr()         => t
@@ -100,10 +107,8 @@ object VariableResolver {
             case While(cond, exp, l)    => While(resolveExpression(cond, variableMap), resolveExpression(exp, variableMap), l)
             case If(cond, thenB, elseB) => If(resolveExpression(cond, variableMap), resolveExpression(thenB, variableMap), if elseB.isDefined then Some(resolveExpression(elseB.get, variableMap)) else None)
             case Constant(value)        => Constant(value)
-            case Unary(op, e)           => Unary(op, resolveExpression(e, variableMap))
             case Cast(exp, typ)         => Cast(resolveExpression(exp, variableMap), typ)
             case Return(exp)            => Return(resolveExpression(exp, variableMap))
-            case Binary(op, exp1, exp2) => Binary(op, resolveExpression(exp1, variableMap), resolveExpression(exp2, variableMap))
             case Var(value) => {
                 variableMap.get(value) match {
                     case Some(MapEntry(uniqueName, _, _)) => Var(uniqueName)
@@ -114,12 +119,11 @@ object VariableResolver {
                 ArrayLit(values.map(e => resolveExpression(e, variableMap)), typ)
             case Ref(exp)   => Ref(resolveExpression(exp, variableMap))
             case Deref(exp) => Deref(resolveExpression(exp, variableMap))
+            case FunctionCall(BuiltinVar(target), args) =>
+                if Builtins.builtinFunctions.contains(target) then FunctionCall(BuiltinVar(target), args.map(resolveExpression(_, variableMap)))
+                else throw EpistemicError(s"Builtin $target does not exist.")
             case FunctionCall(target, args) =>
-                variableMap.get(target) match {
-                    case Some(MapEntry(uniqueName, _, _)) => FunctionCall(uniqueName, args.map(resolveExpression(_, variableMap)))
-                    case None =>
-                        throw EpistemicError(s"Undeclared function: $target")
-                }
+                FunctionCall(resolveExpression(target, variableMap), args.map(resolveExpression(_, variableMap)))
             case Assignment(target, value) => {
                 val resolvedTarget = resolveExpression(target, variableMap)
                 val resolvedValue  = resolveExpression(value, variableMap)

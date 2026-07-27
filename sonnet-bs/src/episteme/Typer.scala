@@ -1,7 +1,8 @@
 package episteme
 
 import syntax.*
-import scala.collection.mutable.Map
+import scala.collection.immutable.Map
+import scala.collection.mutable.{Map => MutMap}
 import app.CompilerError
 import scala.compiletime.ops.boolean
 
@@ -15,38 +16,43 @@ object Typed {
     case class VarDeclaration(name: String, typ: Type, init: Option[Expression]) extends Statement
     case class ExpressionStmt(exp: Expression)                                   extends Statement
 
+    trait Formal
+
     abstract sealed class Expression
-    case class Constant(const: Const, typ: Type)                                                       extends Expression
-    case class ArrayLit(values: List[Expression], typ: ArrayType)                                      extends Expression
-    case class Function(params: List[(String, Type)], returnType: Type, body: Expression)              extends TopLevelItem
-    case class Var(name: String, typ: Type)                                                            extends Expression
-    case class Ref(exp: Expression, typ: Type)                                                         extends Expression
-    case class Deref(exp: Expression, typ: Type)                                                       extends Expression
-    case class Unary(op: UnaryOp, exp: Expression, typ: Type)                                          extends Expression
-    case class Cast(exp: Expression, targetType: Type)                                                 extends Expression
-    case class Binary(op: BinaryOp, exp1: Expression, exp2: Expression, typ: Type)                     extends Expression
-    case class Assignment(target: Expression, value: Expression, typ: Type)                            extends Expression
-    case class If(cond: Expression, thenBranch: Expression, elseBranch: Option[Expression], typ: Type) extends Expression
-    case class Return(exp: Expression, typ: Type)                                                      extends Expression
-    case class Break(label: String, typ: Type)                                                         extends Expression
-    case class Continue(label: String, typ: Type)                                                      extends Expression
-    case class While(cond: Expression, body: Expression, label: String, typ: Type)                     extends Expression
-    case class FunctionCall(target: String, args: List[Expression], typ: Type)                         extends Expression
-    case class Block(statements: List[Statement], exp: Option[Expression], typ: Type)                  extends Expression
-    case class TrueExpr()                                                                              extends Expression
-    case class FalseExpr()                                                                             extends Expression
+    case class Constant(const: Const, typ: Type)                                                                                extends Expression
+    case class ArrayLit(values: List[Expression], typ: ArrayType)                                                               extends Expression
+    case class Function(recBinder: Option[String], params: List[(String, Type)], returnType: Type, body: Expression, typ: Type) extends Expression
+    case class Var(name: String, typ: Type)                                                                                     extends Expression with Formal
+    case class BuiltinVar(name: String)                                                                                         extends Expression
+    case class Ref(exp: Expression, typ: Type)                                                                                  extends Expression
+    case class Deref(exp: Expression, typ: Type)                                                                                extends Expression
+    case class Cast(exp: Expression, targetType: Type)                                                                          extends Expression
+    case class Assignment(target: Expression, value: Expression, typ: Type)                                                     extends Expression
+    case class If(cond: Expression, thenBranch: Expression, elseBranch: Option[Expression], typ: Type)                          extends Expression
+    case class Return(exp: Expression, typ: Type)                                                                               extends Expression
+    case class Break(label: String, typ: Type)                                                                                  extends Expression
+    case class Continue(label: String, typ: Type)                                                                               extends Expression
+    case class While(cond: Expression, body: Expression, label: String, typ: Type)                                              extends Expression
+    case class FunctionCall(target: Expression, args: List[Expression], typ: Type)                                              extends Expression
+    case class Block(statements: List[Statement], exp: Option[Expression], typ: Type)                                           extends Expression
+    case class TrueExpr()                                                                                                       extends Expression
+    case class FalseExpr()                                                                                                      extends Expression
 }
 
 def getTypedType(expr: Typed.Expression): Type =
     expr match {
-        case Typed.Constant(_, t)        => t
-        case Typed.ArrayLit(_, t)        => t
-        case Typed.Cast(_, t)            => t
-        case Typed.Var(_, t)             => t
+        case Typed.Function(_, _, _, _, t) => t
+        case Typed.Constant(_, t)          => t
+        case Typed.ArrayLit(_, t)          => t
+        case Typed.Var(_, t)               => t
+        case Typed.BuiltinVar(name) =>
+            Builtins.builtinFunctions.get(name) match {
+                case Some(t) => instantiateForall(Set.empty, t)
+                case None    => throw CheckedError
+            }
         case Typed.Ref(_, t)             => t
         case Typed.Deref(_, t)           => t
-        case Typed.Unary(_, _, t)        => t
-        case Typed.Binary(_, _, _, t)    => t
+        case Typed.Cast(_, targetType)   => targetType
         case Typed.Assignment(_, _, t)   => t
         case Typed.If(_, _, _, t)        => t
         case Typed.Return(_, t)          => t
@@ -63,275 +69,433 @@ val CheckedError = EpistemicError("This has been checked in variable resolution 
 
 case class SymbolEntry(typ: Type, isDefined: Boolean)
 
+def formalToName(f: Formal): String = f match {
+    case Var(name)               => name
+    case TypedExpr(Var(name), _) => name
+    case _                       => throw EpistemicError("Invalid function parameter: expected a variable, optionally annotated with `: Type`.")
+}
+
+def formalToType(f: Formal): Option[Type] = f match {
+    case TypedExpr(Var(_), t) => Some(t)
+    case _                    => None
+}
+
+def substituteInTypedExpr(subst: Subst, exp: Typed.Expression): Typed.Expression = exp match {
+    case Typed.Constant(c, t) =>
+        Typed.Constant(c, substitute(subst, t))
+    case Typed.ArrayLit(values, t) =>
+        Typed.ArrayLit(values.map(substituteInTypedExpr(subst, _)), substitute(subst, t).asInstanceOf[ArrayType])
+    case Typed.Function(recBinder, params, ret, body, t) =>
+        Typed.Function(
+          recBinder,
+          params.map { case (n, pT) => (n, substitute(subst, pT)) },
+          substitute(subst, ret),
+          substituteInTypedExpr(subst, body),
+          substitute(subst, t)
+        )
+    case Typed.Var(name, t) =>
+        Typed.Var(name, substitute(subst, t))
+    case bv: Typed.BuiltinVar =>
+        bv
+    case Typed.Ref(e, t) =>
+        Typed.Ref(substituteInTypedExpr(subst, e), substitute(subst, t))
+    case Typed.Deref(e, t) =>
+        Typed.Deref(substituteInTypedExpr(subst, e), substitute(subst, t))
+    case Typed.Cast(e, targetType) =>
+        Typed.Cast(substituteInTypedExpr(subst, e), substitute(subst, targetType))
+    case Typed.Assignment(target, value, t) =>
+        Typed.Assignment(substituteInTypedExpr(subst, target), substituteInTypedExpr(subst, value), substitute(subst, t))
+    case Typed.If(cond, thenBranch, elseBranch, t) =>
+        Typed.If(substituteInTypedExpr(subst, cond), substituteInTypedExpr(subst, thenBranch), elseBranch.map(substituteInTypedExpr(subst, _)), substitute(subst, t))
+    case Typed.Return(e, t) =>
+        Typed.Return(substituteInTypedExpr(subst, e), substitute(subst, t))
+    case Typed.Break(l, t) =>
+        Typed.Break(l, substitute(subst, t))
+    case Typed.Continue(l, t) =>
+        Typed.Continue(l, substitute(subst, t))
+    case Typed.While(cond, body, l, t) =>
+        Typed.While(substituteInTypedExpr(subst, cond), substituteInTypedExpr(subst, body), l, substitute(subst, t))
+    case Typed.FunctionCall(target, args, t) =>
+        Typed.FunctionCall(
+          substituteInTypedExpr(subst, target),
+          args.map(substituteInTypedExpr(subst, _)),
+          substitute(subst, t)
+        )
+    case Typed.Block(statements, e, t) =>
+        Typed.Block(statements.map(substituteTypedStatement(subst, _)), e.map(substituteInTypedExpr(subst, _)), substitute(subst, t))
+    case Typed.TrueExpr()  => exp
+    case Typed.FalseExpr() => exp
+}
+
+def substituteTypedStatement(subst: Subst, stmt: Typed.Statement): Typed.Statement = stmt match {
+    case Typed.VarDeclaration(name, t, init) =>
+        Typed.VarDeclaration(name, substitute(subst, t), init.map(substituteInTypedExpr(subst, _)))
+    case Typed.ExpressionStmt(e) =>
+        Typed.ExpressionStmt(substituteInTypedExpr(subst, e))
+}
+
+def pp(env: Env, exp: Expression): (Env, Typed.Expression) = exp match {
+
+    case TypedExpr(exp, annot) =>
+        val (a, typedExp) = ppCheck(addEnv(env, Map.empty), exp, annot)
+        (a, typedExp)
+
+    // Trivial cases
+    case Constant(Const.I8Lit(value)) =>
+        (Map.empty, Typed.Constant(Const.I8Lit(value), I8()))
+    case Constant(Const.I16Lit(value)) =>
+        (Map.empty, Typed.Constant(Const.I16Lit(value), I16()))
+    case Constant(Const.I32Lit(value)) =>
+        (Map.empty, Typed.Constant(Const.I32Lit(value), I32()))
+    case Constant(Const.I64Lit(value)) =>
+        (Map.empty, Typed.Constant(Const.I64Lit(value), I64()))
+    case Constant(Const.F16Lit(value)) =>
+        (Map.empty, Typed.Constant(Const.F16Lit(value), F16()))
+    case Constant(Const.F32Lit(value)) =>
+        (Map.empty, Typed.Constant(Const.F32Lit(value), F32()))
+    case Constant(Const.F64Lit(value)) =>
+        (Map.empty, Typed.Constant(Const.F64Lit(value), F64()))
+    case Constant(Const.U8Lit(value)) =>
+        (Map.empty, Typed.Constant(Const.U8Lit(value), U8()))
+    case Constant(Const.U16Lit(value)) =>
+        (Map.empty, Typed.Constant(Const.U16Lit(value), U16()))
+    case Constant(Const.U32Lit(value)) =>
+        (Map.empty, Typed.Constant(Const.U32Lit(value), U32()))
+    case Constant(Const.U64Lit(value)) =>
+        (Map.empty, Typed.Constant(Const.U64Lit(value), U64()))
+    case TrueExpr() =>
+        (Map.empty, Typed.TrueExpr())
+    case FalseExpr() =>
+        (Map.empty, Typed.FalseExpr())
+    case Break(label) =>
+        (Map.empty, Typed.Break(label, I32()))
+    case Continue(label) =>
+        (Map.empty, Typed.Continue(label, I32()))
+
+    case Return(e) => {
+        val (a, typedE) = pp(env, e)
+        (a, Typed.Return(typedE, I32()))
+    }
+    case While(cond, body, label) => {
+        val (a1, typedCond) = ppCheck(env, cond, Bool())
+        val (a2, typedBody) = pp(addEnv(env, a1), body)
+        (addEnv(a1, a2), Typed.While(typedCond, typedBody, label, I32()))
+    }
+
+    case Ref(e) => {
+        val (a, typedE) = pp(env, e)
+        // TODO: Do we want array decay to pointer? Think about this.
+        val refType = getTypedType(typedE) match {
+            case ArrayType(elem, _) => Pointer(elem)
+            case t                  => Pointer(t)
+        }
+        (a, Typed.Ref(typedE, refType))
+    }
+    case Deref(e) => {
+        val (a, typedE) = pp(env, e)
+        getTypedType(typedE) match {
+            case Pointer(innerType) =>
+                (a, Typed.Deref(typedE, innerType))
+            case t =>
+                throw EpistemicError(s"Cannot dereference non-pointer type: $t")
+        }
+    }
+
+    case Cast(e, targetType) => {
+        val (a, typedE) = pp(env, e)
+        // TODO: Which casts should be allowed? Think about this.
+        val sourceType = getTypedType(typedE)
+        if (!isNumericType(sourceType) || !isNumericType(targetType)) {
+            throw EpistemicError(s"Disallowed cast from $sourceType to $targetType.")
+        }
+        (a, Typed.Cast(typedE, targetType))
+    }
+
+    case Assignment(target, value) => {
+        target match {
+            case Var(_) | Deref(_) => ()
+            case _ =>
+                throw EpistemicError("Invalid l-value: must be variable or dereferenced pointer")
+        }
+        val (a1, typedTarget) = pp(env, target)
+        val targetType        = getTypedType(typedTarget)
+        val (a2, typedValue)  = ppCheck(addEnv(env, a1), value, targetType)
+        (addEnv(a1, a2), Typed.Assignment(typedTarget, typedValue, I32()))
+    }
+
+    case ArrayLit(values, ArrayType(elemType, size)) => {
+        val (reqs, typedValues) = values.foldLeft((Map.empty[String, Type], List[Typed.Expression]())) { case ((a, ts), v) =>
+            val (a2, tv) = ppCheck(addEnv(env, a), v, elemType)
+            (addEnv(a, a2), ts :+ tv)
+        }
+        (reqs, Typed.ArrayLit(typedValues, ArrayType(elemType, size)))
+    }
+
+    case If(cond, thenBranch, elseBranch) => {
+        val (a1, typedCond) = ppCheck(env, cond, Bool())
+        val (a2, typedThen) = pp(addEnv(env, a1), thenBranch)
+        val thenType        = getTypedType(typedThen)
+        val (a3, typedElse) = elseBranch match {
+            case Some(e) =>
+                val (a3Reqs, typedE) = ppCheck(addEnv(addEnv(env, a1), a2), e, thenType)
+                (a3Reqs.asInstanceOf[Env], Some(typedE))
+            case None => (Map.empty[String, Type], None)
+        }
+        (addEnv(addEnv(addEnv(a1, a2), a3), Map.empty), Typed.If(typedCond, typedThen, typedElse, thenType))
+    }
+
+    case Block(statements, blockExp) => {
+        val (stmtReqs, typedStmts) = statements.foldLeft((Map.empty[String, Type], List[Typed.Statement]())) { case ((a, ts), stmt) =>
+            val (a2, ts2) = ppStatement(addEnv(env, a), stmt)
+            (addEnv(a, a2), ts :+ ts2)
+        }
+
+        val (blockReqs, typedExp, blockType) = blockExp match {
+            case Some(e) =>
+                val (a3, te) = pp(addEnv(env, stmtReqs), e)
+                (addEnv(stmtReqs, a3), Some(te), getTypedType(te))
+            case None =>
+                (stmtReqs, None, I32())
+        }
+
+        (blockReqs, Typed.Block(typedStmts, typedExp, blockType))
+    }
+
+    case Var(name) =>
+        env.get(name) match {
+            case Some(t) => {
+                val instT = instantiateForall(ftvEnv(env), t)
+                (Map.empty, Typed.Var(name, instT))
+            }
+            case None =>
+                val fresh = TypeVar(newTypeVar(ftvEnv(env)))
+                (Map(name -> fresh), Typed.Var(name, fresh))
+        }
+
+    case BuiltinVar(name) =>
+        (Map.empty, Typed.BuiltinVar(name))
+
+    case Function(recBinderOpt, params, retTypeOpt, body) => {
+        val envForBody = params.foldLeft(env) { (currentEnv, formal) =>
+            val name = formalToName(formal)
+            formalToType(formal) match {
+                case Some(t) => currentEnv + (name -> t)
+                case None    => currentEnv - name
+            }
+        }
+
+        val (bodyReqs, typedBodyInit) = pp(envForBody, body)
+
+        case class ParamAcc(reqs: Env, typedBody: Typed.Expression, params: List[(String, Type)])
+
+        val afterParams = params.foldLeft(ParamAcc(bodyReqs, typedBodyInit, Nil)) { (acc, formal) =>
+            val name     = formalToName(formal)
+            val annotOpt = formalToType(formal)
+
+            acc.reqs.get(name) match {
+                case Some(inferredTy) =>
+                    val reqsWithoutBinder = acc.reqs - name
+                    annotOpt match {
+                        case Some(annotTy) =>
+                            val u = mgs(List(ConstraintSub(inferredTy, annotTy)))
+                            ParamAcc(applyEnv(u, reqsWithoutBinder), substituteInTypedExpr(u, acc.typedBody), acc.params :+ (name, annotTy))
+                        case None =>
+                            ParamAcc(reqsWithoutBinder, acc.typedBody, acc.params :+ (name, inferredTy))
+                    }
+                case None =>
+                    val paramTy = annotOpt.getOrElse {
+                        val used = ftvEnv(acc.reqs) ++ ftvType(getTypedType(acc.typedBody))
+                        TypeVar(newTypeVar(used))
+                    }
+                    ParamAcc(acc.reqs, acc.typedBody, acc.params :+ (name, paramTy))
+            }
+        }
+
+        val bodyType = getTypedType(afterParams.typedBody)
+
+        val (finalReqs, finalRetType, finalTypedBody) = retTypeOpt match {
+            case Some(annotatedRet) =>
+                val u = mgs(List(ConstraintSub(bodyType, annotatedRet)))
+                (applyEnv(u, afterParams.reqs), annotatedRet, substituteInTypedExpr(u, afterParams.typedBody))
+            case None =>
+                (afterParams.reqs, bodyType, afterParams.typedBody)
+        }
+
+        val funTy = FunType(afterParams.params.map(_._2), finalRetType)
+
+        recBinderOpt match {
+            case Some(binder) =>
+                finalReqs.get(binder) match {
+                    case None =>
+                        val genFunTy = generalize(finalReqs, funTy)
+                        (finalReqs, Typed.Function(recBinderOpt, afterParams.params, finalRetType, finalTypedBody, genFunTy))
+
+                    case Some(tyB) =>
+                        val reqsWithoutBinder = finalReqs - binder
+                        val sigma             = generalize(reqsWithoutBinder, funTy)
+                        val u                 = mgs(List(ConstraintSub(sigma, tyB)))
+
+                        val mergedReqs = applyEnv(u, reqsWithoutBinder)
+
+                        val substitutedParams = afterParams.params.map { case (n, t) => (n, substitute(u, t)) }
+                        val substitutedRet    = substitute(u, finalRetType)
+                        val substitutedBody   = substituteInTypedExpr(u, finalTypedBody)
+
+                        val finalGenFunTy = generalize(mergedReqs, substitute(u, funTy))
+
+                        (mergedReqs, Typed.Function(recBinderOpt, substitutedParams, substitutedRet, substitutedBody, finalGenFunTy))
+                }
+            case None =>
+                val genFunTy = generalize(finalReqs, funTy)
+                (finalReqs, Typed.Function(recBinderOpt, afterParams.params, finalRetType, finalTypedBody, genFunTy))
+        }
+    }
+
+    case FunctionCall(target, args) => {
+        val (targetReqs, typedTargetRaw) = pp(env, target)
+
+        val targetType = typedTargetRaw match {
+            case Typed.BuiltinVar(name) =>
+                Builtins.builtinFunctions.get(name) match {
+                    case Some(t) => instantiateForall(ftvEnv(env), t)
+                    case None    => throw CheckedError
+                }
+            case other => getTypedType(other)
+        }
+
+        case class ArgAcc(reqs: Env, used: Set[String], typedArgs: List[Typed.Expression], argTypes: List[Type])
+
+        val initUsed = ftvEnv(targetReqs) ++ ftvType(targetType)
+        val argsAcc = args.foldLeft(ArgAcc(targetReqs, initUsed, Nil, Nil)) { (acc, argExp) =>
+            val (argReqsRaw, typedArgRaw)      = pp(env, argExp)
+            val (freshSubst, argReqs, argType) = freshenPair(acc.used, (argReqsRaw, getTypedType(typedArgRaw)))
+            val typedArg                       = substituteInTypedExpr(freshSubst, typedArgRaw)
+
+            ArgAcc(
+              addEnv(acc.reqs, argReqs),
+              acc.used ++ ftvEnv(argReqs) ++ ftvType(argType),
+              acc.typedArgs :+ typedArg,
+              acc.argTypes :+ argType
+            )
+        }
+
+        val alpha = TypeVar(newTypeVar(argsAcc.used))
+        val u     = mgs(List(ConstraintSub(targetType, FunType(argsAcc.argTypes, alpha))))
+
+        val mergedReqs = applyEnv(u, argsAcc.reqs)
+        val resultType = substitute(u, alpha)
+
+        val finalTypedTarget = substituteInTypedExpr(u, typedTargetRaw)
+        val finalTypedArgs   = argsAcc.typedArgs.map(substituteInTypedExpr(u, _))
+
+        (mergedReqs, Typed.FunctionCall(finalTypedTarget, finalTypedArgs, resultType))
+    }
+
+}
+
+def ppCheck(env: Env, exp: Expression, expected: Type): (Env, Typed.Expression) = {
+    val (a, typedExp) = pp(env, exp)
+    val inferred      = getTypedType(typedExp)
+
+    if (inferred == expected) {
+        (a, typedExp)
+    } else {
+        val cs = List(ConstraintSub(inferred, expected))
+        val u  = mgs(cs)
+        (applyEnv(u, a), substituteInTypedExpr(u, typedExp))
+    }
+}
+
+def ppStatement(env: Env, stmt: Statement): (Env, Typed.Statement) = stmt match {
+    case ExpressionStmt(exp) =>
+        val (a, typedExp) = pp(env, exp)
+        if getTypedType(typedExp) != I32() then throw EpistemicError("Statement does not return unit.")
+        (a, Typed.ExpressionStmt(typedExp))
+
+    case VarDeclaration(name, typOpt, init) => {
+        val (a, declType, typedInit): (Env, Type, Option[Typed.Expression]) = typOpt match {
+            case Some(t) =>
+                val (a2, ti) = init match {
+                    case Some(i) => ppCheck(env, i, t)
+                    case None    => (Map.empty[String, Type], Typed.Block(List(), None, I32()))
+                }
+                (a2, t, Some(ti))
+
+            case None =>
+                init match {
+                    case Some(i) =>
+                        val (a2, te) = pp(env, i)
+                        (a2, getTypedType(te), Some(te))
+                    case None =>
+                        val fresh = TypeVar(newTypeVar(ftvEnv(env)))
+                        (Map.empty[String, Type], fresh, None)
+                }
+        }
+
+        (a.asInstanceOf[Env], Typed.VarDeclaration(name, declType, typedInit))
+    }
+}
+
 object TypeChecker {
-    private val symbols = Map[String, Type]()
+    private val symbols = MutMap[String, Type]()
 
     def typecheckProgram(p: Program): Typed.Program = {
         symbols.clear()
 
-        p.items.foreach {
-            case Declaration(name, Some(t), _, _) => symbols.put(name, t)
-            case Declaration(name, None, Some(init), _) =>
-                symbols.put(name, getTypedType(infer(init)))
-            case syntax.Declaration(name, None, None, _) =>
-                throw EpistemicError(s"Global declaration '$name' needs a type or initializer.")
-            case _ => ()
-        }
-
         val typedItems = p.items.flatMap { item =>
             item match {
-                case d: syntax.Declaration => Some(typecheckDeclaration(d))
-                case syntax.Import(_)      => None
+                case d: Declaration => {
+                    val typed = typecheckDeclaration(d)
+                    println(s"${typed.name} : ${typed.typ}")
+                    Some(typed)
+                }
+                case Import(_) => None
             }
         }
+
         Typed.Program(typedItems)
     }
 
     private def typecheckDeclaration(v: Declaration): Typed.Declaration = {
-        val resolvedType = v.typ match {
-            case Some(t) => t
-            case None =>
-                v.init match {
-                    case Some(initExpr) => getTypedType(infer(initExpr))
-                    case None           => throw EpistemicError(s"Declaration of '${v.name}' needs either an explicit type or an initializer.")
+        val (resolvedType, typedInitOpt) = (v.typ, v.init) match {
+            case (Some(t), Some(init)) =>
+                val (_, typedInit) = pp(symbols.toMap, init)
+                val inferredType   = getTypedType(typedInit)
+                mgs(List(ConstraintSub(inferredType, t)))
+                (t, Some(typedInit))
+
+            case (Some(t), None) =>
+                (t, None)
+
+            case (None, Some(init)) =>
+                val (reqEnv, typedInit) = pp(symbols.toMap, init)
+                val inferredType        = getTypedType(typedInit)
+
+                val unboundKeys = reqEnv.keys.filterNot(symbols.contains).toList
+                if (unboundKeys.nonEmpty) {
+                    throw EpistemicError(s"Undefined variables referenced: ${unboundKeys.mkString(", ")}")
                 }
+
+                val compatConstraints = reqEnv.keys
+                    .filter(symbols.contains)
+                    .map { k =>
+                        ConstraintSub(symbols(k), reqEnv(k))
+                    }
+                    .toList
+
+                val subst     = mgs(compatConstraints)
+                val finalTy   = substitute(subst, inferredType)
+                val genResult = generalize(reqEnv, finalTy)
+
+                (genResult, Some(typedInit))
+
+            case (None, None) =>
+                (TypeVar(newTypeVar(ftvEnv(symbols.toMap))), None)
         }
 
         symbols.put(v.name, resolvedType)
-        val typedInit = v.init.map { e => check(e, resolvedType) }
-        Typed.Declaration(v.name, resolvedType, typedInit, v.linkage)
+
+        Typed.Declaration(v.name, resolvedType, typedInitOpt, v.linkage)
     }
 
-    private def typecheckFunctionDef(f: FunctionDef): Typed.FunctionDef = {
-        val (paramTypes, returnType) = f.typ match {
-            case FunType(ps, ret) => (ps, ret)
-            case t                => throw EpistemicError(s"Function ${f.name} has an invalid type signature.")
-        }
-
-        symbols.get(f.name) match {
-            case Some(FunType(declParams, declRet)) =>
-                if (declParams != paramTypes || declRet != returnType) {
-                    throw EpistemicError(s"Function ${f.name} signature redefinition mismatch. Declared as ${FunType(declParams, declRet)}, defined as ${FunType(paramTypes, returnType)}.")
-                }
-            case Some(_) =>
-                throw EpistemicError(s"Identifier ${f.name} redefined as a function.")
-            case None =>
-                ()
-        }
-
-        symbols.put(f.name, FunType(paramTypes, returnType))
-
-        val typedParams = f.params
-            .zip(paramTypes)
-            .map({ case (paramName, paramType) =>
-                symbols.put(paramName, paramType)
-                (paramName, paramType)
-            })
-
-        val typedBody = typecheckExpression(f.body)
-
-        if (getTypedType(typedBody) != returnType) {
-            throw EpistemicError(s"Function ${f.name} return type mismatch. Expected $returnType, got ${getTypedType(typedBody)}")
-        }
-
-        Typed.FunctionDef(f.name, typedParams, returnType, typedBody, f.linkage)
-    }
-    
-    private def typecheckStatement(stmt: syntax.Statement): Typed.Statement =
-        stmt match {
-            case syntax.ExpressionStmt(exp) =>
-                Typed.ExpressionStmt(infer(exp))
-            case syntax.VarDeclaration(name, typOpt, init) => {
-                val resolvedType = typOpt match {
-                    case Some(t) => t
-                    case None =>
-                        init match {
-                            case Some(i) => getTypedType(infer(i))
-                            case None    => throw EpistemicError(s"Local variable '$name' needs a type or initializer.")
-                        }
-                }
-                symbols.put(name, resolvedType)
-                val typedInit = init.map { e => check(e, resolvedType) }
-                Typed.VarDeclaration(name, resolvedType, typedInit)
-            }
-        }
-
-    private def infer(exp: Expression): Typed.Expression =
-        exp match {
-            case Constant(Const.I8Lit(value)) =>
-                Typed.Constant(Const.I8Lit(value), I8())
-            case Constant(Const.I16Lit(value)) =>
-                Typed.Constant(Const.I16Lit(value), I16())
-            case Constant(Const.I32Lit(value)) =>
-                Typed.Constant(Const.I32Lit(value), I32())
-            case Constant(Const.I64Lit(value)) =>
-                Typed.Constant(Const.I64Lit(value), I64())
-
-            case Constant(Const.F16Lit(value)) =>
-                Typed.Constant(Const.F16Lit(value), F16())
-            case Constant(Const.F32Lit(value)) =>
-                Typed.Constant(Const.F32Lit(value), F32())
-            case Constant(Const.F64Lit(value)) =>
-                Typed.Constant(Const.F64Lit(value), F64())
-
-            case Constant(Const.U8Lit(value)) =>
-                Typed.Constant(Const.U8Lit(value), U8())
-            case Constant(Const.U16Lit(value)) =>
-                Typed.Constant(Const.U16Lit(value), U16())
-            case Constant(Const.U32Lit(value)) =>
-                Typed.Constant(Const.U32Lit(value), U32())
-            case Constant(Const.U64Lit(value)) =>
-                Typed.Constant(Const.U64Lit(value), U64())
-
-            case TrueExpr()  => Typed.TrueExpr()
-            case FalseExpr() => Typed.FalseExpr()
-
-            case Cast(exp, targetType) => Typed.Cast(infer(exp), targetType)
-
-            case Var(name) =>
-                symbols.get(name) match {
-                    case Some(t) => Typed.Var(name, t)
-                    case None    => throw CheckedError
-                }
-            case FunctionCall(target, args) =>
-                symbols.get(target) match {
-                    case Some(FunType(paramTypes, retType)) => {
-                        if (paramTypes.length != args.length) {
-                            throw EpistemicError(s"Function $target expected ${paramTypes.length} arguments, got ${args.length}.")
-                        }
-                        val typedArgs = args.map(typecheckExpression)
-                        val typedArgs = args.zip(paramTypes).map { case (arg, expectedType) =>
-                            check(arg, expectedType)
-                        }
-                        Typed.FunctionCall(target, typedArgs, retType)
-                    }
-                    case _ => throw EpistemicError(s"Identifier '$target' is not a callable function.")
-                }
-            case Assignment(target, value) => {
-                target match {
-                    case Var(_) | Deref(_) => ()
-                    case _                 => throw EpistemicError("Invalid l-value: Target of assignment must be a variable or a dereferenced pointer.")
-                }
-
-                val typedTarget = infer(target)
-                val targetType  = getTypedType(typedTarget)
-                val typedValue  = check(value, targetType)
-
-                Typed.Assignment(typedTarget, typedValue, targetType)
-            }
-            case Unary(op, e) => {
-                val typedExpr = infer(e)
-                val t         = getTypedType(typedExpr)
-                op match {
-                    case UnaryOp.Complement | UnaryOp.Negate => if !(isIntegerType(t)) then throw EpistemicError(s"Complement requires integer type, found: $t.")
-                    case UnaryOp.Not                         => if t != Bool() then throw EpistemicError(s"Logical not requires bool type, found: $t.")
-                }
-                Typed.Unary(op, typedExpr, t)
-            }
-            case Binary(op, exp1, exp2) => {
-                val typedE1 = infer(exp1)
-                val typedE2 = infer(exp2)
-                val t1      = getTypedType(typedE1)
-                val t2      = getTypedType(typedE2)
-                if (t1 != t2) {
-                    val e = EpistemicError(s"Type mismatch in binary operation: $t1 and $t2 do not match.")
-                    t1 match {
-                        case Pointer(r) =>
-                            t2 match {
-                                case U64() => Typed.Binary(op, typedE1, typedE2, Pointer(r))
-                                case _     => throw e
-                            }
-                        case U64() =>
-                            t2 match {
-                                case Pointer(r) => Typed.Binary(op, typedE1, typedE2, Pointer(r))
-                                case _          => throw e
-                            }
-                        case _ => throw e
-                    }
-                } else {
-                    if (!isNumericType(t1)) {
-                        throw EpistemicError(s"Binary operator requires numeric types, found: $t1.")
-                    }
-                    op match {
-                        case BinaryOp.Equal | BinaryOp.NotEqual | BinaryOp.LessThan | BinaryOp.LessOrEqual | BinaryOp.GreaterThan | BinaryOp.GreaterOrEqual => if (!isNumericType(t1)) then throw EpistemicError(s"Relational operator requires numeric types, found: $t1.")
-                        case BinaryOp.Add | BinaryOp.Divide | BinaryOp.Subtract | BinaryOp.Multiply                                                         => if (!isNumericType(t1)) then throw EpistemicError(s"Binary operator requires numeric types, found: $t1.")
-                        case BinaryOp.Remainder | BinaryOp.BitAnd | BinaryOp.BitOr | BinaryOp.BitXor | BinaryOp.LShift | BinaryOp.RShift                    => if !(isIntegerType(t1)) then throw EpistemicError(s"Remainder and Bit operators requires integer types, found: $t1.")
-                        case BinaryOp.And | BinaryOp.Or                                                                                                     => if t1 != Bool() then throw EpistemicError(s"Logical operators require bool type, found: $t1.")
-                    }
-                    if (isComparisonOp(op)) {
-                        Typed.Binary(op, typedE1, typedE2, Bool())
-                    } else {
-                        Typed.Binary(op, typedE1, typedE2, t1)
-                    }
-                }
-            }
-            case If(cond, thenBranch, elseBranch) => {
-                val typedCond = check(cond, Bool())
-                val typedThen = infer(thenBranch)
-                val thenType  = getTypedType(typedThen)
-                val typedElse = elseBranch.map(e => check(e, thenType))
-
-                Typed.If(typedCond, typedThen, typedElse, thenType)
-            }
-            case While(cond, body, label) => {
-                val typedCond = check(cond, Bool())
-                val typedBody = infer(body)
-                Typed.While(typedCond, typedBody, label, I32())
-            }
-            case Block(statements, blockExp) => {
-                val typedStmts = statements.map(typecheckStatement)
-                val (typedBlockExp, blockType) = blockExp match {
-                    case Some(e) => {
-                        val typedE = infer(e)
-                        (Some(typedE), getTypedType(typedE))
-                    }
-                    case None => (None, I32())
-                }
-                Typed.Block(typedStmts, typedBlockExp, blockType)
-            }
-            case Return(e) => {
-                val typedExpr = infer(e)
-                Typed.Return(typedExpr, getTypedType(typedExpr))
-            }
-            case Ref(e) => {
-                infer(e) match {
-                    case v @ Typed.Var(_, ArrayType(elem, _)) =>
-                        Typed.Ref(v, Pointer(elem))
-                    case v @ Typed.Var(_, _) =>
-                        Typed.Ref(v, Pointer(getTypedType(v)))
-                    case _ =>
-                        throw new EpistemicError("Cannot reference non-variable.")
-                }
-            }
-            case Deref(e) => {
-                val typedExpr = infer(e)
-                getTypedType(typedExpr) match {
-                    case Pointer(innerType) =>
-                        Typed.Deref(typedExpr, innerType)
-
-                    case _ =>
-                        throw new EpistemicError("Cannot dereference non-pointer.")
-                }
-            }
-            case Break(label) =>
-                Typed.Break(label, I32())
-            case Continue(label) =>
-                Typed.Continue(label, I32())
-        }
-
-    private def check(exp: Expression, t: Type): Typed.Expression = {
-        val at = infer(exp)
-        if getTypedType(at) == t then at else throw EpistemicError(s"Expression does not have expected type $t")
-    }
-
-    private def isComparisonOp(op: BinaryOp): Boolean =
-        op match {
-            case BinaryOp.Equal          => true
-            case BinaryOp.NotEqual       => true
-            case BinaryOp.LessThan       => true
-            case BinaryOp.GreaterThan    => true
-            case BinaryOp.LessOrEqual    => true
-            case BinaryOp.GreaterOrEqual => true
-            case _                       => false
-        }
 }

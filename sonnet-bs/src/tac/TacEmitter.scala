@@ -12,7 +12,7 @@ private case class PlainOperand(value: Tac.Val)      extends ExpressionResult
 private case class DereferencedPointer(ptr: Tac.Val) extends ExpressionResult
 
 class TacEmitterError(detail: String) extends CompilerError("Three-address-code generator", detail)
-
+/*
 class TacEmitter(prog: Typed.Program) {
     private var tempCounter  = 0
     private var labelCounter = 0
@@ -408,3 +408,4 @@ class TacEmitter(prog: Typed.Program) {
         Tac.Program(topItems.toList)
     }
 }
+ */

@@ -18,6 +18,7 @@ case class KwIf()       extends Token
 case class KwThen()     extends Token
 case class KwElse()     extends Token
 case class KwFun()      extends Token
+case class KwRec()      extends Token
 case class KwWhile()    extends Token
 case class KwBreak()    extends Token
 case class KwContinue() extends Token
@@ -87,21 +88,22 @@ case class OpBitXorAssign() extends Token // ^=
 case class OpLShiftAssign() extends Token // <<=
 case class OpRShiftAssign() extends Token // >>=
 
-case class TokIdent(value: String)      extends Token
-case class TokI8Lit(value: BigInt)      extends Token
-case class TokI16Lit(value: BigInt)     extends Token
-case class TokI32Lit(value: BigInt)     extends Token
-case class TokI64Lit(value: BigInt)     extends Token
-case class TokU8Lit(value: BigInt)      extends Token
-case class TokU16Lit(value: BigInt)     extends Token
-case class TokU32Lit(value: BigInt)     extends Token
-case class TokU64Lit(value: BigInt)     extends Token
-case class TokF16Lit(value: BigDecimal) extends Token
-case class TokF32Lit(value: BigDecimal) extends Token
-case class TokF64Lit(value: BigDecimal) extends Token
-case class TokStringLit(value: String)  extends Token
-case class TokTrue()                    extends Token
-case class TokFalse()                   extends Token
+case class TokIdent(value: String)        extends Token
+case class TokBuiltinIdent(value: String) extends Token
+case class TokI8Lit(value: BigInt)        extends Token
+case class TokI16Lit(value: BigInt)       extends Token
+case class TokI32Lit(value: BigInt)       extends Token
+case class TokI64Lit(value: BigInt)       extends Token
+case class TokU8Lit(value: BigInt)        extends Token
+case class TokU16Lit(value: BigInt)       extends Token
+case class TokU32Lit(value: BigInt)       extends Token
+case class TokU64Lit(value: BigInt)       extends Token
+case class TokF16Lit(value: BigDecimal)   extends Token
+case class TokF32Lit(value: BigDecimal)   extends Token
+case class TokF64Lit(value: BigDecimal)   extends Token
+case class TokStringLit(value: String)    extends Token
+case class TokTrue()                      extends Token
+case class TokFalse()                     extends Token
 
 class TokenizerError(detail: String) extends CompilerError("Tokenizer", detail)
 
@@ -127,6 +129,7 @@ class Tokenizer(input: String) {
       (Word("then"), _ => KwThen()),
       (Word("else"), _ => KwElse()),
       (Word("fun"), _ => KwFun()),
+      (Word("rec"), _ => KwRec()),
       (Word("while"), _ => KwWhile()),
       (Word("break"), _ => KwBreak()),
       (Word("continue"), _ => KwContinue()),
@@ -320,6 +323,7 @@ class Tokenizer(input: String) {
         }
       ),
       (RegexPat("\"[^\"]*\""), s => TokStringLit(s.substring(1, s.length - 1))),
+      (RegexPat("@[a-zA-Z_]\\w*"), s => TokBuiltinIdent(s.tail)),
       (RegexPat("[a-zA-Z_]\\w*"), s => TokIdent(s))
     )
     val tokenPatterns: List[(Regex, String => Token)] = rawPatterns.map {

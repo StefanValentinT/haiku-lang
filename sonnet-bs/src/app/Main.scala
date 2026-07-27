@@ -41,7 +41,6 @@ object App {
                 val ast = Parser.fromString(fileContent).parse()
                 if (cfg.isVerbose) pprintln(ast)
 
-                /*
                 val importAst  = ImportResolver().resolve(ast, sourcePath.toString)
                 val fixedAst   = VariableResolver.resolveProgram(importAst)
                 val labeledAst = LoopLabeler.labelProgram(fixedAst)
@@ -49,6 +48,7 @@ object App {
                 val typedAst = TypeChecker.typecheckProgram(labeledAst)
                 if (cfg.isVerbose) pprintln(typedAst)
 
+                /*
                 val tacAst = TacEmitter(typedAst).emitProgramTac()
                 if (cfg.isVerbose) pprintln(tacAst)
 
