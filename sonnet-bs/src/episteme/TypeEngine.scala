@@ -20,6 +20,7 @@ def ftvType(t: Type): Set[String] = t match {
     case TypeVar(x)                   => Set(x)
     case FunType(params, ret)         => params.foldLeft(Set.empty[String])((acc, elem) => acc | ftvType(elem)) | ftvType(ret)
     case Inter(types)                 => types.foldLeft(Set.empty[String])((acc, elem) => acc | ftvType(elem))
+    case Variant(types)               => types.foldLeft(Set.empty[String])((acc, elem) => acc | ftvType(elem))
     case Quantified(binders, typ)     => ftvType(typ).diff(binders)
     case Pointer(typ)                 => ftvType(typ)
     case ArrayType(elem: Type, _size) => ftvType(elem)
@@ -46,6 +47,17 @@ def intersect(types: Set[Type]): Type = types match {
     case xs               => Inter(xs.flatMap(flattenIntersection).toSet)
 }
 
+def flattenVariant(t: Type): Set[Type] = t match {
+    case Variant(ts) => ts.flatMap(flattenVariant)
+    case _           => Set(t)
+}
+
+def makeVariant(types: Set[Type]): Type = types match {
+    case s if s.isEmpty   => throw EpistemicError("Cannot construct a variant type of nothing.")
+    case s if s.size == 1 => s.head
+    case xs               => Variant(xs.flatMap(flattenVariant).toSet)
+}
+
 def quantify(binders: Set[String], typ: Type): Type = typ match {
     case Quantified(b2, t) if b2.isEmpty => t
     case Quantified(b2, t)               => Quantified(binders ++ b2, t)
@@ -63,6 +75,7 @@ def substitute(subst: Subst, typ: Type): Type = typ match {
     case TypeVar(x)               => subst.getOrElse(x, TypeVar(x))
     case FunType(params, ret)     => FunType(params.map(substitute(subst, _)), substitute(subst, ret))
     case Inter(types)             => intersect(types.map(substitute(subst, _)))
+    case Variant(types)           => makeVariant(types.map(substitute(subst, _)))
     case Quantified(binders, typ) => quantify(binders, substitute(subst -- binders, typ))
 
     case Pointer(ref)       => Pointer(substitute(subst, ref))
@@ -128,6 +141,54 @@ def subtypeSatisfaction(used: Set[String], sigma: Type, tau: Type): UnificationP
         validCandidates.headOption match {
             case Some(firstValid) => firstValid
             case None             => UnificationProblem(Set(), List(ConstraintEqual(Inter(types), tau)))
+        }
+    }
+
+    case (sigma @ Variant(types), tau) => {
+        val candidates = types.toList.map(t => (t, subtypeSatisfaction(used, t, tau)))
+        val validCandidates = candidates.flatMap { case (t, candidate) =>
+            try {
+                val sub = unify(convertToEqualities(used, candidate.constraints))
+                Some((candidate, sub))
+            } catch {
+                case _: EpistemicError => None
+            }
+        }
+        validCandidates match {
+            case Nil                    => UnificationProblem(Set(), List(ConstraintEqual(sigma, tau)))
+            case (singleProb, _) :: Nil => singleProb
+            case multiple               =>
+                val allFresh = multiple.flatMap(_._1.freshVars).toSet
+                val allKeys  = multiple.flatMap(_._2.keys).toSet
+                val mergedConstraints = allKeys.map { k =>
+                    val possibleTypes = multiple.flatMap(_._2.get(k)).toSet
+                    ConstraintEqual(TypeVar(k), makeVariant(possibleTypes))
+                }.toList
+                UnificationProblem(allFresh, mergedConstraints)
+        }
+    }
+
+    case (sigma, tau @ Variant(types)) => {
+        val candidates = types.toList.map(t => (t, subtypeSatisfaction(used, sigma, t)))
+        val validCandidates = candidates.flatMap { case (t, candidate) =>
+            try {
+                val sub = unify(convertToEqualities(used, candidate.constraints))
+                Some((candidate, sub))
+            } catch {
+                case _: EpistemicError => None
+            }
+        }
+        validCandidates match {
+            case Nil                    => UnificationProblem(Set(), List(ConstraintEqual(sigma, tau)))
+            case (singleProb, _) :: Nil => singleProb
+            case multiple =>
+                val allFresh = multiple.flatMap(_._1.freshVars).toSet
+                val allKeys  = multiple.flatMap(_._2.keys).toSet
+                val mergedConstraints = allKeys.map { k =>
+                    val possibleTypes = multiple.flatMap(_._2.get(k)).toSet
+                    ConstraintEqual(TypeVar(k), makeVariant(possibleTypes))
+                }.toList
+                UnificationProblem(allFresh, mergedConstraints)
         }
     }
 

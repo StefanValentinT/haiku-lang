@@ -1,11 +1,9 @@
 import ./stdlib/print.lang;
 
-
 val test = ( fun (x) -> x(x) ) ( (fun (y) -> y) );
 
-val myadd = fun (a, b) -> (a + b);
-
+val myadd = fun (a, b) -> a + b;
 
 val fib = fun fib (n) ->
-	if n < 2i64 then n
-	else fib(n-1i64) + fib(n-2i64);
+	if n < 2 then n
+	else fib( n-1) + fib(n-2);

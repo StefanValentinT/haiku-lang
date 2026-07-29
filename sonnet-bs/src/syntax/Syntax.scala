@@ -60,6 +60,7 @@ abstract sealed class Type {
         case FunType(params, ret)  => s"${params.mkString(", ")} -> $ret"
         case TypeVar(name)         => name
         case Inter(types)          => types.map(t => s"($t)").mkString(" ∩ ")
+        case Variant(types)        => "<" + types.mkString(" | ") + ">"
         case Quantified(binders, typ) =>
             if (binders.isEmpty) typ.toString
             else s"∀ ${binders.mkString(" ")}. $typ"
@@ -82,11 +83,12 @@ case class Pointer(ref: Type)                          extends Type
 case class FunType(params: List[Type], ret: Type)      extends Type
 case class TypeVar(name: String)                       extends Type
 case class Inter(types: Set[Type])                     extends Type
+case class Variant(types: Set[Type])                   extends Type
 case class Quantified(binders: Set[String], typ: Type) extends Type
 
 object Builtins {
 
-    val binaryArithType: Type = Inter(
+    val binaryArithType: Type = Variant(
       Set(
         FunType(List(I8(), I8()), I8()),
         FunType(List(I16(), I16()), I16()),
@@ -111,7 +113,7 @@ object Builtins {
         )
       )
     )
-    val unaryArithType: Type = Inter(
+    val unaryArithType: Type = Variant(
       Set(
         FunType(List(I8()), I8()),
         FunType(List(I16()), I16()),
@@ -132,7 +134,7 @@ object Builtins {
 
     val eqType: Type = Quantified(Set("t"), FunType(List(TypeVar("t"), TypeVar("t")), Bool()))
 
-    val binaryRelationalType: Type = Inter(
+    val binaryRelationalType: Type = Variant(
       Set(
         FunType(List(I8(), I8()), Bool()),
         FunType(List(I16(), I16()), Bool()),
