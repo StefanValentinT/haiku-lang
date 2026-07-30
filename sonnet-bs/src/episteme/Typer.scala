@@ -245,15 +245,15 @@ def pp(env: Env, exp: Expression): (Env, Typed.Expression) = exp match {
     }
 
     case Block(statements, blockExp) => {
-        val (stmtReqs, typedStmts) = statements.foldLeft((Map.empty[String, Type], List[Typed.Statement]())) { case ((a, ts), stmt) =>
-            val (a2, ts2) = ppStatement(addEnv(env, a), stmt)
-            (addEnv(a, a2), ts :+ ts2)
+        val (finalEnv, stmtReqs, typedStmts) = statements.foldLeft((env, Map.empty[String, Type], List[Typed.Statement]())) { case ((curEnv, reqsAcc, stmtsAcc), stmt) =>
+            val (sReqs, typedStmt, nextEnv) = ppStatement(curEnv, stmt)
+            (nextEnv, addEnv(reqsAcc, sReqs), stmtsAcc :+ typedStmt)
         }
 
         val (blockReqs, typedExp, blockType) = blockExp match {
             case Some(e) =>
-                val (a3, te) = pp(addEnv(env, stmtReqs), e)
-                (addEnv(stmtReqs, a3), Some(te), getTypedType(te))
+                val (eReqs, te) = pp(finalEnv, e)
+                (addEnv(stmtReqs, eReqs), Some(te), getTypedType(te))
             case None =>
                 (stmtReqs, None, I32())
         }
@@ -406,20 +406,22 @@ def ppCheck(env: Env, exp: Expression, expected: Type): (Env, Typed.Expression) 
     }
 }
 
-def ppStatement(env: Env, stmt: Statement): (Env, Typed.Statement) = stmt match {
+def ppStatement(env: Env, stmt: Statement): (Env, Typed.Statement, Env) = stmt match {
     case ExpressionStmt(exp) =>
         val (a, typedExp) = pp(env, exp)
-        if getTypedType(typedExp) != I32() then throw EpistemicError("Statement does not return unit.")
-        (a, Typed.ExpressionStmt(typedExp))
+        if (getTypedType(typedExp) != I32()) then throw EpistemicError("Statement does not return unit.")
+        (a, Typed.ExpressionStmt(typedExp), env)
 
     case VarDeclaration(name, typOpt, init) => {
         val (a, declType, typedInit): (Env, Type, Option[Typed.Expression]) = typOpt match {
             case Some(t) =>
-                val (a2, ti) = init match {
-                    case Some(i) => ppCheck(env, i, t)
-                    case None    => (Map.empty[String, Type], Typed.Block(List(), None, I32()))
+                init match {
+                    case Some(i) =>
+                        val (a2, ti) = ppCheck(env, i, t)
+                        (a2, t, Some(ti))
+                    case None =>
+                        (Map.empty[String, Type], t, None)
                 }
-                (a2, t, Some(ti))
 
             case None =>
                 init match {
@@ -432,7 +434,7 @@ def ppStatement(env: Env, stmt: Statement): (Env, Typed.Statement) = stmt match 
                 }
         }
 
-        (a.asInstanceOf[Env], Typed.VarDeclaration(name, declType, typedInit))
+        (a, Typed.VarDeclaration(name, declType, typedInit), env + (name -> declType))
     }
 }
 

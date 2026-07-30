@@ -157,7 +157,7 @@ def subtypeSatisfaction(used: Set[String], sigma: Type, tau: Type): UnificationP
         validCandidates match {
             case Nil                    => UnificationProblem(Set(), List(ConstraintEqual(sigma, tau)))
             case (singleProb, _) :: Nil => singleProb
-            case multiple               =>
+            case multiple =>
                 val allFresh = multiple.flatMap(_._1.freshVars).toSet
                 val allKeys  = multiple.flatMap(_._2.keys).toSet
                 val mergedConstraints = allKeys.map { k =>

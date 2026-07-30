@@ -151,6 +151,7 @@ object Builtins {
     )
 
     val builtinFunctions: scala.collection.immutable.Map[String, Type] = scala.collection.immutable.Map(
+      "t2"      -> FunType(List(Variant(Set(I16(), Bool()))), Variant(Set(I16(), Bool()))),
       "add"     -> binaryArithPointerType,
       "sub"     -> binaryArithPointerType,
       "mul"     -> binaryArithType,

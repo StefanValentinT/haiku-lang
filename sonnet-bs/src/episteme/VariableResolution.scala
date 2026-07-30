@@ -24,7 +24,7 @@ object VariableResolver {
             case d: Declaration => {
                 if (globalVariableMap.contains(d.name)) {
                     val prevEntry = globalVariableMap(d.name)
-                    if (prevEntry.fromCurrentBlock && !prevEntry.hasLinkage) {
+                    if (prevEntry.fromCurrentBlock) {
                         throw EpistemicError(s"Duplicate declaration of name: ${d.name}")
                     }
                 }
