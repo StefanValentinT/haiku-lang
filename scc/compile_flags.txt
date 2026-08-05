@@ -1,0 +1,9 @@
+-std=c99
+-Isrc
+
+-Wall
+-Wextra
+-Wpedantic
+-Wfloat-equal
+-Wpointer-arith
+-Wconversion
