@@ -10,6 +10,11 @@
 // but merely there for implementation reasons
 // (e. g. we always store the length of a string together with the string)
 
+typedef struct
+{
+	int line;
+} SourceInfo;
+
 // Types
 
 typedef enum
@@ -218,6 +223,7 @@ struct Term
 		AssignmentData assignment;
 		BlockData block;
 	} data;
+	SourceInfo info;
 };
 
 // Statements
@@ -229,6 +235,7 @@ typedef struct
 	Type* type; // nullable
 	bool mutable;
 	Term* exp; // nullable
+	SourceInfo info;
 } DeclarationData;
 
 struct Statement
@@ -239,6 +246,7 @@ struct Statement
 		DeclarationData declaration;
 		Term unit_expression;
 	} data;
+	SourceInfo info;
 };
 
 // Whole Program
@@ -266,7 +274,7 @@ Term* newTerm(Term t)
 
 Statement* newStatement(Statement t)
 {
-	Statement* ptr = malloc(sizeof(Term));
+	Statement* ptr = malloc(sizeof(Statement));
 	if (ptr == NULL)
 	{
 		logFatal("Could not allocate enough memory to make an AST Node.");
