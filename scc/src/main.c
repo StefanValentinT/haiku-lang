@@ -18,8 +18,7 @@ void testPlatform(void)
 	);
 	if (fSize == 4 && lSize == 8)
 	{
-		printf("Therefore this platform is suitable for running the compiler.\n"
-		);
+		printf("Therefore this platform is suitable for running the compiler.\n");
 	}
 	else
 	{
@@ -68,9 +67,7 @@ int main(int argc, char** argv)
 
 	if (argc != 2)
 	{
-		logFatal(
-		    "%s may be invoked with one argument, but got %d\n", argv[0], argc
-		);
+		logFatal("%s may be invoked with one argument, but got %d\n", argv[0], argc);
 	}
 	char* fileName = argv[1];
 	printfn("Compiling %s.", fileName);
@@ -81,7 +78,7 @@ int main(int argc, char** argv)
 	int line = -1;
 	while (true)
 	{
-		Token tok = lexToken();
+		Token tok = nextToken();
 		if (tok.line != line)
 		{
 			printf("%4d\n", tok.line);

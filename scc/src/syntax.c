@@ -1,6 +1,7 @@
 #ifndef SYNTAX_H
 #define SYNTAX_H
 
+#include "lexer.c"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -27,7 +28,6 @@ typedef enum
 	U16,
 	U32,
 	U64,
-	F16,
 	F32,
 	F64,
 	ARRAY_TYPE,
@@ -111,23 +111,24 @@ typedef struct
 typedef struct
 {
 	ConstantData* constants;
+	int _constantsCount;
 } ArrayData;
 
 typedef struct
 {
-	char* string;
+	const char* string;
 	int _len;
 } StringData;
 
 typedef struct
 {
-	char* name;
+	const char* name;
 	int _len;
 } VarData;
 
 typedef struct
 {
-	char* name;
+	const char* name;
 	int _len;
 } BuiltinVarData;
 
@@ -164,7 +165,7 @@ typedef struct
 // Or maybe somehting else?
 typedef struct
 {
-	char* funName;
+	const char* funName;
 	int _len;
 	Term* args;
 	int _argCount;
@@ -172,14 +173,14 @@ typedef struct
 
 typedef struct
 {
-	char* name;
+	const char* name;
 	int _len;
 	Type* type; // nullable
 } Formal;
 
 typedef struct
 {
-	char* recBinder; // nullable
+	const char* recBinder; // nullable
 	int _recBinderLength;
 	Formal* formals;
 	int _formalCount;
@@ -195,6 +196,7 @@ typedef struct
 typedef struct
 {
 	Statement* stmts;
+	int _stmtCount;
 	Term* exp; // nullable
 } BlockData;
 
@@ -230,12 +232,11 @@ struct Term
 
 typedef struct
 {
-	char* name;
+	const char* name;
 	int _len;
 	Type* type; // nullable
 	bool mutable;
 	Term* exp; // nullable
-	SourceInfo info;
 } DeclarationData;
 
 struct Statement
@@ -253,17 +254,179 @@ struct Statement
 
 typedef DeclarationData* Program;
 
+// Allocation
 Term* newTerm(Term t);
+Type* newType(Type t);
+Statement* newStatement(Statement s);
+
+// Pretty printing
+void printTerm(const Term* t);
+void printStatement(const Statement* s);
+void printProgram(const Program p);
 
 #endif
 #if __INCLUDE_LEVEL__ == 0
 
 #include "log.c"
+#include <inttypes.h>
+#include <stdio.h>
 #include <stdlib.h>
+
+void printType(const Type* t)
+{
+	switch (t->kind)
+	{
+	case I8:
+		printf("i8");
+		break;
+	case I16:
+		printf("i16");
+		break;
+	case I32:
+		printf("i32");
+		break;
+	case I64:
+		printf("i64");
+		break;
+	case U8:
+		printf("u8");
+		break;
+	case U16:
+		printf("u16");
+		break;
+	case U32:
+		printf("u32");
+		break;
+	case U64:
+		printf("u64");
+		break;
+	case F32:
+		printf("f32");
+		break;
+	case F64:
+		printf("f64");
+		break;
+	case ARRAY_TYPE:
+		printf("(ARRAY_TYPE ");
+		printType(t->data.arr.elemType);
+		printf("of size %i)", *t->data.arr.elemCount);
+		break;
+	case FUN_TYPE:
+		printf("(FUN_TYPE ");
+		for (int i = 0; i < t->data.fun._paramCount; i++)
+		{
+			printType(&t->data.fun.paramTypes[i]);
+			printf(" ");
+		}
+		printf("->");
+		printType(t->data.fun.retType);
+		printf(")");
+		break;
+	}
+}
+
+void printConstant(const ConstantData* t)
+{
+	switch (t->numericType.kind)
+	{
+	case I8:
+		printf("(CONSTANT %" PRId8 ")", t->data.i8Val);
+		break;
+	case I16:
+		printf("(CONSTANT %" PRId16 ")", t->data.i16Val);
+		break;
+	case I32:
+		printf("(CONSTANT %" PRId32 ")", t->data.i32Val);
+		break;
+	case I64:
+		printf("(CONSTANT %" PRId64 ")", t->data.i64Val);
+		break;
+	case U8:
+		printf("(CONSTANT %" PRIu8 ")", t->data.u8Val);
+		break;
+	case U16:
+		printf("(CONSTANT %" PRIu16 ")", t->data.u16Val);
+		break;
+	case U32:
+		printf("(CONSTANT %" PRIu32 ")", t->data.u32Val);
+		break;
+	case U64:
+		printf("(CONSTANT %" PRIu64 ")", t->data.u64Val);
+		break;
+	case F32:
+		printf("(CONSTANT %f)", t->data.f32Val);
+		break;
+	case F64:
+		printf("(CONSTANT %lf)", t->data.f64Val);
+		break;
+	default:
+		printf("Not a constant!");
+		break;
+	}
+}
+
+void printArray(const ArrayData* a)
+{
+	for (int i = 0; i < a->_constantsCount; i++)
+	{
+		printConstant(&a->constants[i]);
+	}
+}
+
+void printString(const StringData* s) { printf("\"%.*s\"", s->_len, s->string); }
+
+void printVar(const VarData* s) { printf("%.*s", s->_len, s->name); }
+void printBuiltin(const BuiltinVarData* s) { printf("%.*s", s->_len, s->name); }
+
+void printCast(const CastData* c) { printf("(CAST "); }
+
+void printTerm(const Term* t)
+{
+	switch (t->kind)
+	{
+	case CONSTANT:
+		printConstant(&t->data.constant);
+		break;
+	case ARRAY:
+		printArray(&t->data.array);
+		break;
+	case STRING:
+		printString(&t->data.string);
+		break;
+	case VAR:
+		printVar(&t->data.var);
+		break;
+	case BUILTIN_VAR:
+		printBuiltin(&t->data.builtinVar);
+		break;
+	case REF:
+		printf("(REF ");
+		printTerm(t->data.ref.exp);
+		printf(")");
+		break;
+	case DEREF:
+		printf("(DEREF ");
+		printTerm(t->data.deref.exp);
+		printf(")");
+		break;
+	case CAST:
+	}
+}
 
 Term* newTerm(Term t)
 {
 	Term* ptr = malloc(sizeof(Term));
+	if (ptr == NULL)
+	{
+		logFatal("Could not allocate enough memory to make an AST Node.");
+	}
+	*ptr = t;
+	return ptr;
+}
+
+Type* newType(Type t)
+{
+	Type* ptr = malloc(sizeof(Type));
 	if (ptr == NULL)
 	{
 		logFatal("Could not allocate enough memory to make an AST Node.");

@@ -1,6 +1,8 @@
 #ifndef LEXER_H
 #define LEXER_H
 
+#include <stdbool.h>
+
 typedef enum
 {
 	TOK_LEFT_PAREN,
@@ -13,6 +15,8 @@ typedef enum
 	TOK_COLON,
 	TOK_EQUAL,
 	TOK_ARROW,
+	TOK_AMPERSAND,
+	TOK_DOT_STAR,
 
 	TOK_IDENTIFIER,
 	TOK_BUILTIN,
@@ -28,6 +32,18 @@ typedef enum
 	TOK_CONTINUE,
 	TOK_VAL,
 	TOK_VAR,
+	TOK_TYPE,
+
+	TOK_I8,
+	TOK_I16,
+	TOK_I32,
+	TOK_I64,
+	TOK_U8,
+	TOK_U16,
+	TOK_U32,
+	TOK_U64,
+	TOK_F32,
+	TOK_F64,
 
 	TOK_ERROR,
 	TOK_EOF,
@@ -46,10 +62,14 @@ typedef struct
 	const char* start;
 	const char* current;
 	int line;
+	Token peekedToken;
+	bool hasPeeked;
 } Lexer;
 
 void initLexer(const char* source);
-Token lexToken(void);
+Token nextToken(void);
+Token peekToken(void);
+Token makeErrorToken(const char* message);
 
 #endif
 #if __INCLUDE_LEVEL__ == 0
@@ -167,10 +187,7 @@ Token lexString(void)
 
 bool isDigit(char c) { return c >= '0' && c <= '9'; }
 
-bool isAlpha(char c)
-{
-	return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c == '_');
-}
+bool isAlpha(char c) { return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c == '_'); }
 
 Token lexNumber(void)
 {
@@ -186,9 +203,7 @@ Token lexNumber(void)
 		}
 		else
 		{
-			return makeErrorToken(
-			    "An integer literal has no members to possibly access."
-			);
+			return makeErrorToken("An integer literal has no members to possibly access.");
 		}
 	}
 	return makeToken(TOK_NUMBER);
@@ -196,8 +211,7 @@ Token lexNumber(void)
 
 TokenKind checkKeyword(const char* key, long keyLen, TokenKind k)
 {
-	if ((keyLen == lexer.current - lexer.start) &&
-	    (memcmp(lexer.start, key, (unsigned)keyLen) == 0))
+	if ((keyLen == lexer.current - lexer.start) && (memcmp(lexer.start, key, (unsigned)keyLen) == 0))
 	{
 		return k;
 	}
@@ -224,11 +238,43 @@ TokenKind classifyIdent(void)
 			return checkKeyword("fun", 3, TOK_FUN);
 		case 'o':
 			return checkKeyword("for", 3, TOK_FOR);
+		case '3':
+			return checkKeyword("f32", 3, TOK_F32);
+		case '6':
+			return checkKeyword("f64", 3, TOK_F64);
 		}
+		break;
 	case 'i':
-		return checkKeyword("if", 2, TOK_IF);
+		switch (lexer.start[1])
+		{
+		case 'f':
+			return checkKeyword("if", 2, TOK_IF);
+		case '8':
+			return checkKeyword("i8", 2, TOK_I8);
+		case '1':
+			return checkKeyword("i16", 3, TOK_I16);
+		case '3':
+			return checkKeyword("i32", 3, TOK_I32);
+		case '6':
+			return checkKeyword("i64", 3, TOK_I64);
+		}
+		break;
 	case 'r':
 		return checkKeyword("return", 6, TOK_RETURN);
+	case 't':
+		return checkKeyword("type", 4, TOK_TYPE);
+	case 'u':
+		switch (lexer.start[1])
+		{
+		case '8':
+			return checkKeyword("u8", 2, TOK_U8);
+		case '1':
+			return checkKeyword("u16", 3, TOK_U16);
+		case '3':
+			return checkKeyword("u32", 3, TOK_U32);
+		case '6':
+			return checkKeyword("u64", 3, TOK_U64);
+		}
 	case 'v':
 		switch (lexer.start[2])
 		{
@@ -237,6 +283,7 @@ TokenKind classifyIdent(void)
 		case 'r':
 			return checkKeyword("var", 3, TOK_VAR);
 		}
+		break;
 	}
 
 	return TOK_IDENTIFIER;
@@ -245,24 +292,12 @@ TokenKind classifyIdent(void)
 Token lexIdentifier(void)
 {
 	char p = peek();
-	bool d = isDigit(p);
-	bool containsDigit = false;
-	while (isAlpha(p) || d)
+	while (isAlpha(p) || isDigit(p))
 	{
-		if (d)
-		{
-			containsDigit = true;
-		}
 		advance();
 		p = peek();
-		d = isDigit(p);
 	}
-	// No keywords contain any digits
-	if (!containsDigit)
-	{
-		return makeToken(classifyIdent());
-	}
-	return makeToken(TOK_IDENTIFIER);
+	return makeToken(classifyIdent());
 }
 
 Token lexBuiltin(void)
@@ -276,8 +311,24 @@ Token lexBuiltin(void)
 	return makeToken(TOK_BUILTIN);
 }
 
-Token lexToken(void)
+Token peekToken(void)
 {
+	if (lexer.hasPeeked)
+	{
+		return lexer.peekedToken;
+	}
+	lexer.peekedToken = nextToken();
+	lexer.hasPeeked = true;
+	return lexer.peekedToken;
+}
+
+Token nextToken(void)
+{
+	if (lexer.hasPeeked)
+	{
+		lexer.hasPeeked = false;
+		return lexer.peekedToken;
+	}
 	skipWhitespace();
 	lexer.start = lexer.current;
 
@@ -308,6 +359,10 @@ Token lexToken(void)
 	case ';':
 		return makeToken(TOK_SEMICOLON);
 	case '.':
+		if (peek() == '*')
+		{
+			return makeToken(TOK_DOT_STAR);
+		}
 		return makeToken(TOK_DOT);
 	case ':':
 		return makeToken(TOK_COLON);
@@ -320,10 +375,10 @@ Token lexToken(void)
 		}
 		else
 		{
-			return makeErrorToken(
-			    "Expected '>' after '-' to complete an arrow symbol."
-			);
+			return makeErrorToken("Expected '>' after '-' to complete an arrow symbol.");
 		}
+	case '&':
+		return makeToken(TOK_AMPERSAND);
 	case '"':
 		return lexString();
 	}

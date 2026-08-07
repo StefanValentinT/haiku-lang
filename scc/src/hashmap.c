@@ -21,10 +21,10 @@ typedef struct
 
 void mapInit(Map* map);
 void mapFree(Map* map);
-void* mapGet(Map* map, char* key, int keyLen);
-void mapPut(Map* map, char* key, int keyLen, void* value);
-bool mapHas(Map* map, char* key, int keylen);
-void mapRemove(Map* map, char* key, int keyLen);
+void* mapGet(Map* map, const char* key, int keyLen);
+void mapPut(Map* map, const char* key, int keyLen, void* value);
+bool mapHas(Map* map, const char* key, int keylen);
+void mapRemove(Map* map, const char* key, int keyLen);
 
 #endif
 #if __INCLUDE_LEVEL__ == 0
@@ -64,7 +64,7 @@ void mapFree(Map* map)
 
 // Adapted from Jenkin's hash function 'One at a time'
 // see https://www.burtleburtle.net/bob/hash/doobs.html
-size_t hashKey(char* key, int keyLen)
+size_t hashKey(const char* key, int keyLen)
 {
 	size_t hash = 0;
 	for (int i = 0; i < keyLen; i++)
@@ -79,7 +79,7 @@ size_t hashKey(char* key, int keyLen)
 	return hash;
 }
 
-MapEntry* findEntry(MapEntry* entries, size_t capacity, char* key, int keyLen)
+MapEntry* findEntry(MapEntry* entries, size_t capacity, const char* key, int keyLen)
 {
 	size_t index = hashKey(key, keyLen) & (capacity - 1);
 	MapEntry* tombstone = NULL;
@@ -112,14 +112,14 @@ MapEntry* findEntry(MapEntry* entries, size_t capacity, char* key, int keyLen)
 			}
 			else
 			{
-				logFatal("Unreachable case: Hashmap contains value without key."
-				);
+				logFatal("Unreachable case: Hashmap contains value without key.");
 			}
 		}
-		else if (entry->key == key)
+		else if (entry->key == key || (entry->_len == keyLen && memcmp(entry->key, key, (size_t)keyLen) == 0))
 		{
 			return entry;
 		}
+		index = (index + 1) & (capacity - 1);
 	}
 }
 
@@ -149,34 +149,22 @@ static void increaseCapacity(Map* map, size_t capacity)
 	map->capacity = capacity;
 }
 
-void* mapGet(Map* map, char* key, int keyLen)
+void* mapGet(Map* map, const char* key, int keyLen)
 {
 	if (map->count == 0 || key == NULL)
 		return NULL;
-	size_t index = hashKey(key, keyLen) & (map->capacity - 1);
-	MapEntry* entry = NULL;
-	while (true)
-	{
-		entry = &map->entries[index];
-		if (entry->key == NULL)
-		{
-			if (entry->value == NULL)
-				return NULL;
-		}
-		else if (entry->_len == keyLen &&
-		         memcmp(entry->key, key, (size_t)keyLen) == 0)
-		{
-			return entry->value;
-		}
-	}
+
+	MapEntry* entry = findEntry(map->entries, map->capacity, key, keyLen);
+
+	if (entry->key == NULL)
+		return NULL;
+
+	return entry->value;
 }
 
-bool mapHas(Map* map, char* key, int keyLen)
-{
-	return mapGet(map, key, keyLen) != NULL;
-}
+bool mapHas(Map* map, const char* key, int keyLen) { return mapGet(map, key, keyLen) != NULL; }
 
-void mapPut(Map* map, char* key, int keyLen, void* value)
+void mapPut(Map* map, const char* key, int keyLen, void* value)
 {
 	if (key == NULL)
 	{
@@ -190,23 +178,26 @@ void mapPut(Map* map, char* key, int keyLen, void* value)
 
 	MapEntry* entry = findEntry(map->entries, map->capacity, key, keyLen);
 	bool isNew = (entry->key == NULL);
-	if (isNew && entry->value != CAIRO)
+	if (isNew)
 	{
 		map->count++;
 	}
 
-	entry->key = key;
+	entry->key = (char*)key;
 	entry->_len = keyLen;
 	entry->value = value;
 }
 
-void mapRemove(Map* map, char* key, int keyLen)
+void mapRemove(Map* map, const char* key, int keyLen)
 {
 	if (map->count == 0)
 		return;
 	MapEntry* entry = findEntry(map->entries, map->capacity, key, keyLen);
+	if (entry->key == NULL)
+		return;
 	entry->key = NULL;
 	entry->value = CAIRO;
+	map->count--;
 }
 
 #endif
