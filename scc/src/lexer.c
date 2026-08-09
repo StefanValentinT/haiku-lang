@@ -16,6 +16,11 @@ typedef enum
 	TOK_EQUAL,
 	TOK_ARROW,
 	TOK_AMPERSAND,
+	TOK_STAR,
+	TOK_PLUS,
+	TOK_MINUS,
+	TOK_SLASH,
+	TOK_PERCENT,
 	TOK_DOT_STAR,
 
 	TOK_IDENTIFIER,
@@ -33,6 +38,8 @@ typedef enum
 	TOK_VAL,
 	TOK_VAR,
 	TOK_TYPE,
+	TOK_AND,
+	TOK_OR,
 
 	TOK_I8,
 	TOK_I16,
@@ -225,6 +232,8 @@ TokenKind classifyIdent(void)
 {
 	switch (lexer.start[0])
 	{
+	case 'a':
+		return checkKeyword("and", 3, TOK_AND);
 	case 'b':
 		return checkKeyword("break", 5, TOK_BREAK);
 	case 'c':
@@ -259,6 +268,8 @@ TokenKind classifyIdent(void)
 			return checkKeyword("i64", 3, TOK_I64);
 		}
 		break;
+	case 'o':
+		return checkKeyword("or", 2, TOK_OR);
 	case 'r':
 		return checkKeyword("return", 6, TOK_RETURN);
 	case 't':
@@ -361,6 +372,7 @@ Token nextToken(void)
 	case '.':
 		if (peek() == '*')
 		{
+			advance();
 			return makeToken(TOK_DOT_STAR);
 		}
 		return makeToken(TOK_DOT);
@@ -369,16 +381,25 @@ Token nextToken(void)
 	case '=':
 		return makeToken(TOK_EQUAL);
 	case '-':
-		if (isNext('>'))
+		if (peek() == '>')
 		{
+			advance();
 			return makeToken(TOK_ARROW);
 		}
 		else
 		{
-			return makeErrorToken("Expected '>' after '-' to complete an arrow symbol.");
+			return makeToken(TOK_MINUS);
 		}
 	case '&':
 		return makeToken(TOK_AMPERSAND);
+	case '*':
+		return makeToken(TOK_STAR);
+	case '/':
+		return makeToken(TOK_SLASH);
+	case '%':
+		return makeToken(TOK_PERCENT);
+	case '+':
+		return makeToken(TOK_PLUS);
 	case '"':
 		return lexString();
 	}

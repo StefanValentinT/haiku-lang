@@ -9,14 +9,18 @@ Program parse(char* source);
 #endif
 #if __INCLUDE_LEVEL__ == 0
 
+#include "dynarray.c"
 #include "hashmap.c"
 #include "lexer.c"
 #include "log.c"
 #include "stdlib.h"
 #include "syntax.c"
+#include <stdio.h>
+
+#define expect(x) expectElse(x, "Expected " #x ".")
 
 // internal functions
-Token expect(TokenKind k, char* msg);
+Token expectElse(TokenKind k, char* msg);
 Term parseTerm(void);
 DeclarationData parseDeclaration(void);
 Statement parseStatement(void);
@@ -28,7 +32,7 @@ bool inPanicMode;
 // String -> Type
 Map typeDefinitions;
 
-Token expect(TokenKind k, char* msg)
+Token expectElse(TokenKind k, char* msg)
 {
 	Token t = nextToken();
 	if (t.type == k)
@@ -57,17 +61,35 @@ int32_t parseNumber(const char* start, int len)
 	return result;
 }
 
-Term parseTermPrimary(void)
+Term parseTermFactor(void)
 {
+	Token recBinderOpt = (Token){TOK_IDENTIFIER, NULL, 0, -1};
+	DynArray arr;
 	Token tok = nextToken();
 	SourceInfo s = (SourceInfo){tok.line};
 
 	switch (tok.type)
 	{
 	case TOK_IDENTIFIER:
-		return (Term){VAR, {.var = {tok.start, tok.len}}, s};
-	case TOK_BUILTIN:
-		return (Term){BUILTIN_VAR, {.builtinVar = {tok.start, tok.len}}, s};
+		if (peekToken().type == TOK_LEFT_PAREN)
+		{
+			nextToken();
+			arr = initArray(2, sizeof(Term));
+			while (peekToken().type != TOK_RIGHT_PAREN)
+			{
+				appendArray(&arr, newTerm(parseTerm()));
+				if (peekToken().type != TOK_RIGHT_PAREN)
+				{
+					expect(TOK_COMMA);
+				}
+			}
+			expect(TOK_RIGHT_PAREN);
+			return (Term){APPLICATION, {.app = {tok.start, tok.len, (Term*)arr.items, (int)arr.count}}, s};
+		}
+		else
+		{
+			return (Term){VAR, {.var = {tok.start, tok.len}}, s};
+		}
 	case TOK_NUMBER:
 		// TODO: Typed number literals
 		// For now all number literals are implictly i32
@@ -79,64 +101,34 @@ Term parseTermPrimary(void)
 
 	case TOK_LEFT_PAREN:
 	{
-	}
 		Term t = parseTerm();
-		expect(TOK_RIGHT_PAREN, "Parentheted expression requires a closing parenthese.");
+		expectElse(TOK_RIGHT_PAREN, "Parentheted expression requires a closing parenthese.");
 		return t;
-		break;
-
-	case TOK_LEFT_BRACE:
-	{
 	}
-		Token next = peekToken();
-		if (next.type == TOK_RIGHT_BRACE)
+	case TOK_LEFT_BRACE:
+		if (peekToken().type == TOK_RIGHT_BRACE)
 		{
 			nextToken();
 			return (Term){BLOCK, {.block = {.stmts = NULL, ._stmtCount = 0}}, s};
 		}
-		int capacity = 16;
-		int count = 0;
-		Statement* stmts = malloc((size_t)capacity * sizeof(Statement));
+		arr = initArray(16, sizeof(Statement));
 		Term* trailingExp = NULL;
-		while (next.type != TOK_RIGHT_BRACE)
+		while (peekToken().type != TOK_RIGHT_BRACE)
 		{
-			next = peekToken();
-			if (next.type == TOK_VAL || next.type == TOK_VAR)
+			Token peek = peekToken();
+			if (peek.type == TOK_VAL || peek.type == TOK_VAR)
 			{
 				Statement newS = (Statement){DECLARATION, {.declaration = parseDeclaration()}, s};
-
-				if (count >= capacity)
-				{
-					capacity *= 2;
-					Statement* temp = realloc(stmts, (size_t)capacity * sizeof(Statement));
-					if (temp == NULL)
-					{
-						logFatal("Could not allocate enough memory to parse all statements.");
-					}
-					stmts = temp;
-				}
-				stmts[count++] = newS;
+				appendArray(&arr, (void*)&newS);
 			}
 			else
 			{
 				Term expr = parseTerm();
-
 				if (peekToken().type == TOK_SEMICOLON)
 				{
 					nextToken();
 					Statement newS = (Statement){UNIT_EXPRESSION, {.unit_expression = expr}, s};
-
-					if (count >= capacity)
-					{
-						capacity *= 2;
-						Statement* temp = realloc(stmts, (size_t)capacity * sizeof(Statement));
-						if (temp == NULL)
-						{
-							logFatal("Could not allocate enough memory to parse all statements.");
-						}
-						stmts = temp;
-					}
-					stmts[count++] = newS;
+					appendArray(&arr, (void*)&newS);
 				}
 				else if (peekToken().type == TOK_RIGHT_BRACE)
 				{
@@ -149,8 +141,9 @@ Term parseTermPrimary(void)
 				}
 			}
 		}
-		expect(TOK_RIGHT_BRACE, "Block requires a closing brace.");
-		return (Term){BLOCK, {.block = {.stmts = stmts, ._stmtCount = count, .exp = trailingExp}}, s};
+		expectElse(TOK_RIGHT_BRACE, "Block requires a closing brace.");
+		return (Term
+		){BLOCK, {.block = {.stmts = (Statement*)arr.items, ._stmtCount = (int)arr.count, .exp = trailingExp}}, s};
 	case TOK_RIGHT_PAREN:
 		logError("Stray right paren in source code.");
 		hadError = true;
@@ -165,27 +158,122 @@ Term parseTermPrimary(void)
 		return (Term){BREAK, {0}, s};
 	case TOK_CONTINUE:
 		return (Term){CONTINUE, {0}, s};
+	case TOK_FUN:
+		arr = initArray(2, sizeof(Formal));
+		if (peekToken().type == TOK_IDENTIFIER)
+		{
+			recBinderOpt = nextToken();
+		}
+		if (peekToken().type == TOK_LEFT_PAREN)
+		{
+			nextToken();
+			while (peekToken().type != TOK_RIGHT_PAREN)
+			{
+				Token name = nextToken();
+				Type* t = NULL;
+				if (peekToken().type == TOK_COLON)
+				{
+					nextToken();
+					t = newType(parseType());
+				}
+				Formal formal = (Formal){.name = name.start, ._len = name.len, .type = t};
+				appendArray(&arr, (void*)&formal);
+				Token peek = peekToken();
+				if (peek.type == TOK_COMMA)
+				{
+					nextToken();
+				}
+				else if (peek.type == TOK_RIGHT_PAREN)
+				{
+					break;
+				}
+				else
+				{
+					logFatal("Bad token: %.*s", peek.len, peek.start);
+				}
+			}
+			expect(TOK_RIGHT_PAREN);
+		}
+		else
+		{
+			logFatal("%i: Expected formals list or recursive bind but got %d", tok.line, tok.type);
+		}
+		expect(TOK_ARROW);
+		return (Term){FUNCTION,
+		              {.fun =
+		                   {
+		                       recBinderOpt.start,
+		                       recBinderOpt.len,
+		                       (Formal*)arr.items,
+		                       (int)arr.count,
+		                       newTerm(parseTerm()),
+		                   }},
+		              s};
 	}
 
 	logFatal("Unparseable term, this could indicate a compiler bug.");
 	// unreachable
 }
 
+BinaryOpKind tokToBinOp(TokenKind t)
+{
+	switch (t)
+	{
+	case TOK_STAR:
+		return MULTIPLY;
+	case TOK_MINUS:
+		return SUBTRACT;
+	case TOK_PLUS:
+		return ADD;
+	case TOK_SLASH:
+		return DIVIDE;
+	case TOK_PERCENT:
+		return REMAINDER;
+	case TOK_OR:
+		return OR;
+	case TOK_AND:
+		return AND;
+	}
+}
+
 Term parseTerm(void)
 {
-	Term term = parseTermPrimary();
+	Term term = parseTermFactor();
 	while (true)
 	{
 		Token next = peekToken();
 		SourceInfo s = term.info;
-		if (next.type == TOK_DOT_STAR)
+		// parses left-to-rigth associatively
+		// TODO: add precedence
+		switch (next.type)
 		{
+		// Binary
+		case TOK_PLUS:
+		case TOK_MINUS:
+		case TOK_STAR:
+		case TOK_SLASH:
+		case TOK_PERCENT:
+		case TOK_AND:
+		case TOK_OR:
+			nextToken();
+			BinaryOpKind binOp = tokToBinOp(next.type);
+			term = (Term){BINARY_OP, {.binOp = {binOp, newTerm(term), newTerm(parseTermFactor())}}, s};
+			break;
+
+		case TOK_COLON:
+			nextToken();
+			term = (Term){TYPED, {.typed = {newTerm(term), parseType()}}};
+			break;
+
+		// Postfix
+		case TOK_DOT_STAR:
 			nextToken();
 			term = (Term){DEREF, .data = {.deref = {newTerm(term)}}, s};
-		}
-		else
-		{
 			break;
+
+		// no postfix or binary expression left
+		default:
+			return term;
 		}
 	}
 }
@@ -193,16 +281,28 @@ Term parseTerm(void)
 DeclarationData parseDeclaration(void)
 {
 	bool mutable = nextToken().type == TOK_VAL ? false : true;
-	Token ident = expect(TOK_IDENTIFIER, "Declaration keyword must be followed by identfier.");
-	expect(TOK_EQUAL, "Declaration requires an equal sign.");
-	Term* exp = newTerm(parseTerm());
-	expect(TOK_SEMICOLON, "Unterminated declaration.");
-	return (DeclarationData){
+	Token ident = expectElse(TOK_IDENTIFIER, "Declaration keyword must be followed by identfier.");
+	Type* typePtr = NULL;
+	if (peekToken().type == TOK_COLON)
+	{
+		nextToken();
+		typePtr = newType(parseType());
+	}
+	Term* exp = NULL;
+	if (peekToken().type == TOK_EQUAL)
+	{
+		nextToken();
+		exp = newTerm(parseTerm());
+	}
+	expectElse(TOK_SEMICOLON, "Unterminated declaration.");
+	DeclarationData d = (DeclarationData){
 	    .mutable = mutable,
 	    .name = ident.start,
+	    .type = typePtr,
 	    ._len = ident.len,
 	    .exp = exp,
 	};
+	return d;
 }
 
 Type parseType(void)
@@ -245,7 +345,6 @@ Program parse(char* source)
 	int capacity = 8;
 	int count = 0;
 	DeclarationData* declarations = malloc((size_t)capacity * sizeof(DeclarationData));
-
 	while (next.type != TOK_EOF)
 	{
 		DeclarationData newDecl = {0};
@@ -278,14 +377,17 @@ Program parse(char* source)
 				logFatal("Type definitions misses equal sign after identifier.");
 			}
 			Type* type = newType(parseType());
+			expect(TOK_SEMICOLON);
 			mapPut(&typeDefinitions, ident.start, ident.len, (void*)type);
 			break;
 
 		default:
-			logError("Epxected start of declaration at %d.", next.line);
+			logFatal("Expected start of declaration at line %d, but got %d", next.line, next.type);
+			break;
 		}
 		next = peekToken();
 	}
+	return (Program){declarations, count};
 }
 
 #endif

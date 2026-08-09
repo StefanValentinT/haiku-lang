@@ -67,7 +67,6 @@ typedef enum
 	ARRAY,
 	STRING,
 	VAR,
-	BUILTIN_VAR,
 	REF,
 	DEREF,
 	CAST,
@@ -75,11 +74,23 @@ typedef enum
 	RETURN,
 	BREAK,    // no data
 	CONTINUE, // no data
+	BINARY_OP,
 	APPLICATION,
 	FUNCTION,
 	ASSIGNMENT,
 	BLOCK
 } TermKind;
+
+typedef enum
+{
+	ADD,
+	SUBTRACT,
+	MULTIPLY,
+	DIVIDE,
+	REMAINDER,
+	AND,
+	OR,
+} BinaryOpKind;
 
 typedef enum
 {
@@ -128,12 +139,6 @@ typedef struct
 
 typedef struct
 {
-	const char* name;
-	int _len;
-} BuiltinVarData;
-
-typedef struct
-{
 	Term* exp;
 } RefData;
 
@@ -158,6 +163,13 @@ typedef struct
 {
 	Term* exp; // nullable
 } ReturnData;
+
+typedef struct
+{
+	BinaryOpKind kind;
+	Term* a;
+	Term* b;
+} BinOpData;
 
 // TODO: Have application of anonymous functions be syntactic sugar.
 // (fun (x) -> x)(1) becomes apply(fun (x) -> x, 1)
@@ -210,7 +222,6 @@ struct Term
 		StringData string;
 
 		VarData var;
-		BuiltinVarData builtinVar;
 
 		RefData ref;
 		DerefData deref;
@@ -219,6 +230,7 @@ struct Term
 		TypedData typed;
 		ReturnData retur;
 
+		BinOpData binOp;
 		ApplicationData app;
 		FunctionData fun;
 
@@ -252,7 +264,11 @@ struct Statement
 
 // Whole Program
 
-typedef DeclarationData* Program;
+typedef struct
+{
+	DeclarationData* decls;
+	int _declCount;
+} Program;
 
 // Allocation
 Term* newTerm(Term t);
@@ -262,7 +278,21 @@ Statement* newStatement(Statement s);
 // Pretty printing
 void printTerm(const Term* t);
 void printStatement(const Statement* s);
-void printProgram(const Program p);
+void printProgram(const Program* p);
+
+void printConstant(const ConstantData* t);
+void printArray(const ArrayData* a);
+void printString(const StringData* s);
+void printVar(const VarData* s);
+void printCast(const CastData* c);
+void printTyped(const TypedData* c);
+void printBinaryOp(const BinOpData* b);
+void printApplication(const ApplicationData* a);
+void printFunction(const FunctionData* f);
+void printAssignment(const AssignmentData* a);
+void printBlock(const BlockData* b);
+
+void printDeclaration(const DeclarationData* d);
 
 #endif
 #if __INCLUDE_LEVEL__ == 0
@@ -367,18 +397,122 @@ void printConstant(const ConstantData* t)
 
 void printArray(const ArrayData* a)
 {
+	printf("(ARRAY ");
 	for (int i = 0; i < a->_constantsCount; i++)
 	{
 		printConstant(&a->constants[i]);
 	}
+	printf(")");
 }
 
 void printString(const StringData* s) { printf("\"%.*s\"", s->_len, s->string); }
 
 void printVar(const VarData* s) { printf("%.*s", s->_len, s->name); }
-void printBuiltin(const BuiltinVarData* s) { printf("%.*s", s->_len, s->name); }
 
-void printCast(const CastData* c) { printf("(CAST "); }
+void printCast(const CastData* c)
+{
+	printf("(CAST ");
+	printTerm(c->exp);
+	printf(" as ");
+	printType(&c->type);
+	printf(")");
+}
+
+void printTyped(const TypedData* c)
+{
+	printf("(TYPED ");
+	printTerm(c->exp);
+	printf(" as ");
+	printType(&c->type);
+	printf(")");
+}
+
+void printBinaryOp(const BinOpData* b)
+{
+	switch (b->kind)
+	{
+	case ADD:
+		printf("(ADD ");
+		break;
+	case SUBTRACT:
+		printf("(SUBTRACT ");
+		break;
+	case MULTIPLY:
+		printf("(MULTIPLY ");
+		break;
+	case DIVIDE:
+		printf("(DIVIDE ");
+		break;
+	case REMAINDER:
+		printf("(REMAINDER ");
+		break;
+	case AND:
+		printf("(AND ");
+		break;
+	case OR:
+		printf("(OR ");
+		break;
+	}
+	printTerm(b->a);
+	printf(" ");
+	printTerm(b->b);
+	printf(")");
+}
+
+void printApplication(const ApplicationData* a)
+{
+	printf("(APP %.*s ", a->_len, a->funName);
+	for (int i = 0; i < a->_argCount; i++)
+	{
+		printTerm(&a->args[i]);
+		printf(" ");
+	}
+	printf(")");
+}
+
+void printFunction(const FunctionData* f)
+{
+	printf("(FUNCTION %.*s", f->_recBinderLength, f->recBinder);
+	printf("(");
+	for (int i = 0; i < f->_formalCount; i++)
+	{
+		Formal form = f->formals[i];
+		printf("%.*s", form._len, form.name);
+		if (form.type)
+		{
+			printf(": ");
+			printType(form.type);
+		}
+		if (i + 1 < f->_formalCount)
+		{
+			printf(", ");
+		}
+	}
+	printf(") ");
+	printTerm(f->body);
+	printf(")");
+}
+
+void printAssignment(const AssignmentData* a)
+{
+	printf("(ASSIGN ");
+	printTerm(a->lvalue);
+	printf(" ");
+	printTerm(a->value);
+	printf(")");
+}
+
+void printBlock(const BlockData* b)
+{
+	printf("(BLOCK \n");
+	for (int i = 0; i < b->_stmtCount; i++)
+	{
+		printf("    ");
+		printStatement(&b->stmts[i]);
+		printf("\n");
+	}
+	printf(")");
+}
 
 void printTerm(const Term* t)
 {
@@ -396,9 +530,6 @@ void printTerm(const Term* t)
 	case VAR:
 		printVar(&t->data.var);
 		break;
-	case BUILTIN_VAR:
-		printBuiltin(&t->data.builtinVar);
-		break;
 	case REF:
 		printf("(REF ");
 		printTerm(t->data.ref.exp);
@@ -410,6 +541,82 @@ void printTerm(const Term* t)
 		printf(")");
 		break;
 	case CAST:
+		printCast(&t->data.cast);
+		break;
+	case TYPED:
+		printTyped(&t->data.typed);
+		break;
+	case RETURN:
+		printf("(RETURN ");
+		printTerm(t->data.retur.exp);
+		printf(")");
+		break;
+	case BREAK:
+		printf("BREAK");
+		break;
+	case CONTINUE:
+		printf("CONTINUE");
+		break;
+	case BINARY_OP:
+		printBinaryOp(&t->data.binOp);
+		break;
+	case APPLICATION:
+		printApplication(&t->data.app);
+		break;
+	case FUNCTION:
+		printFunction(&t->data.fun);
+		break;
+	case ASSIGNMENT:
+		printAssignment(&t->data.assignment);
+		break;
+	case BLOCK:
+		printBlock(&t->data.block);
+		break;
+	}
+}
+
+void printDeclaration(const DeclarationData* d)
+{
+	if (d->mutable)
+	{
+		printf("(VAR %.*s", d->_len, d->name);
+	}
+	else
+	{
+		printf("(VAR %.*s", d->_len, d->name);
+	}
+	if (d->type)
+	{
+		printf(" : ");
+		printType(d->type);
+	}
+	if (d->exp)
+	{
+		printf(" = ");
+		printTerm(d->exp);
+	}
+	printf(")");
+}
+
+void printStatement(const Statement* stmt)
+{
+	switch (stmt->kind)
+	{
+	case DECLARATION:
+		printDeclaration(&stmt->data.declaration);
+		break;
+	case UNIT_EXPRESSION:
+		printTerm(&stmt->data.unit_expression);
+		break;
+	}
+}
+
+void printProgram(const Program* p)
+{
+	for (int i = 0; i < p->_declCount; i++)
+	{
+		printDeclaration(&p->decls[i]);
+		printf("\n");
 	}
 }
 

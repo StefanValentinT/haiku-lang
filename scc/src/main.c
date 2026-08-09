@@ -1,6 +1,8 @@
 #include "lexer.c"
 #include "log.c"
+#include "parser.c"
 #include "stdbool.h"
+#include "syntax.c"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,7 +14,7 @@ void testPlatform(void)
 	int fSize = sizeof(float);
 	int lSize = sizeof(double);
 	printf(
-	    "The sizes of a flaot and a double on this platform are %d (float) and "
+	    "The sizes of a float and a double on this platform are %d (float) and "
 	    "%d (double).\n",
 	    fSize, lSize
 	);
@@ -73,25 +75,8 @@ int main(int argc, char** argv)
 	printfn("Compiling %s.", fileName);
 
 	char* source = readFile(fileName);
-	initLexer(source);
-
-	int line = -1;
-	while (true)
-	{
-		Token tok = nextToken();
-		if (tok.line != line)
-		{
-			printf("%4d\n", tok.line);
-			line = tok.line;
-		}
-		else
-		{
-			printf("    | ");
-		}
-		printf("%2d  '%.*s'\n", tok.type, tok.len, tok.start);
-		if (tok.type == TOK_EOF)
-			break;
-	}
+	Program ast = parse(source);
+	printProgram(&ast);
 
 	return 0;
 }
