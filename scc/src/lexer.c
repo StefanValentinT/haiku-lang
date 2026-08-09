@@ -40,6 +40,7 @@ typedef enum
 	TOK_TYPE,
 	TOK_AND,
 	TOK_OR,
+	TOK_AS,
 
 	TOK_I8,
 	TOK_I16,
@@ -233,7 +234,14 @@ TokenKind classifyIdent(void)
 	switch (lexer.start[0])
 	{
 	case 'a':
-		return checkKeyword("and", 3, TOK_AND);
+		switch (lexer.start[1])
+		{
+		case 'n':
+			return checkKeyword("and", 3, TOK_AND);
+		case 's':
+			return checkKeyword("as", 2, TOK_AS);
+		}
+		break;
 	case 'b':
 		return checkKeyword("break", 5, TOK_BREAK);
 	case 'c':
@@ -286,6 +294,7 @@ TokenKind classifyIdent(void)
 		case '6':
 			return checkKeyword("u64", 3, TOK_U64);
 		}
+		break;
 	case 'v':
 		switch (lexer.start[2])
 		{

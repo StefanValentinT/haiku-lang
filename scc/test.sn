@@ -18,6 +18,8 @@ val t = fun (a, b) -> add(a, b); # declaration wiht init
 
 val r : i32 = 0; # declaration with type and init
 
+val prec_test = 1 * 2 + 3 * 4 as i64 / 2;
+
 type int = i32;
 
 val main = fun () -> {

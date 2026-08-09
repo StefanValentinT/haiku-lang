@@ -21,7 +21,7 @@ Program parse(char* source);
 
 // internal functions
 Token expectElse(TokenKind k, char* msg);
-Term parseTerm(void);
+Term parseTerm(int minPrec);
 DeclarationData parseDeclaration(void);
 Statement parseStatement(void);
 Type parseType(void);
@@ -56,7 +56,7 @@ int32_t parseNumber(const char* start, int len)
 	int32_t result = 0;
 	for (int i = 0; i < len; i++)
 	{
-		result = result + 10 * (start[i] - '0');
+		result = result * 10 + (start[i] - '0');
 	}
 	return result;
 }
@@ -77,7 +77,7 @@ Term parseTermFactor(void)
 			arr = initArray(2, sizeof(Term));
 			while (peekToken().type != TOK_RIGHT_PAREN)
 			{
-				appendArray(&arr, newTerm(parseTerm()));
+				appendArray(&arr, newTerm(parseTerm(0)));
 				if (peekToken().type != TOK_RIGHT_PAREN)
 				{
 					expect(TOK_COMMA);
@@ -97,11 +97,11 @@ Term parseTermFactor(void)
 	case TOK_STRING:
 		return (Term){STRING, {.string = {tok.start, tok.len}}, s};
 	case TOK_AMPERSAND:
-		return (Term){REF, {.ref = {newTerm(parseTerm())}}, s};
+		return (Term){REF, {.ref = {newTerm(parseTerm(0))}}, s};
 
 	case TOK_LEFT_PAREN:
 	{
-		Term t = parseTerm();
+		Term t = parseTerm(0);
 		expectElse(TOK_RIGHT_PAREN, "Parentheted expression requires a closing parenthese.");
 		return t;
 	}
@@ -123,7 +123,7 @@ Term parseTermFactor(void)
 			}
 			else
 			{
-				Term expr = parseTerm();
+				Term expr = parseTerm(0);
 				if (peekToken().type == TOK_SEMICOLON)
 				{
 					nextToken();
@@ -153,7 +153,7 @@ Term parseTermFactor(void)
 		hadError = true;
 		break;
 	case TOK_RETURN:
-		return (Term){RETURN, {.retur = {newTerm(parseTerm())}}, s};
+		return (Term){RETURN, {.retur = {newTerm(parseTerm(0))}}, s};
 	case TOK_BREAK:
 		return (Term){BREAK, {0}, s};
 	case TOK_CONTINUE:
@@ -206,13 +206,15 @@ Term parseTermFactor(void)
 		                       recBinderOpt.len,
 		                       (Formal*)arr.items,
 		                       (int)arr.count,
-		                       newTerm(parseTerm()),
+		                       newTerm(parseTerm(0)),
 		                   }},
 		              s};
+	default:
+		logFatal("Unparseable term starting with %d.", tok.type);
 	}
 
-	logFatal("Unparseable term, this could indicate a compiler bug.");
 	// unreachable
+	return (Term){0};
 }
 
 BinaryOpKind tokToBinOp(TokenKind t)
@@ -233,15 +235,45 @@ BinaryOpKind tokToBinOp(TokenKind t)
 		return OR;
 	case TOK_AND:
 		return AND;
+	// Non-existent binary op
+	default:
+		abort();
 	}
 }
 
-Term parseTerm(void)
+int precedence(TokenKind k)
+{
+	switch (k)
+	{
+	case TOK_AS:
+		return 7;
+	case TOK_COLON:
+		return 6;
+	case TOK_STAR:
+	case TOK_SLASH:
+	case TOK_PERCENT:
+		return 5;
+	case TOK_PLUS:
+	case TOK_MINUS:
+		return 4;
+	case TOK_AND:
+		return 3;
+	case TOK_OR:
+		return 2;
+	default:
+		return -1;
+	}
+}
+
+Term parseTerm(int minPrec)
 {
 	Term term = parseTermFactor();
-	while (true)
+	Token next;
+	int prec;
+	next = peekToken();
+	prec = precedence(next.type);
+	while (prec >= minPrec)
 	{
-		Token next = peekToken();
 		SourceInfo s = term.info;
 		// parses left-to-rigth associatively
 		// TODO: add precedence
@@ -257,12 +289,17 @@ Term parseTerm(void)
 		case TOK_OR:
 			nextToken();
 			BinaryOpKind binOp = tokToBinOp(next.type);
-			term = (Term){BINARY_OP, {.binOp = {binOp, newTerm(term), newTerm(parseTermFactor())}}, s};
+			term = (Term){BINARY_OP, {.binOp = {binOp, newTerm(term), newTerm(parseTerm(prec + 1))}}, s};
+			break;
+
+		case TOK_AS:
+			nextToken();
+			term = (Term){CAST, {.cast = {newTerm(term), parseType()}}, s};
 			break;
 
 		case TOK_COLON:
 			nextToken();
-			term = (Term){TYPED, {.typed = {newTerm(term), parseType()}}};
+			term = (Term){TYPED, {.typed = {newTerm(term), parseType()}}, s};
 			break;
 
 		// Postfix
@@ -275,6 +312,8 @@ Term parseTerm(void)
 		default:
 			return term;
 		}
+		next = peekToken();
+		prec = precedence(next.type);
 	}
 }
 
@@ -292,7 +331,7 @@ DeclarationData parseDeclaration(void)
 	if (peekToken().type == TOK_EQUAL)
 	{
 		nextToken();
-		exp = newTerm(parseTerm());
+		exp = newTerm(parseTerm(0));
 	}
 	expectElse(TOK_SEMICOLON, "Unterminated declaration.");
 	DeclarationData d = (DeclarationData){
@@ -332,6 +371,7 @@ Type parseType(void)
 		return (Type){F64, {0}};
 	default:
 		logFatal("Unrecognized type: %s", tok.start);
+		abort();
 	}
 }
 
