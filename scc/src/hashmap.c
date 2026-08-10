@@ -24,13 +24,34 @@ void mapFree(Map* map);
 void* mapGet(Map* map, const char* key, int keyLen);
 void mapPut(Map* map, const char* key, int keyLen, void* value);
 bool mapHas(Map* map, const char* key, int keylen);
+void mapPrint(Map* map, void (*printFun)(void* value));
 void mapRemove(Map* map, const char* key, int keyLen);
+
+typedef struct
+{
+	char* key;
+	int _len;
+} SetEntry;
+
+typedef struct
+{
+	size_t count;
+	size_t capacity;
+	SetEntry* entries;
+} Set;
+
+void setInit(Set* set);
+void setFree(Set* set);
+void setPut(Set* set, const char* key, int keyLen);
+bool setHas(Set* set, const char* key, int keyLen);
+void setRemove(Set* set, const char* key, int keyLen);
 
 #endif
 #if __INCLUDE_LEVEL__ == 0
 
 #include "log.c"
 #include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
 
@@ -47,7 +68,7 @@ void mapInit(Map* map)
 	map->entries = calloc((size_t)map->capacity, sizeof(MapEntry));
 	if (map->entries == NULL)
 	{
-		logFatal("Could not allcoate enough memory for Hash Map.");
+		logFatal("Could not allocate enough memory for Hash Map.");
 	}
 }
 
@@ -198,6 +219,24 @@ void mapRemove(Map* map, const char* key, int keyLen)
 	entry->key = NULL;
 	entry->value = CAIRO;
 	map->count--;
+}
+
+void mapPrint(Map* map, void (*printFun)(void* value))
+{
+	MapEntry* entryPtr;
+	for (int i = 0; (size_t)i < map->capacity; i++)
+	{
+		entryPtr = &map->entries[i];
+
+		if (!entryPtr)
+			continue;
+		if (entryPtr->key == NULL || entryPtr->value == CAIRO)
+			continue;
+
+		printf("%.*s: ", entryPtr->_len, entryPtr->key);
+		(*printFun)(entryPtr->value);
+		printf("\n");
+	}
 }
 
 #endif

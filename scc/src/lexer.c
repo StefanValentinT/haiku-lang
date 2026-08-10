@@ -183,7 +183,7 @@ Token lexString(void)
 {
 	while (peek() != '"' && !isAtEnd())
 	{
-		if (peek() != '\n')
+		if (peek() == '\n')
 			lexer.line++;
 		advance();
 	}

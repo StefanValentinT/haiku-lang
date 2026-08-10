@@ -18,6 +18,11 @@ Program parse(char* source);
 #include <stdio.h>
 
 #define expect(x) expectElse(x, "Expected " #x ".")
+#define UNREACHABLE                                                                                                    \
+	{                                                                                                                  \
+		printf("UNREACHABLE reached in file %s:%d.\n", __FILE__, __LINE__);                                            \
+		abort();                                                                                                       \
+	}
 
 // internal functions
 Token expectElse(TokenKind k, char* msg);
@@ -26,6 +31,20 @@ DeclarationData parseDeclaration(void);
 Statement parseStatement(void);
 Type parseType(void);
 
+typedef struct
+{
+	int shadowDepth;
+	bool mutable;
+} ScopeData;
+
+typedef struct Scope
+{
+	struct Scope* parent;
+	// String -> ScopeData
+	Map* vars;
+} Scope;
+
+Scope* scope = NULL;
 bool hadError;
 bool inPanicMode;
 
@@ -61,16 +80,114 @@ int32_t parseNumber(const char* start, int len)
 	return result;
 }
 
+void enterScope(void)
+{
+	Scope* newScope = malloc(sizeof(Scope));
+
+	if (newScope == NULL)
+	{
+		logFatal("Could not allocate enough memory for new scope.");
+	}
+
+	newScope->vars = malloc(sizeof(Map));
+	if (newScope->vars == NULL)
+	{
+		free(newScope);
+		logFatal("Could not allocate enough memory for scope map.");
+	}
+
+	mapInit(newScope->vars);
+	newScope->parent = scope;
+	scope = newScope;
+}
+
+void leaveScope(void)
+{
+	if (scope == NULL)
+	{
+		logFatal("Can't leave global scope exists.");
+	}
+
+	Scope* oldScope = scope;
+	scope = scope->parent;
+
+	mapFree(oldScope->vars);
+	free(oldScope->vars);
+	free(oldScope);
+}
+
+ScopeData* lookup(const char* varName, int len)
+{
+	for (Scope* current = scope; current != NULL; current = current->parent)
+	{
+		ScopeData* val = mapGet(current->vars, varName, len);
+
+		if (val != NULL)
+			return val;
+	}
+
+	return NULL;
+}
+
+void declare(const char* varName, int len, bool mutable)
+{
+	if (mapHas(scope->vars, varName, len))
+	{
+		logFatal("Invalid redeclaration of %.*s in same scope.", len, varName);
+	}
+
+	ScopeData* previous = lookup(varName, len);
+
+	int shadowDepth = 0;
+
+	if (previous != NULL)
+	{
+		shadowDepth = previous->shadowDepth + 1;
+	}
+
+	ScopeData* newData = malloc(sizeof(ScopeData));
+
+	if (newData == NULL)
+	{
+		logFatal("Could not allocate ScopeData.");
+	}
+
+	*newData = (ScopeData){.shadowDepth = shadowDepth, .mutable = mutable};
+
+	mapPut(scope->vars, varName, len, newData);
+}
+
+void printScopeData(void* val)
+{
+	ScopeData* scopeData = (ScopeData*)val;
+	printf("{depth: %d, mutable: %s}", scopeData->shadowDepth, scopeData->mutable ? "true" : "false");
+}
+void printScope(void)
+{
+	printf("--- Scope ---\n");
+	for (Scope* current = scope; current != NULL; current = current->parent)
+	{
+		mapPrint(current->vars, printScopeData);
+	}
+	printf("-------------\n");
+}
+
 Term parseTermFactor(void)
 {
 	Token recBinderOpt = (Token){TOK_IDENTIFIER, NULL, 0, -1};
 	DynArray arr;
 	Token tok = nextToken();
+	ScopeData* scopeData;
 	SourceInfo s = (SourceInfo){tok.line};
 
 	switch (tok.type)
 	{
 	case TOK_IDENTIFIER:
+		scopeData = lookup(tok.start, tok.len);
+		if (!scopeData)
+		{
+			logFatal("Undefined variable %.*s in line %d.", tok.len, tok.start, tok.line);
+		}
 		if (peekToken().type == TOK_LEFT_PAREN)
 		{
 			nextToken();
@@ -111,6 +228,7 @@ Term parseTermFactor(void)
 			nextToken();
 			return (Term){BLOCK, {.block = {.stmts = NULL, ._stmtCount = 0}}, s};
 		}
+		enterScope();
 		arr = initArray(16, sizeof(Statement));
 		Term* trailingExp = NULL;
 		while (peekToken().type != TOK_RIGHT_BRACE)
@@ -118,7 +236,9 @@ Term parseTermFactor(void)
 			Token peek = peekToken();
 			if (peek.type == TOK_VAL || peek.type == TOK_VAR)
 			{
-				Statement newS = (Statement){DECLARATION, {.declaration = parseDeclaration()}, s};
+				DeclarationData decl = parseDeclaration();
+				declare(decl.name, decl._len, decl.mutable);
+				Statement newS = (Statement){DECLARATION, {.declaration = decl}, s};
 				appendArray(&arr, (void*)&newS);
 			}
 			else
@@ -141,6 +261,7 @@ Term parseTermFactor(void)
 				}
 			}
 		}
+		leaveScope();
 		expectElse(TOK_RIGHT_BRACE, "Block requires a closing brace.");
 		return (Term
 		){BLOCK, {.block = {.stmts = (Statement*)arr.items, ._stmtCount = (int)arr.count, .exp = trailingExp}}, s};
@@ -170,6 +291,10 @@ Term parseTermFactor(void)
 			while (peekToken().type != TOK_RIGHT_PAREN)
 			{
 				Token name = nextToken();
+				if (name.type != TOK_IDENTIFIER)
+				{
+					logFatal("Expected identifier in formals list.");
+				}
 				Type* t = NULL;
 				if (peekToken().type == TOK_COLON)
 				{
@@ -178,6 +303,7 @@ Term parseTermFactor(void)
 				}
 				Formal formal = (Formal){.name = name.start, ._len = name.len, .type = t};
 				appendArray(&arr, (void*)&formal);
+				declare(name.start, name.len, false);
 				Token peek = peekToken();
 				if (peek.type == TOK_COMMA)
 				{
@@ -212,9 +338,7 @@ Term parseTermFactor(void)
 	default:
 		logFatal("Unparseable term starting with %d.", tok.type);
 	}
-
-	// unreachable
-	return (Term){0};
+	UNREACHABLE
 }
 
 BinaryOpKind tokToBinOp(TokenKind t)
@@ -245,6 +369,9 @@ int precedence(TokenKind k)
 {
 	switch (k)
 	{
+	case TOK_DOT:
+	case TOK_DOT_STAR:
+		return 15;
 	case TOK_AS:
 		return 7;
 	case TOK_COLON:
@@ -260,6 +387,8 @@ int precedence(TokenKind k)
 		return 3;
 	case TOK_OR:
 		return 2;
+	case TOK_EQUAL:
+		return 1;
 	default:
 		return -1;
 	}
@@ -276,7 +405,6 @@ Term parseTerm(int minPrec)
 	{
 		SourceInfo s = term.info;
 		// parses left-to-rigth associatively
-		// TODO: add precedence
 		switch (next.type)
 		{
 		// Binary
@@ -302,6 +430,24 @@ Term parseTerm(int minPrec)
 			term = (Term){TYPED, {.typed = {newTerm(term), parseType()}}, s};
 			break;
 
+		case TOK_EQUAL:
+			nextToken();
+			ScopeData* varData;
+			switch (term.kind)
+			{
+			case VAR:
+				varData = lookup(term.data.var.name, term.data.var._len);
+				if (!varData->mutable)
+				{
+					logFatal("Can not assign to immutable variable.");
+				}
+			// TODO: Implement assignment to a dereference: x.* = 10 ... x.*.*.* = "it goes on forever"
+			default:
+				logFatal("Invalid assignment, assignment to dereference not yet implemented.");
+			}
+			term = (Term){ASSIGNMENT, {.assignment = {newTerm(term), newTerm(parseTerm(prec + 1))}}, s};
+			break;
+
 		// Postfix
 		case TOK_DOT_STAR:
 			nextToken();
@@ -315,6 +461,7 @@ Term parseTerm(int minPrec)
 		next = peekToken();
 		prec = precedence(next.type);
 	}
+	return term;
 }
 
 DeclarationData parseDeclaration(void)
@@ -341,6 +488,8 @@ DeclarationData parseDeclaration(void)
 	    ._len = ident.len,
 	    .exp = exp,
 	};
+	printDeclaration(&d);
+	printf("\n");
 	return d;
 }
 
@@ -380,11 +529,10 @@ Program parse(char* source)
 	mapInit(&typeDefinitions);
 
 	initLexer(source);
+	enterScope();
 
 	Token next = peekToken();
-	int capacity = 8;
-	int count = 0;
-	DeclarationData* declarations = malloc((size_t)capacity * sizeof(DeclarationData));
+	DynArray declarations = initArray(16, sizeof(DeclarationData));
 	while (next.type != TOK_EOF)
 	{
 		DeclarationData newDecl = {0};
@@ -393,19 +541,8 @@ Program parse(char* source)
 		case TOK_VAL:
 		case TOK_VAR:
 			newDecl = parseDeclaration();
-			if (count >= capacity)
-			{
-				capacity = capacity * 2;
-				DeclarationData* temp = realloc(declarations, (size_t)capacity * sizeof(DeclarationData));
-				if (temp == NULL)
-				{
-					logFatal("Could not allocate enough memory to parse all "
-					         "declarations.");
-				}
-				declarations = temp;
-			}
-			declarations[count] = newDecl;
-			count++;
+			declare(newDecl.name, newDecl._len, newDecl.mutable);
+			appendArray(&declarations, (void*)&newDecl);
 			break;
 		case TOK_TYPE:
 		{
@@ -426,8 +563,10 @@ Program parse(char* source)
 			break;
 		}
 		next = peekToken();
+		printScope();
 	}
-	return (Program){declarations, count};
+	leaveScope();
+	return (Program){(DeclarationData*)declarations.items, (int)declarations.count};
 }
 
 #endif
