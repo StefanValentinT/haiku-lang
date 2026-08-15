@@ -27,25 +27,6 @@ bool mapHas(Map* map, const char* key, int keylen);
 void mapPrint(Map* map, void (*printFun)(void* value));
 void mapRemove(Map* map, const char* key, int keyLen);
 
-typedef struct
-{
-	char* key;
-	int _len;
-} SetEntry;
-
-typedef struct
-{
-	size_t count;
-	size_t capacity;
-	SetEntry* entries;
-} Set;
-
-void setInit(Set* set);
-void setFree(Set* set);
-void setPut(Set* set, const char* key, int keyLen);
-bool setHas(Set* set, const char* key, int keyLen);
-void setRemove(Set* set, const char* key, int keyLen);
-
 #endif
 #if __INCLUDE_LEVEL__ == 0
 

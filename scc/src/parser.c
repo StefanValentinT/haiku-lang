@@ -26,7 +26,7 @@ Program parse(char* source);
 
 // internal functions
 Token expectElse(TokenKind k, char* msg);
-Term parseTerm(int minPrec);
+Term parseTerm(void);
 DeclarationData parseDeclaration(void);
 Statement parseStatement(void);
 Type parseType(void);
@@ -54,7 +54,7 @@ Map typeDefinitions;
 Token expectElse(TokenKind k, char* msg)
 {
 	Token t = nextToken();
-	if (t.type == k)
+	if (t.kind == k)
 	{
 		return t;
 	}
@@ -172,6 +172,257 @@ void printScope(void)
 	printf("-------------\n");
 }
 
+Term parseAtom(void)
+{
+	Token tok = nextToken();
+	ScopeData* scopeData;
+	SourceInfo s = (SourceInfo){tok.line};
+	switch (tok.kind)
+	{
+	case TOK_IDENTIFIER:
+		scopeData = lookup(tok.start, tok.len);
+		if (!scopeData)
+		{
+			logFatal("Undefined variable %.*s in line %d.", tok.len, tok.start, tok.line);
+		}
+		return (Term){VAR, {.var = {tok.start, tok.len}}, s};
+	case TOK_NUMBER:
+		// TODO: Typed number literals
+		// For now all number literals are implictly i32
+		return (Term){CONSTANT, {.constant = {{.i32Val = parseNumber(tok.start, tok.len)}, (Type){I32, {0}}}}, s};
+	case TOK_STRING:
+		return (Term){STRING, {.string = {tok.start, tok.len}}, s};
+	default:
+		logFatal("Not an atom: %d.", tok.kind);
+		abort();
+	}
+}
+
+bool startsAtom(TokenKind tok)
+{
+	switch (tok)
+	{
+	case TOK_IDENTIFIER:
+	case TOK_NUMBER:
+	case TOK_STRING:
+		return true;
+	default:
+		return false;
+	}
+}
+
+bool startsFactor(TokenKind tok)
+{
+	switch (tok)
+	{
+	case TOK_LEFT_PAREN:
+	case TOK_STRUCT:
+	case TOK_UNION:
+		return true;
+	default:
+		if (startsAtom(tok))
+		{
+			return true;
+		}
+		return false;
+	}
+}
+
+DynArray parseInitList(void)
+{
+	DynArray initList;
+	initArray(4, sizeof(Member));
+
+	while (true)
+	{
+		Token name = expect(TOK_IDENTIFIER);
+
+		expect(TOK_EQUAL);
+
+		Term* value = newTerm(parseTerm());
+		Member* memberPtr = malloc(sizeof(Member));
+		*memberPtr = (Member){name.start, name.len, value};
+
+		appendArray(&initList, memberPtr);
+
+		if (peekToken().kind == TOK_COMMA)
+		{
+			nextToken();
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	return initList;
+}
+
+DynArray parseArgList(void)
+{
+	DynArray initList;
+	initArray(4, sizeof(Term));
+	while (true)
+	{
+		Term* valuePtr = newTerm(parseTerm());
+		appendArray(&initList, valuePtr);
+
+		if (peekToken().kind == TOK_COMMA)
+		{
+			nextToken();
+		}
+		else
+		{
+			break;
+		}
+	}
+	return initList;
+}
+
+Term parseFactor(void)
+{
+	DynArray initList;
+	bool isUnion;
+	Term t;
+
+	Token tok = peekToken();
+	SourceInfo s = (SourceInfo){tok.line};
+	switch (tok.kind)
+	{
+	case TOK_LEFT_PAREN:
+		nextToken();
+		t = parseTerm();
+		expect(TOK_RIGHT_PAREN);
+		return t;
+		break;
+	case TOK_UNION:
+	case TOK_STRUCT:
+		isUnion = tok.kind == TOK_STRUCT ? false : true;
+		nextToken();
+		expect(TOK_LEFT_BRACE);
+		if (peekToken().kind != TOK_RIGHT_BRACE)
+		{
+			initList = parseInitList();
+			expect(TOK_RIGHT_BRACE);
+			return (Term){STRUCTURE, {.structure = {isUnion, (Member*)initList.items, (int)initList.count}}, s};
+		}
+		else
+		{
+			nextToken();
+			return (Term){STRUCTURE, {.structure = {isUnion, NULL, 0}}, s};
+		}
+		break;
+	default:
+		if (startsAtom(tok.kind))
+		{
+			return parseAtom();
+		}
+		logFatal("Not a factor: %d.", tok.kind);
+		abort();
+		break;
+	}
+}
+
+bool startsPostfix(TokenKind tok)
+{
+	if (startsFactor(tok))
+	{
+		return true;
+	}
+	return false;
+}
+
+Term parsePostfix(void)
+
+{
+	Term post;
+	Token peek = peekToken();
+	SourceInfo s = (SourceInfo){peek.line};
+
+	if (peek.kind == TOK_LEFT_BRACE)
+	{
+		Token ident = expect(TOK_IDENTIFIER);
+		expect(TOK_LEFT_BRACE);
+		Type* type = (Type*)mapGet(&typeDefinitions, ident.start, ident.len);
+		if (type == NULL)
+		{
+			logFatal("Type not defined, but used in line %d.", ident.line);
+		}
+		if (type->kind != STRUCT_TYPE)
+		{
+			logFatal("Type to be initialized not a structure, in line %d.", ident.line);
+		}
+		DynArray inits = parseInitList();
+		expect(TOK_LEFT_BRACE);
+		post =
+		    (Term){STRUCTURE, {.structure = {type->data.structure.isUnion, (Member*)inits.items, (int)inits.count}}, s};
+	}
+	else
+	{
+		post = parseFactor();
+	}
+
+	DynArray list;
+	while (true)
+	{
+		peek = peekToken();
+		switch (peek.kind)
+		{
+		case TOK_LEFT_BRACKET:
+			nextToken();
+			Term* indexPtr = newTerm(parseTerm());
+			expect(TOK_RIGHT_BRACKET);
+			post = (Term){SUBSCRIPT, {.subscript = {newTerm(post), indexPtr}}, s};
+			break;
+		case TOK_LEFT_PAREN:
+			nextToken();
+			if (peekToken().kind == TOK_RIGHT_PAREN)
+			{
+				nextToken();
+				post = (Term){APPLICATION, {.app = {newTerm(post), NULL, 0}}, s};
+			}
+			else
+			{
+				list = parseArgList();
+				expect(TOK_RIGHT_PAREN);
+				post = (Term){APPLICATION, {.app = {newTerm(post), (Term*)list.items, (int)list.count}}, s};
+			}
+			break;
+		// TODO: Where to add auto-dereferincg?
+		case TOK_DOT:
+			nextToken();
+			Token ident = expect(TOK_IDENTIFIER);
+			post = (Term){ACCESS, {.access = {newTerm(post), ident.start, ident.len}}, s};
+			break;
+		// TODO: How to hanlde other numeric types?
+		case TOK_INCREMENT:
+			nextToken();
+			Term* constant1 = (Term*)malloc(sizeof(Term));
+			*constant1 = (Term){CONSTANT,
+			                    {
+			                        .constant = {{.i32Val = 1}, {I32, {0}}},
+			                    },
+			                    s};
+			post = (Term){BINARY_OP_ASSIGN, {.binAssignOp = {ADD, newTerm(post), constant1}}, s};
+		// TODO: OTther numeric types.
+		case TOK_DECREMENT:
+			nextToken();
+			Term* constantneg1 = (Term*)malloc(sizeof(Term));
+			*constantneg1 = (Term){CONSTANT,
+			                       {
+			                           .constant = {{.i32Val = -1}, {I32, {0}}},
+			                       },
+			                       s};
+			post = (Term){BINARY_OP_ASSIGN, {.binAssignOp = {ADD, newTerm(post), constantneg1}}, s};
+		case TOK_STAR:
+			nextToken();
+			post = (Term){DEREF, {.deref = {newTerm(post)}}, s};
+		default:
+			return post;
+		}
+	}
+}
+
 Term parseTermFactor(void)
 {
 	Token recBinderOpt = (Token){TOK_IDENTIFIER, NULL, 0, -1};
@@ -180,7 +431,7 @@ Term parseTermFactor(void)
 	ScopeData* scopeData;
 	SourceInfo s = (SourceInfo){tok.line};
 
-	switch (tok.type)
+	switch (tok.kind)
 	{
 	case TOK_IDENTIFIER:
 		scopeData = lookup(tok.start, tok.len);
@@ -188,14 +439,14 @@ Term parseTermFactor(void)
 		{
 			logFatal("Undefined variable %.*s in line %d.", tok.len, tok.start, tok.line);
 		}
-		if (peekToken().type == TOK_LEFT_PAREN)
+		if (peekToken().kind == TOK_LEFT_PAREN)
 		{
 			nextToken();
 			arr = initArray(2, sizeof(Term));
-			while (peekToken().type != TOK_RIGHT_PAREN)
+			while (peekToken().kind != TOK_RIGHT_PAREN)
 			{
 				appendArray(&arr, newTerm(parseTerm(0)));
-				if (peekToken().type != TOK_RIGHT_PAREN)
+				if (peekToken().kind != TOK_RIGHT_PAREN)
 				{
 					expect(TOK_COMMA);
 				}
@@ -207,12 +458,6 @@ Term parseTermFactor(void)
 		{
 			return (Term){VAR, {.var = {tok.start, tok.len}}, s};
 		}
-	case TOK_NUMBER:
-		// TODO: Typed number literals
-		// For now all number literals are implictly i32
-		return (Term){CONSTANT, {.constant = {{.i32Val = parseNumber(tok.start, tok.len)}, (Type){I32, {0}}}}, s};
-	case TOK_STRING:
-		return (Term){STRING, {.string = {tok.start, tok.len}}, s};
 	case TOK_AMPERSAND:
 		return (Term){REF, {.ref = {newTerm(parseTerm(0))}}, s};
 
@@ -223,7 +468,7 @@ Term parseTermFactor(void)
 		return t;
 	}
 	case TOK_LEFT_BRACE:
-		if (peekToken().type == TOK_RIGHT_BRACE)
+		if (peekToken().kind == TOK_RIGHT_BRACE)
 		{
 			nextToken();
 			return (Term){BLOCK, {.block = {.stmts = NULL, ._stmtCount = 0}}, s};
@@ -231,10 +476,10 @@ Term parseTermFactor(void)
 		enterScope();
 		arr = initArray(16, sizeof(Statement));
 		Term* trailingExp = NULL;
-		while (peekToken().type != TOK_RIGHT_BRACE)
+		while (peekToken().kind != TOK_RIGHT_BRACE)
 		{
 			Token peek = peekToken();
-			if (peek.type == TOK_VAL || peek.type == TOK_VAR)
+			if (peek.kind == TOK_VAL || peek.kind == TOK_VAR)
 			{
 				DeclarationData decl = parseDeclaration();
 				declare(decl.name, decl._len, decl.mutable);
@@ -244,13 +489,13 @@ Term parseTermFactor(void)
 			else
 			{
 				Term expr = parseTerm(0);
-				if (peekToken().type == TOK_SEMICOLON)
+				if (peekToken().kind == TOK_SEMICOLON)
 				{
 					nextToken();
 					Statement newS = (Statement){UNIT_EXPRESSION, {.unit_expression = expr}, s};
 					appendArray(&arr, (void*)&newS);
 				}
-				else if (peekToken().type == TOK_RIGHT_BRACE)
+				else if (peekToken().kind == TOK_RIGHT_BRACE)
 				{
 					trailingExp = newTerm(expr);
 					break;
@@ -280,23 +525,24 @@ Term parseTermFactor(void)
 	case TOK_CONTINUE:
 		return (Term){CONTINUE, {0}, s};
 	case TOK_FUN:
+		enterScope();
 		arr = initArray(2, sizeof(Formal));
-		if (peekToken().type == TOK_IDENTIFIER)
+		if (peekToken().kind == TOK_IDENTIFIER)
 		{
 			recBinderOpt = nextToken();
 		}
-		if (peekToken().type == TOK_LEFT_PAREN)
+		if (peekToken().kind == TOK_LEFT_PAREN)
 		{
 			nextToken();
-			while (peekToken().type != TOK_RIGHT_PAREN)
+			while (peekToken().kind != TOK_RIGHT_PAREN)
 			{
 				Token name = nextToken();
-				if (name.type != TOK_IDENTIFIER)
+				if (name.kind != TOK_IDENTIFIER)
 				{
 					logFatal("Expected identifier in formals list.");
 				}
 				Type* t = NULL;
-				if (peekToken().type == TOK_COLON)
+				if (peekToken().kind == TOK_COLON)
 				{
 					nextToken();
 					t = newType(parseType());
@@ -305,11 +551,11 @@ Term parseTermFactor(void)
 				appendArray(&arr, (void*)&formal);
 				declare(name.start, name.len, false);
 				Token peek = peekToken();
-				if (peek.type == TOK_COMMA)
+				if (peek.kind == TOK_COMMA)
 				{
 					nextToken();
 				}
-				else if (peek.type == TOK_RIGHT_PAREN)
+				else if (peek.kind == TOK_RIGHT_PAREN)
 				{
 					break;
 				}
@@ -322,9 +568,11 @@ Term parseTermFactor(void)
 		}
 		else
 		{
-			logFatal("%i: Expected formals list or recursive bind but got %d", tok.line, tok.type);
+			logFatal("%i: Expected formals list or recursive bind but got %d", tok.line, tok.kind);
 		}
 		expect(TOK_ARROW);
+		Term* t = newTerm(parseTerm(0));
+		leaveScope();
 		return (Term){FUNCTION,
 		              {.fun =
 		                   {
@@ -332,11 +580,11 @@ Term parseTermFactor(void)
 		                       recBinderOpt.len,
 		                       (Formal*)arr.items,
 		                       (int)arr.count,
-		                       newTerm(parseTerm(0)),
+		                       t,
 		                   }},
 		              s};
 	default:
-		logFatal("Unparseable term starting with %d.", tok.type);
+		logFatal("Unparseable term starting with %d.", tok.kind);
 	}
 	UNREACHABLE
 }
@@ -394,18 +642,19 @@ int precedence(TokenKind k)
 	}
 }
 
-Term parseTerm(int minPrec)
+Term parseTerm()
 {
 	Term term = parseTermFactor();
 	Token next;
 	int prec;
 	next = peekToken();
-	prec = precedence(next.type);
+	prec = precedence(next.kind);
 	while (prec >= minPrec)
 	{
 		SourceInfo s = term.info;
 		// parses left-to-rigth associatively
-		switch (next.type)
+		// TODO: differnet kind of associativities
+		switch (next.kind)
 		{
 		// Binary
 		case TOK_PLUS:
@@ -416,7 +665,7 @@ Term parseTerm(int minPrec)
 		case TOK_AND:
 		case TOK_OR:
 			nextToken();
-			BinaryOpKind binOp = tokToBinOp(next.type);
+			BinaryOpKind binOp = tokToBinOp(next.kind);
 			term = (Term){BINARY_OP, {.binOp = {binOp, newTerm(term), newTerm(parseTerm(prec + 1))}}, s};
 			break;
 
@@ -459,23 +708,23 @@ Term parseTerm(int minPrec)
 			return term;
 		}
 		next = peekToken();
-		prec = precedence(next.type);
+		prec = precedence(next.kind);
 	}
 	return term;
 }
 
 DeclarationData parseDeclaration(void)
 {
-	bool mutable = nextToken().type == TOK_VAL ? false : true;
+	bool mutable = nextToken().kind == TOK_VAL ? false : true;
 	Token ident = expectElse(TOK_IDENTIFIER, "Declaration keyword must be followed by identfier.");
 	Type* typePtr = NULL;
-	if (peekToken().type == TOK_COLON)
+	if (peekToken().kind == TOK_COLON)
 	{
 		nextToken();
 		typePtr = newType(parseType());
 	}
 	Term* exp = NULL;
-	if (peekToken().type == TOK_EQUAL)
+	if (peekToken().kind == TOK_EQUAL)
 	{
 		nextToken();
 		exp = newTerm(parseTerm(0));
@@ -493,31 +742,39 @@ DeclarationData parseDeclaration(void)
 	return d;
 }
 
+#define equal(a, lit) memcmp(a.start, lit, (size_t)a.len) == 0
 Type parseType(void)
 {
 	Token tok = nextToken();
-	switch (tok.type)
+	switch (tok.kind)
 	{
-	case TOK_I8:
-		return (Type){I8, {0}};
-	case TOK_I16:
-		return (Type){I16, {0}};
-	case TOK_I32:
-		return (Type){I32, {0}};
-	case TOK_I64:
-		return (Type){I64, {0}};
-	case TOK_U8:
-		return (Type){U8, {0}};
-	case TOK_U16:
-		return (Type){U16, {0}};
-	case TOK_U32:
-		return (Type){U32, {0}};
-	case TOK_U64:
-		return (Type){U64, {0}};
-	case TOK_F32:
-		return (Type){F32, {0}};
-	case TOK_F64:
-		return (Type){F64, {0}};
+	case TOK_IDENTIFIER:
+		if (equal(tok, "i8"))
+			return (Type){I8, {0}};
+		else if (equal(tok, "i16"))
+			return (Type){I16, {0}};
+		else if (equal(tok, "i32"))
+			return (Type){I32, {0}};
+		else if (equal(tok, "i64"))
+			return (Type){I64, {0}};
+
+		else if (equal(tok, "u8"))
+			return (Type){U8, {0}};
+		else if (equal(tok, "u16"))
+			return (Type){U16, {0}};
+		else if (equal(tok, "u32"))
+			return (Type){U32, {0}};
+		else if (equal(tok, "u64"))
+			return (Type){U64, {0}};
+
+		else if (equal(tok, "f32"))
+			return (Type){F32, {0}};
+		else if (equal(tok, "f64"))
+			return (Type){F64, {0}};
+
+		Type def = mapGet(&typeDefinitions, tok.start, tok.len);
+		break;
+
 	default:
 		logFatal("Unrecognized type: %s", tok.start);
 		abort();
@@ -533,10 +790,10 @@ Program parse(char* source)
 
 	Token next = peekToken();
 	DynArray declarations = initArray(16, sizeof(DeclarationData));
-	while (next.type != TOK_EOF)
+	while (next.kind != TOK_EOF)
 	{
 		DeclarationData newDecl = {0};
-		switch (next.type)
+		switch (next.kind)
 		{
 		case TOK_VAL:
 		case TOK_VAR:
@@ -549,7 +806,7 @@ Program parse(char* source)
 		}
 			nextToken();
 			Token ident = nextToken();
-			if (nextToken().type != TOK_EQUAL)
+			if (nextToken().kind != TOK_EQUAL)
 			{
 				logFatal("Type definitions misses equal sign after identifier.");
 			}
@@ -559,7 +816,7 @@ Program parse(char* source)
 			break;
 
 		default:
-			logFatal("Expected start of declaration at line %d, but got %d", next.line, next.type);
+			logFatal("Expected start of declaration at line %d, but got %d", next.line, next.kind);
 			break;
 		}
 		next = peekToken();

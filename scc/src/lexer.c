@@ -7,6 +7,8 @@ typedef enum
 {
 	TOK_LEFT_PAREN,
 	TOK_RIGHT_PAREN,
+	TOK_LEFT_BRACKET,
+	TOK_RIGHT_BRACKET,
 	TOK_LEFT_BRACE,
 	TOK_RIGHT_BRACE,
 	TOK_COMMA,
@@ -16,12 +18,13 @@ typedef enum
 	TOK_EQUAL,
 	TOK_ARROW,
 	TOK_AMPERSAND,
+	TOK_DECREMENT,
+	TOK_INCREMENT,
 	TOK_STAR,
 	TOK_PLUS,
 	TOK_MINUS,
 	TOK_SLASH,
 	TOK_PERCENT,
-	TOK_DOT_STAR,
 
 	TOK_IDENTIFIER,
 	TOK_BUILTIN,
@@ -38,20 +41,11 @@ typedef enum
 	TOK_VAL,
 	TOK_VAR,
 	TOK_TYPE,
+	TOK_STRUCT,
+	TOK_UNION,
 	TOK_AND,
 	TOK_OR,
 	TOK_AS,
-
-	TOK_I8,
-	TOK_I16,
-	TOK_I32,
-	TOK_I64,
-	TOK_U8,
-	TOK_U16,
-	TOK_U32,
-	TOK_U64,
-	TOK_F32,
-	TOK_F64,
 
 	TOK_ERROR,
 	TOK_EOF,
@@ -59,7 +53,7 @@ typedef enum
 
 typedef struct
 {
-	TokenKind type;
+	TokenKind kind;
 	const char* start;
 	int len;
 	int line;
@@ -101,7 +95,7 @@ bool isAtEnd(void) { return *lexer.current == '\0'; }
 Token makeToken(TokenKind t)
 {
 	Token token;
-	token.type = t;
+	token.kind = t;
 	token.start = lexer.start;
 	token.len = (int)(lexer.current - lexer.start);
 	token.line = lexer.line;
@@ -111,7 +105,7 @@ Token makeToken(TokenKind t)
 Token makeErrorToken(const char* message)
 {
 	Token token;
-	token.type = TOK_ERROR;
+	token.kind = TOK_ERROR;
 	token.start = message;
 	token.len = (int)strlen(message);
 	token.line = lexer.line;
@@ -214,6 +208,14 @@ Token lexNumber(void)
 			return makeErrorToken("An integer literal has no members to possibly access.");
 		}
 	}
+	char p = peek();
+	if (p == 'i' || p == 'u' || p == 'f')
+	{
+		advance();
+		if (peek() != 8)
+			advance();
+		advance();
+	}
 	return makeToken(TOK_NUMBER);
 }
 
@@ -255,46 +257,20 @@ TokenKind classifyIdent(void)
 			return checkKeyword("fun", 3, TOK_FUN);
 		case 'o':
 			return checkKeyword("for", 3, TOK_FOR);
-		case '3':
-			return checkKeyword("f32", 3, TOK_F32);
-		case '6':
-			return checkKeyword("f64", 3, TOK_F64);
 		}
 		break;
 	case 'i':
-		switch (lexer.start[1])
-		{
-		case 'f':
-			return checkKeyword("if", 2, TOK_IF);
-		case '8':
-			return checkKeyword("i8", 2, TOK_I8);
-		case '1':
-			return checkKeyword("i16", 3, TOK_I16);
-		case '3':
-			return checkKeyword("i32", 3, TOK_I32);
-		case '6':
-			return checkKeyword("i64", 3, TOK_I64);
-		}
-		break;
+		return checkKeyword("if", 2, TOK_IF);
 	case 'o':
 		return checkKeyword("or", 2, TOK_OR);
 	case 'r':
 		return checkKeyword("return", 6, TOK_RETURN);
+	case 's':
+		return checkKeyword("struct", 6, TOK_STRUCT);
 	case 't':
 		return checkKeyword("type", 4, TOK_TYPE);
 	case 'u':
-		switch (lexer.start[1])
-		{
-		case '8':
-			return checkKeyword("u8", 2, TOK_U8);
-		case '1':
-			return checkKeyword("u16", 3, TOK_U16);
-		case '3':
-			return checkKeyword("u32", 3, TOK_U32);
-		case '6':
-			return checkKeyword("u64", 3, TOK_U64);
-		}
-		break;
+		return checkKeyword("union", 5, TOK_UNION);
 	case 'v':
 		switch (lexer.start[2])
 		{
@@ -370,6 +346,10 @@ Token nextToken(void)
 		return makeToken(TOK_LEFT_PAREN);
 	case ')':
 		return makeToken(TOK_RIGHT_PAREN);
+	case '[':
+		return makeToken(TOK_LEFT_BRACKET);
+	case ']':
+		return makeToken(TOK_RIGHT_BRACKET);
 	case '{':
 		return makeToken(TOK_LEFT_BRACE);
 	case '}':
@@ -379,11 +359,6 @@ Token nextToken(void)
 	case ';':
 		return makeToken(TOK_SEMICOLON);
 	case '.':
-		if (peek() == '*')
-		{
-			advance();
-			return makeToken(TOK_DOT_STAR);
-		}
 		return makeToken(TOK_DOT);
 	case ':':
 		return makeToken(TOK_COLON);
@@ -394,6 +369,11 @@ Token nextToken(void)
 		{
 			advance();
 			return makeToken(TOK_ARROW);
+		}
+		else if (peek() == '-')
+		{
+			advance();
+			return makeToken(TOK_DECREMENT);
 		}
 		else
 		{
@@ -408,7 +388,15 @@ Token nextToken(void)
 	case '%':
 		return makeToken(TOK_PERCENT);
 	case '+':
-		return makeToken(TOK_PLUS);
+		if (peek() == '+')
+		{
+			advance();
+			return makeToken(TOK_INCREMENT);
+		}
+		else
+		{
+			return makeToken(TOK_PLUS);
+		}
 	case '"':
 		return lexString();
 	}

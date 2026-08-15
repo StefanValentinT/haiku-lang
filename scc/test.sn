@@ -1,3 +1,5 @@
+val print_i32 : (i32) -> struct{}
+
 # constants
 val x = 1;
 val y = 2;
@@ -18,7 +20,7 @@ val t = fun (a, b) -> add(a, b); # declaration wiht init
 
 val r : i32 = 0; # declaration with type and init
 
-val prec_test = 1 * 2 + 3 * 4 as i64 / 2;
+val prec_test = 1 * 2 + 3 * 4 as i32 / 2;
 
 type int = i32;
 
@@ -26,5 +28,8 @@ val main = fun () -> {
 	val a : i32 = 3;
 	val b : i32 = 10;
 	print_i32(a + b);
+
+	val ptr : *i32 = &a;
+	print_i32(ptr.*);
 	return 0;
 };

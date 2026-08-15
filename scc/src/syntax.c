@@ -1,6 +1,7 @@
 #ifndef SYNTAX_H
 #define SYNTAX_H
 
+#include "dynarray.c"
 #include "lexer.c"
 #include <stdbool.h>
 #include <stdint.h>
@@ -32,6 +33,7 @@ typedef enum
 	F64,
 	ARRAY_TYPE,
 	FUN_TYPE,
+	STRUCT_TYPE,
 } TypeKind;
 
 typedef struct Type Type;
@@ -49,6 +51,20 @@ typedef struct
 	Type* retType;
 } FunTypeData;
 
+typedef struct
+{
+	char* name;
+	int _len;
+	Type* type;
+} MemberType;
+
+typedef struct
+{
+	MemberType* memberTypes;
+	int _typesCount;
+	bool isUnion;
+} StructTypeData;
+
 struct Type
 {
 	TypeKind kind;
@@ -56,6 +72,7 @@ struct Type
 	{
 		ArrayTypeData arr;
 		FunTypeData fun;
+		StructTypeData structure;
 	} data;
 };
 
@@ -65,6 +82,7 @@ typedef enum
 {
 	CONSTANT,
 	ARRAY,
+	STRUCTURE,
 	STRING,
 	VAR,
 	REF,
@@ -75,6 +93,9 @@ typedef enum
 	BREAK,    // no data
 	CONTINUE, // no data
 	BINARY_OP,
+	BINARY_OP_ASSIGN,
+	SUBSCRIPT,
+	ACCESS,
 	APPLICATION,
 	FUNCTION,
 	ASSIGNMENT,
@@ -127,6 +148,20 @@ typedef struct
 
 typedef struct
 {
+	const char* name;
+	int _len;
+	Term* term;
+} Member;
+
+typedef struct
+{
+	bool isUnion;
+	Member* members;
+	int memberCount;
+} StructData;
+
+typedef struct
+{
 	const char* string;
 	int _len;
 } StringData;
@@ -171,14 +206,30 @@ typedef struct
 	Term* b;
 } BinOpData;
 
-// TODO: Have application of anonymous functions be syntactic sugar.
-// (fun (x) -> x)(1) becomes apply(fun (x) -> x, 1)
-// where apply = fun (f, arg...)
-// Or maybe somehting else?
+// a *= val
 typedef struct
 {
-	const char* funName;
+	BinaryOpKind kind;
+	Term* a;
+	Term* value;
+} BinOpAssignData;
+
+typedef struct
+{
+	Term* term;
+	Term* index;
+} SubscriptData;
+
+typedef struct
+{
+	Term* term;
+	char* member;
 	int _len;
+} AccessData;
+
+typedef struct
+{
+	Term* fun;
 	Term* args;
 	int _argCount;
 } ApplicationData;
@@ -220,6 +271,7 @@ struct Term
 		ConstantData constant;
 		ArrayData array;
 		StringData string;
+		StructData structure;
 
 		VarData var;
 
@@ -231,6 +283,10 @@ struct Term
 		ReturnData retur;
 
 		BinOpData binOp;
+		BinOpAssignData binAssignOp;
+		SubscriptData subscript;
+		AccessData access;
+
 		ApplicationData app;
 		FunctionData fun;
 
@@ -405,6 +461,25 @@ void printArray(const ArrayData* a)
 	printf(")");
 }
 
+void printStructure(const StructData* s)
+{
+	if (s->isUnion)
+	{
+		printf("(UNION ");
+	}
+	else
+	{
+		printf("(STRUCT ");
+	}
+	for (int i = 0; i < s->memberCount; i++)
+	{
+		Member m = s->members[i];
+		printf("%.*s: ", m._len, m.name);
+		printTerm(m.term);
+	}
+	printf(")");
+}
+
 void printString(const StringData* s) { printf("\"%.*s\"", s->_len, s->string); }
 
 void printVar(const VarData* s) { printf("%.*s", s->_len, s->name); }
@@ -523,6 +598,9 @@ void printTerm(const Term* t)
 		break;
 	case ARRAY:
 		printArray(&t->data.array);
+		break;
+	case STRUCTURE:
+		printStructure(&t->data.structure);
 		break;
 	case STRING:
 		printString(&t->data.string);
