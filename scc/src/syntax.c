@@ -536,7 +536,9 @@ void printBinaryOp(const BinOpData* b)
 
 void printApplication(const ApplicationData* a)
 {
-	printf("(APP %.*s ", a->_len, a->funName);
+	printf("(APP (");
+	printTerm(a->fun);
+	printf(") ");
 	for (int i = 0; i < a->_argCount; i++)
 	{
 		printTerm(&a->args[i]);

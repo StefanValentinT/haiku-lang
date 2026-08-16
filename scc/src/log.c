@@ -19,7 +19,7 @@ void logDebug(const char* fmt, ...);
 void logInfo(const char* fmt, ...);
 void logWarn(const char* fmt, ...);
 void logError(const char* fmt, ...);
-void logFatal(const char* fmt, ...);
+void logFatal(const char* fmt, ...) __attribute__((noreturn));
 
 void printfn(char* fmt, ...);
 

@@ -14,6 +14,7 @@ typedef enum
 	TOK_COMMA,
 	TOK_SEMICOLON,
 	TOK_DOT,
+	TOK_DOT_STAR,
 	TOK_COLON,
 	TOK_EQUAL,
 	TOK_ARROW,
@@ -47,16 +48,18 @@ typedef enum
 	TOK_OR,
 	TOK_AS,
 
-	TOK_ERROR,
 	TOK_EOF,
 } TokenKind;
 
 typedef struct
 {
 	TokenKind kind;
-	const char* start;
+	char* start;
 	int len;
 	int line;
+
+	// for floating-point constants
+	bool hasDot;
 } Token;
 
 typedef struct
@@ -71,13 +74,13 @@ typedef struct
 void initLexer(const char* source);
 Token nextToken(void);
 Token peekToken(void);
-Token makeErrorToken(const char* message);
 
 #endif
 #if __INCLUDE_LEVEL__ == 0
 
 #include "log.c"
 #include "string.h"
+#include <ctype.h>
 #include <stdbool.h>
 #include <stdlib.h>
 
@@ -99,17 +102,16 @@ Token makeToken(TokenKind t)
 	token.start = lexer.start;
 	token.len = (int)(lexer.current - lexer.start);
 	token.line = lexer.line;
+	token.hasDot = false;
 	return token;
 }
 
-Token makeErrorToken(const char* message)
+Token makeConstantToken(TokenKind t, bool hasDot)
 {
-	Token token;
-	token.kind = TOK_ERROR;
-	token.start = message;
-	token.len = (int)strlen(message);
-	token.line = lexer.line;
-	return token;
+	Token tok;
+	tok = makeToken(t);
+	tok.hasDot = hasDot;
+	return tok;
 }
 
 char advance(void)
@@ -182,21 +184,57 @@ Token lexString(void)
 		advance();
 	}
 	if (isAtEnd())
-		return makeErrorToken("String is not terminated.");
+		logFatal("String is not terminated.");
 	advance();
 	return makeToken(TOK_STRING);
 }
 
-bool isDigit(char c) { return c >= '0' && c <= '9'; }
+bool isDigit(char c)
+{
+	switch (c)
+	{
+	case '0':
+	case '1':
+	case '2':
+	case '3':
+	case '4':
+	case '5':
+	case '6':
+	case '7':
+	case '8':
+	case '9':
+	case 'a':
+	case 'A':
+	case 'b':
+	case 'B':
+	case 'c':
+	case 'C':
+	case 'd':
+	case 'D':
+	case 'e':
+	case 'E':
+	case 'f':
+	case 'F':
+	case 'x':
+	case 'X':
+	case 'o':
+	case 'O':
+		return true;
+	default:
+		return false;
+	}
+}
 
-bool isAlpha(char c) { return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c == '_'); }
-
+// in the lexer a lot more is allowed
+// the number validation happens in the parser
 Token lexNumber(void)
 {
+	bool hadDot = false;
 	while (isDigit(peek()))
 		advance();
 	if (peek() == '.')
 	{
+		hadDot = true;
 		advance();
 		if (isDigit(peek()))
 		{
@@ -205,7 +243,7 @@ Token lexNumber(void)
 		}
 		else
 		{
-			return makeErrorToken("An integer literal has no members to possibly access.");
+			logError("An integer literal has no members to possibly access.");
 		}
 	}
 	char p = peek();
@@ -216,7 +254,7 @@ Token lexNumber(void)
 			advance();
 		advance();
 	}
-	return makeToken(TOK_NUMBER);
+	return makeConstantToken(TOK_NUMBER, hadDot);
 }
 
 TokenKind checkKeyword(const char* key, long keyLen, TokenKind k)
@@ -288,7 +326,7 @@ TokenKind classifyIdent(void)
 Token lexIdentifier(void)
 {
 	char p = peek();
-	while (isAlpha(p) || isDigit(p))
+	while (isalpha(p) || isDigit(p))
 	{
 		advance();
 		p = peek();
@@ -299,7 +337,7 @@ Token lexIdentifier(void)
 Token lexBuiltin(void)
 {
 	char p = peek();
-	while (isAlpha(p) || isDigit(p))
+	while (isalpha(p) || isDigit(p))
 	{
 		advance();
 		p = peek();
@@ -333,7 +371,7 @@ Token nextToken(void)
 		return makeToken(TOK_EOF);
 	}
 	char next = advance();
-	if (isAlpha(next))
+	if (isalpha(next))
 		return lexIdentifier();
 	if (isDigit(next))
 		return lexNumber();
@@ -359,6 +397,11 @@ Token nextToken(void)
 	case ';':
 		return makeToken(TOK_SEMICOLON);
 	case '.':
+		if (peek() == '*')
+		{
+			advance();
+			return makeToken(TOK_DOT_STAR);
+		}
 		return makeToken(TOK_DOT);
 	case ':':
 		return makeToken(TOK_COLON);
@@ -401,7 +444,7 @@ Token nextToken(void)
 		return lexString();
 	}
 
-	return makeErrorToken("Input can not be tokenized.");
+	logFatal("Input can not be tokenized.");
 }
 
 #endif
