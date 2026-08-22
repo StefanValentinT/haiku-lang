@@ -92,10 +92,13 @@ typedef enum
 	RETURN,
 	BREAK,    // no data
 	CONTINUE, // no data
+	UNARY_OP,
 	BINARY_OP,
 	BINARY_OP_ASSIGN,
 	SUBSCRIPT,
 	ACCESS,
+	CONDITIONAL,
+	LOOP,
 	APPLICATION,
 	FUNCTION,
 	ASSIGNMENT,
@@ -109,9 +112,28 @@ typedef enum
 	MULTIPLY,
 	DIVIDE,
 	REMAINDER,
+
+	EQUAL,
+	NOT_EQUAL,
+	LESS_THAN,
+	LESS_OR_EQUAL,
+	GREATER_THAN,
+	GREATER_OR_EQUAL,
+
 	AND,
 	OR,
 } BinaryOpKind;
+
+typedef enum
+{
+	BIT_NOT,
+	NOT,
+	NEG,
+	POST_INCREMENT,
+	POST_DECREMENT,
+	PRE_INCREMENT,
+	PRE_DECREMENT,
+} UnaryOpKind;
 
 typedef enum
 {
@@ -216,6 +238,12 @@ typedef struct
 
 typedef struct
 {
+	UnaryOpKind kind;
+	Term* t;
+} UnOpData;
+
+typedef struct
+{
 	Term* term;
 	Term* index;
 } SubscriptData;
@@ -226,6 +254,19 @@ typedef struct
 	char* member;
 	int _len;
 } AccessData;
+
+typedef struct
+{
+	Term* cond;
+	Term* ifBranch;
+	Term* thenBranch; // nullable
+} ConditionalData;
+
+typedef struct
+{
+	Term* cond;
+	Term* body;
+} LoopData;
 
 typedef struct
 {
@@ -284,8 +325,12 @@ struct Term
 
 		BinOpData binOp;
 		BinOpAssignData binAssignOp;
+		UnOpData unOp;
 		SubscriptData subscript;
 		AccessData access;
+
+		ConditionalData cond;
+		LoopData loop;
 
 		ApplicationData app;
 		FunctionData fun;
@@ -502,35 +547,90 @@ void printTyped(const TypedData* c)
 	printf(")");
 }
 
-void printBinaryOp(const BinOpData* b)
+const char* binOpToString(BinaryOpKind b)
 {
-	switch (b->kind)
+	switch (b)
 	{
 	case ADD:
-		printf("(ADD ");
-		break;
+		return "ADD";
 	case SUBTRACT:
-		printf("(SUBTRACT ");
-		break;
+		return "SUBTRACT";
 	case MULTIPLY:
-		printf("(MULTIPLY ");
-		break;
+		return "MULTIPLY";
 	case DIVIDE:
-		printf("(DIVIDE ");
-		break;
+		return "DIVIDE";
 	case REMAINDER:
-		printf("(REMAINDER ");
+		return "REMAINDER";
+	case EQUAL:
+		return "EQUAL";
+		break;
+	case NOT_EQUAL:
+		return "NOT-EQUAL";
+		break;
+	case LESS_THAN:
+		return "LT";
+		break;
+	case LESS_OR_EQUAL:
+		return "LE";
+		break;
+	case GREATER_THAN:
+		return "GT";
+		break;
+	case GREATER_OR_EQUAL:
+		return "GE";
 		break;
 	case AND:
-		printf("(AND ");
-		break;
+		return "AND";
 	case OR:
-		printf("(OR ");
-		break;
+		return "OR";
 	}
+}
+
+void printBinaryOp(const BinOpData* b)
+{
+	printf("(%s ", binOpToString(b->kind));
 	printTerm(b->a);
 	printf(" ");
 	printTerm(b->b);
+	printf(")");
+}
+
+void printBinaryOpAssign(const BinOpAssignData* b)
+{
+	printf("(%sASSIGN ", binOpToString(b->kind));
+	printTerm(b->a);
+	printf(" ");
+	printTerm(b->value);
+	printf(")");
+}
+
+void printUnaryOp(const UnOpData* u)
+{
+	printf("(");
+	switch (u->kind)
+	{
+	case PRE_DECREMENT:
+		printf("PRE-DECREMENT");
+		break;
+	case PRE_INCREMENT:
+		printf("PRE-INCREMENT");
+		break;
+	case POST_INCREMENT:
+		printf("POST-INCREMENT");
+		break;
+	case POST_DECREMENT:
+		printf("POST-DECREMENT");
+		break;
+	case NOT:
+		printf("NOT");
+		break;
+	case BIT_NOT:
+		printf("BIT-NOT");
+		break;
+	case NEG:
+		printf("-");
+	}
+	printTerm(u->t);
 	printf(")");
 }
 
@@ -639,6 +739,12 @@ void printTerm(const Term* t)
 		break;
 	case BINARY_OP:
 		printBinaryOp(&t->data.binOp);
+		break;
+	case BINARY_OP_ASSIGN:
+		printBinaryOpAssign(&t->data.binAssignOp);
+		break;
+	case UNARY_OP:
+		printUnaryOp(&t->data.unOp);
 		break;
 	case APPLICATION:
 		printApplication(&t->data.app);

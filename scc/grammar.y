@@ -21,10 +21,11 @@ factor: atom
 	| "union" '{' init-list '}'
 	;
 
-
 postfix: factor
 	| identifier '{' '}'
 	| identifier '{' init-list '}'
+	| '[' '_' ']'  '{' arg-list '}'
+	| '[' numeric-constant ']'  '{' arg-list '}'
 	| postfix '[' term ']'
 	| postfix '(' ')'
 	| postfix '(' arg-list ')'
@@ -63,6 +64,7 @@ type: "i8"  | "i16" | "i32" | "i64"
 	| "struct" '{' typed-list '}'
 	| "union" '{' '}'
 	| "union" '{' typed-list '}'
+	| '[' numeric-constant ']' type
 	| '(' ')' "->" type
 	| '(' type-list ')' "->" type
 	;
@@ -108,7 +110,7 @@ logical: relational
 control-flow: logical
 	| "if" term "then" term
 	| "if" term "then" term "else" term
-	| "while" term "do" term
+	| "for" term "do" term
 	| "break"
 	| "continue"
 	| "return" term

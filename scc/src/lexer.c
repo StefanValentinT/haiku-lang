@@ -21,11 +21,19 @@ typedef enum
 	TOK_AMPERSAND,
 	TOK_DECREMENT,
 	TOK_INCREMENT,
+	TOK_TILDE,
+	TOK_EXCLAMATION,
 	TOK_STAR,
 	TOK_PLUS,
 	TOK_MINUS,
 	TOK_SLASH,
 	TOK_PERCENT,
+	TOK_EQ,
+	TOK_NEQ,
+	TOK_LT,
+	TOK_LE,
+	TOK_GT,
+	TOK_GE,
 
 	TOK_IDENTIFIER,
 	TOK_BUILTIN,
@@ -34,8 +42,10 @@ typedef enum
 
 	TOK_FUN,
 	TOK_IF,
+	TOK_THEN,
 	TOK_ELSE,
 	TOK_FOR,
+	TOK_DO,
 	TOK_RETURN,
 	TOK_BREAK,
 	TOK_CONTINUE,
@@ -65,7 +75,7 @@ typedef struct
 typedef struct
 {
 	const char* start;
-	const char* current;
+	char* current;
 	int line;
 	Token peekedToken;
 	bool hasPeeked;
@@ -89,7 +99,7 @@ Lexer lexer;
 void initLexer(const char* source)
 {
 	lexer.start = source;
-	lexer.current = source;
+	lexer.current = (char*)source;
 	lexer.line = 0;
 }
 
@@ -99,7 +109,7 @@ Token makeToken(TokenKind t)
 {
 	Token token;
 	token.kind = t;
-	token.start = lexer.start;
+	token.start = (char*)lexer.start;
 	token.len = (int)(lexer.current - lexer.start);
 	token.line = lexer.line;
 	token.hasDot = false;
@@ -286,6 +296,8 @@ TokenKind classifyIdent(void)
 		return checkKeyword("break", 5, TOK_BREAK);
 	case 'c':
 		return checkKeyword("continue", 8, TOK_CONTINUE);
+	case 'd':
+		return checkKeyword("do", 2, TOK_DO);
 	case 'e':
 		return checkKeyword("else", 4, TOK_ELSE);
 	case 'f':
@@ -306,7 +318,14 @@ TokenKind classifyIdent(void)
 	case 's':
 		return checkKeyword("struct", 6, TOK_STRUCT);
 	case 't':
-		return checkKeyword("type", 4, TOK_TYPE);
+		switch (lexer.start[1])
+		{
+		case 'h':
+			return checkKeyword("then", 4, TOK_TYPE);
+		case 'y':
+			return checkKeyword("type", 4, TOK_TYPE);
+		}
+		break;
 	case 'u':
 		return checkKeyword("union", 5, TOK_UNION);
 	case 'v':
@@ -406,7 +425,26 @@ Token nextToken(void)
 	case ':':
 		return makeToken(TOK_COLON);
 	case '=':
+		if (peek() == '=')
+		{
+			advance();
+			return makeToken(TOK_EQ);
+		}
 		return makeToken(TOK_EQUAL);
+	case '<':
+		if (peek() == '=')
+		{
+			advance();
+			return makeToken(TOK_LE);
+		}
+		return makeToken(TOK_LT);
+	case '>':
+		if (peek() == '=')
+		{
+			advance();
+			return makeToken(TOK_GE);
+		}
+		return makeToken(TOK_GT);
 	case '-':
 		if (peek() == '>')
 		{
@@ -422,6 +460,15 @@ Token nextToken(void)
 		{
 			return makeToken(TOK_MINUS);
 		}
+	case '~':
+		return makeToken(TOK_TILDE);
+	case '!':
+		if (peek() == '=')
+		{
+			advance();
+			return makeToken(TOK_NEQ);
+		}
+		return makeToken(TOK_EXCLAMATION);
 	case '&':
 		return makeToken(TOK_AMPERSAND);
 	case '*':
