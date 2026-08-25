@@ -5,5 +5,5 @@ IndentWidth: 4
 BreakBeforeBraces: Allman
 AlignAfterOpenBracket: BlockIndent
 PointerAlignment: Left
-ColumnLimit: 110
+ColumnLimit: 100
 

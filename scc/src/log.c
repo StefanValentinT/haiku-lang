@@ -72,6 +72,9 @@ void logFatal(const char* fmt, ...)
 	va_start(args, fmt);
 	vLogLevel(LOG_FATAL, fmt, args);
 	va_end(args);
+	// Unreachable
+	// Only needed to not cause a warning
+	abort();
 }
 
 void vLogLevel(LogLevel l, const char* fmt, va_list args)

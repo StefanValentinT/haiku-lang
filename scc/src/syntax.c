@@ -25,7 +25,7 @@ typedef struct
 		u64 intData;
 		struct
 		{
-			char* charData;
+			const char* charData;
 			size length;
 		} stringData;
 	} data;
@@ -33,7 +33,7 @@ typedef struct
 
 typedef struct
 {
-	char* chars;
+	const char* chars;
 	size length;
 } string;
 
@@ -454,7 +454,8 @@ bool isEqualIdent(const identifier* id1, const identifier* id2)
 			return false;
 		}
 		return memcmp(
-		           id1->data.stringData.charData, id2->data.stringData.charData, id1->data.stringData.length
+		           id1->data.stringData.charData, id2->data.stringData.charData,
+		           id1->data.stringData.length
 		       ) == 0;
 	}
 }
@@ -741,7 +742,10 @@ void printApplication(const ApplicationData* a)
 	for (int i = 0; i < a->_argCount; i++)
 	{
 		printTerm(&a->args[i]);
-		printf(" ");
+		if (i < a->_argCount - 1)
+		{
+			printf(" ");
+		}
 	}
 	printf(")");
 }
@@ -765,9 +769,10 @@ void printFunction(const FunctionData* f)
 			printf(", ");
 		}
 	}
-	printf(") ");
+	printf(")");
 	if (f->retType != NULL)
 	{
+		printf(" ");
 		printType(f->retType);
 	}
 	printf(" -> ");
@@ -784,15 +789,34 @@ void printAssignment(const AssignmentData* a)
 	printf(")");
 }
 
+static int level = 0;
+
+void indent(int n)
+{
+	if (n == 0)
+		return;
+	printf("    ");
+	indent(n - 1);
+}
+
 void printBlock(const BlockData* b)
 {
 	printf("(BLOCK \n");
+	level++;
 	for (size i = 0; i < b->_stmtCount; i++)
 	{
-		printf("    ");
+		indent(level);
 		printStatement(&b->stmts[i]);
 		printf("\n");
 	}
+	if (b->exp != NULL)
+	{
+		indent(level);
+		printTerm(b->exp);
+		printf("\n");
+	}
+	level--;
+	indent(level);
 	printf(")");
 }
 

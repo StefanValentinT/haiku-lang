@@ -22,10 +22,10 @@ Program parse(char* source);
 #include <string.h>
 
 #define expect(x) expectElse(x, "Expected " #x ".")
-#define UNREACHABLE                                                                                          \
-	{                                                                                                        \
-		printf("UNREACHABLE reached in file %s:%d.\n", __FILE__, __LINE__);                                  \
-		abort();                                                                                             \
+#define UNREACHABLE                                                                                \
+	{                                                                                              \
+		printf("UNREACHABLE reached in file %s:%d.\n", __FILE__, __LINE__);                        \
+		abort();                                                                                   \
 	}
 
 // internal functions
@@ -540,7 +540,7 @@ bool startsFactor(TokenKind tok)
 	}
 }
 
-DynArray parseInitList(void)
+DynArray parseNonEmptyInitList(void)
 {
 	DynArray initList;
 	initList = initArray(4, sizeof(Member));
@@ -569,7 +569,7 @@ DynArray parseInitList(void)
 	return initList;
 }
 
-DynArray parseStructTypesList(void)
+DynArray parseNonEmptyStructTypesList(void)
 {
 	DynArray initList;
 	initList = initArray(4, sizeof(MemberType));
@@ -598,7 +598,7 @@ DynArray parseStructTypesList(void)
 	return initList;
 }
 
-DynArray parseArgList(void)
+DynArray parseNonEmptyArgList(void)
 {
 	DynArray initList;
 	initList = initArray(4, sizeof(Term));
@@ -619,7 +619,7 @@ DynArray parseArgList(void)
 	return initList;
 }
 
-DynArray parseTypeList(void)
+DynArray parseNonEmptyTypeList(void)
 {
 	DynArray initList;
 	initList = initArray(4, sizeof(Type));
@@ -640,7 +640,7 @@ DynArray parseTypeList(void)
 	return initList;
 }
 
-DynArray parseFormalsList(void)
+DynArray parseNonEmptyFormalsList(void)
 {
 	DynArray formals;
 	Formal f;
@@ -693,9 +693,10 @@ Term parseFactor(void)
 		expect(TOK_LEFT_BRACE);
 		if (peekToken().kind != TOK_RIGHT_BRACE)
 		{
-			initList = parseInitList();
+			initList = parseNonEmptyInitList();
 			expect(TOK_RIGHT_BRACE);
-			return (Term){STRUCTURE, {.structure = {isUnion, (Member*)initList.items, initList.count}}, s};
+			return (Term
+			){STRUCTURE, {.structure = {isUnion, (Member*)initList.items, initList.count}}, s};
 		}
 		else
 		{
@@ -730,28 +731,7 @@ Term parsePostfix(void)
 	Token peek = peekToken();
 	SourceInfo s = (SourceInfo){peek.line};
 
-	if (peek.kind == TOK_LEFT_BRACE)
-	{
-		Token ident = expect(TOK_IDENTIFIER);
-		expect(TOK_LEFT_BRACE);
-		Type* type = (Type*)mapGet(&typeDefinitions, ident.start, ident.len);
-		if (type == NULL)
-		{
-			logFatal("Type not defined, but used in line %d.", ident.line);
-		}
-		if (type->kind != STRUCT_TYPE)
-		{
-			logFatal("Type to be initialized not a structure, in line %d.", ident.line);
-		}
-		DynArray inits = parseInitList();
-		expect(TOK_LEFT_BRACE);
-		post = (Term
-		){STRUCTURE, {.structure = {type->data.structure.isUnion, (Member*)inits.items, inits.count}}, s};
-	}
-	else
-	{
-		post = parseFactor();
-	}
+	post = parseFactor();
 
 	DynArray list;
 	while (true)
@@ -759,6 +739,39 @@ Term parsePostfix(void)
 		peek = peekToken();
 		switch (peek.kind)
 		{
+		case TOK_LEFT_BRACE:
+			nextToken();
+			if (post.kind != VAR)
+			{
+				logFatal("Can only instantiate a type wiht a known specifier.");
+			}
+			string string = toString(&post.data.var.name);
+			Type* type = (Type*)mapGet(&typeDefinitions, string.chars, string.length);
+			if (type == NULL)
+			{
+				logFatal("Type not defined, but used in line %d.", post.info.line);
+			}
+			if (type->kind != STRUCT_TYPE)
+			{
+				logFatal("Type to be initialized not a structure, in line %d.", post.info.line);
+			}
+			if (peekToken().kind != TOK_RIGHT_BRACE)
+			{
+				DynArray inits = parseNonEmptyInitList();
+				expect(TOK_RIGHT_BRACE);
+				post = (Term
+				){STRUCTURE,
+				  {.structure = {type->data.structure.isUnion, (Member*)inits.items, inits.count}},
+				  s};
+			}
+			else
+			{
+				nextToken();
+				post = (Term
+				){STRUCTURE, {.structure = {type->data.structure.isUnion, (Member*)NULL, 0}}, s};
+			}
+			break;
+
 		case TOK_LEFT_BRACKET:
 			nextToken();
 			Term* indexPtr = newTerm(parseTerm());
@@ -774,16 +787,18 @@ Term parsePostfix(void)
 			}
 			else
 			{
-				list = parseArgList();
+				list = parseNonEmptyArgList();
 				expect(TOK_RIGHT_PAREN);
-				post = (Term){APPLICATION, {.app = {newTerm(post), (Term*)list.items, (int)list.count}}, s};
+				post = (Term
+				){APPLICATION, {.app = {newTerm(post), (Term*)list.items, (int)list.count}}, s};
 			}
 			break;
 		// TODO: Where to add auto-dereferincg?
 		case TOK_DOT:
 			nextToken();
 			Token ident = expect(TOK_IDENTIFIER);
-			post = (Term){ACCESS, {.access = {newTerm(post), makeIdent(ident.start, ident.len)}}, s};
+			post =
+			    (Term){ACCESS, {.access = {newTerm(post), makeIdent(ident.start, ident.len)}}, s};
 			break;
 		case TOK_INCREMENT:
 			nextToken();
@@ -854,8 +869,10 @@ Term parsePrefix(void)
 	case TOK_AMPERSAND:
 		if (t->kind != VAR && t->kind != SUBSCRIPT && t->kind != DEREF)
 		{
-			logFatal("Only a variable or a subscript or a dereference is adressable, and can thus be "
-			         "referenced.");
+			logFatal(
+			    "Only a variable or a subscript or a dereference is adressable, and can thus be "
+			    "referenced."
+			);
 		}
 		return (Term){REF, {.ref = {t}}, s};
 	case TOK_INCREMENT:
@@ -992,7 +1009,8 @@ Term parseBinary(int minPrec)
 		case TOK_OR:
 			nextToken();
 			BinaryOpKind binOp = tokToBinOp(next.kind);
-			term = (Term){BINARY_OP, {.binOp = {binOp, newTerm(term), newTerm(parseBinary(prec + 1))}}, s};
+			term = (Term
+			){BINARY_OP, {.binOp = {binOp, newTerm(term), newTerm(parseBinary(prec + 1))}}, s};
 			break;
 
 		case TOK_AS:
@@ -1011,6 +1029,57 @@ Term parseBinary(int minPrec)
 		prec = precedence(next.kind);
 	}
 	return term;
+}
+
+Term parseBracedBlock(SourceInfo s)
+{
+	DynArray list;
+	Token peek;
+
+	if (peekToken().kind == TOK_RIGHT_BRACE)
+	{
+		return (Term){BLOCK, {.block = {.stmts = NULL, ._stmtCount = 0}}, s};
+	}
+
+	enterScope();
+
+	list = initArray(16, sizeof(Statement));
+	Term* trailingExp = NULL;
+	do
+	{
+		peek = peekToken();
+		if (peek.kind == TOK_VAL || peek.kind == TOK_VAR)
+		{
+			DeclarationData dec = parseDeclaration();
+			Statement newS = (Statement){DECLARATION, {.declaration = dec}, s};
+			appendArray(&list, (void*)&newS);
+		}
+		else
+		{
+			Term expr = parseTerm();
+			peek = peekToken();
+			if (peek.kind == TOK_SEMICOLON)
+			{
+				nextToken();
+				Statement newS = (Statement){UNIT_EXPRESSION, {.unit_expression = expr}, s};
+				appendArray(&list, (void*)&newS);
+			}
+			else if (peek.kind == TOK_RIGHT_BRACE)
+			{
+				trailingExp = newTerm(expr);
+				break;
+			}
+			else
+			{
+				logFatal("Expression in block must be followed by a semicolon or closing brace.");
+			}
+		}
+		peek = peekToken();
+	} while (peek.kind != TOK_RIGHT_BRACE);
+
+	leaveScope();
+
+	return (Term){BLOCK, {.block = {list.items, list.count, trailingExp}}, s};
 }
 
 // Needed to be a global varaible, so that when performing lambda-lifting,
@@ -1085,11 +1154,22 @@ Term parseControlFlow(void)
 		{
 			logFatal("Unexpected Token %d.", peek.kind);
 		}
-		expect(TOK_LEFT_PAREN);
-		list = parseFormalsList();
-		expect(TOK_RIGHT_PAREN);
 
-		Type* type;
+		bool isEmpty;
+		expect(TOK_LEFT_PAREN);
+		if (peekToken().kind != TOK_RIGHT_PAREN)
+		{
+			isEmpty = false;
+			list = parseNonEmptyFormalsList();
+			expect(TOK_RIGHT_PAREN);
+		}
+		else
+		{
+			nextToken();
+			isEmpty = true;
+		}
+
+		Type* type = NULL;
 		if (peekToken().kind == TOK_ARROW)
 		{
 			nextToken();
@@ -1102,8 +1182,12 @@ Term parseControlFlow(void)
 		t1 = newTerm(parseTerm());
 
 		identifier lambdaIdent = newIdent();
-		Term* lambda = newTerm((Term
-		){FUNCTION, {.fun = {makeIdent(ident.start, ident.len), list.items, list.count, type, t1}}, s});
+		Term* lambda =
+		    newTerm((Term){FUNCTION,
+		                   {.fun =
+		                        {makeIdent(ident.start, ident.len), isEmpty ? NULL : list.items,
+		                         isEmpty ? 0 : list.count, type, t1}},
+		                   s});
 		DeclarationData decl = {lambdaIdent, NULL, false, lambda};
 		appendArray(&declarations, (void*)&decl);
 
@@ -1113,51 +1197,10 @@ Term parseControlFlow(void)
 
 	case TOK_LEFT_BRACE:
 		nextToken();
-		if (peekToken().kind == TOK_RIGHT_BRACE)
-		{
-			nextToken();
-			return (Term){BLOCK, {.block = {.stmts = NULL, ._stmtCount = 0}}, s};
-		}
-
-		enterScope();
-
-		list = initArray(16, sizeof(Statement));
-		Term* trailingExp = NULL;
-		do
-		{
-			peek = peekToken();
-			if (peek.kind == TOK_VAL || peek.kind == TOK_VAR)
-			{
-				DeclarationData dec = parseDeclaration();
-				Statement newS = (Statement){DECLARATION, {.declaration = dec}, s};
-				appendArray(&list, (void*)&newS);
-			}
-			else
-			{
-				Term expr = parseTerm();
-				if (peekToken().kind == TOK_SEMICOLON)
-				{
-					nextToken();
-					Statement newS = (Statement){UNIT_EXPRESSION, {.unit_expression = expr}, s};
-					appendArray(&list, (void*)&newS);
-				}
-				else if (peekToken().kind == TOK_RIGHT_BRACE)
-				{
-					trailingExp = newTerm(expr);
-					break;
-				}
-				else
-				{
-					logFatal("Expression in block must be followed by a semicolon or closing brace.");
-				}
-			}
-			peek = peekToken();
-		} while (peek.kind != TOK_RIGHT_BRACE);
-
+		Term t = parseBracedBlock(s);
 		expect(TOK_RIGHT_BRACE);
-		leaveScope();
+		return t;
 
-		return (Term){BLOCK, {.block = {list.items, list.count, trailingExp}}, s};
 	default:
 		return parseBinary(0);
 	}
@@ -1219,6 +1262,8 @@ DeclarationData parseDeclaration(void)
 
 Type parseType(void)
 {
+	bool isEmptyFun;
+
 	Token tok = nextToken();
 	ConstantData num;
 	DynArray list;
@@ -1263,17 +1308,38 @@ Type parseType(void)
 	case TOK_UNION:
 	case TOK_STRUCT:
 		expect(TOK_LEFT_BRACE);
-		list = parseStructTypesList();
-		expect(TOK_RIGHT_BRACE);
 		bool isUnion = tok.kind == TOK_UNION ? true : false;
-		return (Type){STRUCT_TYPE, {.structure = {(MemberType*)list.items, list.count, isUnion}}};
+		if (peekToken().kind != TOK_RIGHT_BRACE)
+		{
+			list = parseNonEmptyStructTypesList();
+			expect(TOK_RIGHT_BRACE);
+			return (Type){STRUCT_TYPE, {.structure = {(MemberType*)list.items, list.count, isUnion}}
+			};
+		}
+		else
+		{
+			nextToken();
+			return (Type){STRUCT_TYPE, {.structure = {NULL, 0, isUnion}}};
+		}
 
 	case TOK_LEFT_PAREN:
-		list = parseTypeList();
-		expect(TOK_RIGHT_PAREN);
+
+		if (peekToken().kind != TOK_RIGHT_PAREN)
+		{
+			isEmptyFun = false;
+			list = parseNonEmptyTypeList();
+			expect(TOK_RIGHT_PAREN);
+		}
+		else
+		{
+			isEmptyFun = true;
+			nextToken();
+		}
 		expect(TOK_ARROW);
 		Type* retType = newType(parseType());
-		return (Type){FUN_TYPE, {.fun = {(Type*)list.items, list.count, retType}}};
+		return (Type
+		){FUN_TYPE,
+		  {.fun = {isEmptyFun ? NULL : (Type*)list.items, isEmptyFun ? 0 : list.count, retType}}};
 
 	default:
 		logFatal("Unrecognized type: %s", tok.start);
@@ -1283,6 +1349,9 @@ Type parseType(void)
 
 Program parse(char* source)
 {
+	Type* type = NULL;
+	SourceInfo s;
+
 	mapInit(&typeDefinitions);
 
 	initLexer(source);
@@ -1292,7 +1361,9 @@ Program parse(char* source)
 	declarations = initArray(16, sizeof(DeclarationData));
 	while (peek.kind != TOK_EOF)
 	{
+		s = (SourceInfo){peek.line};
 		DeclarationData newDecl = {0};
+
 		switch (peek.kind)
 		{
 		case TOK_VAL:
@@ -1300,20 +1371,59 @@ Program parse(char* source)
 			newDecl = parseDeclaration();
 			appendArray(&declarations, (void*)&newDecl);
 			break;
-		// case TOK_FUN:
-		// 	nextToken();
-		// 	Token ident = expect(TOK_IDENTIFIER);
-		// 	newDecl = {};
+
+		case TOK_FUN:
+			nextToken();
+			Token identTok = expect(TOK_IDENTIFIER);
+			identifier ident = makeIdent(identTok.start, identTok.len);
+
+			bool isEmpty;
+			DynArray formals;
+			expect(TOK_LEFT_PAREN);
+			if (peekToken().kind != TOK_RIGHT_PAREN)
+			{
+				isEmpty = false;
+				formals = parseNonEmptyFormalsList();
+				expect(TOK_RIGHT_PAREN);
+			}
+			else
+			{
+				nextToken();
+				isEmpty = true;
+			}
+
+			if (peekToken().kind == TOK_LEFT_BRACE)
+			{
+				nextToken();
+			}
+			else
+			{
+				type = newType(parseType());
+				expect(TOK_LEFT_BRACE);
+			}
+			Term t = parseBracedBlock(s);
+			expect(TOK_RIGHT_BRACE);
+
+			Term fun = (Term){FUNCTION,
+			                  {.fun =
+			                       {ident, isEmpty ? NULL : formals.items,
+			                        isEmpty ? 0 : formals.count, type, newTerm(t)}},
+			                  s};
+
+			newDecl = (DeclarationData){ident, NULL, false, newTerm(fun)};
+			appendArray(&declarations, (void*)&newDecl);
+			break;
+
 		case TOK_TYPE:
 			nextToken();
-			Token ident = nextToken();
+			Token identType = nextToken();
 			if (nextToken().kind != TOK_EQUAL)
 			{
 				logFatal("Type definitions misses equal sign after identifier.");
 			}
-			Type* type = newType(parseType());
+			type = newType(parseType());
 			expect(TOK_SEMICOLON);
-			mapPut(&typeDefinitions, ident.start, ident.len, (void*)type);
+			mapPut(&typeDefinitions, identType.start, identType.len, (void*)type);
 			break;
 
 		default:
