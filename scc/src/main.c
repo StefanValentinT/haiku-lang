@@ -78,5 +78,7 @@ int main(int argc, char** argv)
 	Program ast = parse(source);
 	printProgram(&ast);
 
+	free(source);
+
 	return 0;
 }

@@ -17,6 +17,33 @@ typedef struct
 	int line;
 } SourceInfo;
 
+typedef struct
+{
+	bool isAuto;
+	union
+	{
+		u64 intData;
+		struct
+		{
+			char* charData;
+			size length;
+		} stringData;
+	} data;
+} identifier;
+
+typedef struct
+{
+	char* chars;
+	size length;
+} string;
+
+identifier newIdent(void);
+identifier makeIdent(const char* content, size length);
+bool isEqualIdent(const identifier* id1, const identifier* id2);
+u64 toAutoID(const identifier* id);
+string toString(const identifier* id);
+void printIdent(identifier ident);
+
 // Types
 
 typedef enum
@@ -41,27 +68,26 @@ typedef struct Type Type;
 typedef struct
 {
 	Type* elemType;
-	int* elemCount; // nullable
+	size* elemCount; // nullable
 } ArrayTypeData;
 
 typedef struct
 {
 	Type* paramTypes;
-	int _paramCount;
+	size _paramCount;
 	Type* retType;
 } FunTypeData;
 
 typedef struct
 {
-	char* name;
-	int _len;
+	identifier name;
 	Type* type;
 } MemberType;
 
 typedef struct
 {
 	MemberType* memberTypes;
-	int _typesCount;
+	size _memberCount;
 	bool isUnion;
 } StructTypeData;
 
@@ -148,14 +174,14 @@ typedef struct
 {
 	union
 	{
-		int8_t i8Val;
-		int16_t i16Val;
-		int32_t i32Val;
-		int64_t i64Val;
-		uint8_t u8Val;
-		uint16_t u16Val;
-		uint32_t u32Val;
-		uint64_t u64Val;
+		i8 i8Val;
+		i16 i16Val;
+		i32 i32Val;
+		i64 i64Val;
+		u8 u8Val;
+		u16 u16Val;
+		u32 u32Val;
+		u64 u64Val;
 		float f32Val;
 		double f64Val;
 	} data;
@@ -165,13 +191,12 @@ typedef struct
 typedef struct
 {
 	ConstantData* constants;
-	int _constantsCount;
+	size _constantsCount;
 } ArrayData;
 
 typedef struct
 {
-	const char* name;
-	int _len;
+	identifier name;
 	Term* term;
 } Member;
 
@@ -179,19 +204,17 @@ typedef struct
 {
 	bool isUnion;
 	Member* members;
-	int memberCount;
+	size memberCount;
 } StructData;
 
 typedef struct
 {
-	const char* string;
-	int _len;
+	identifier string;
 } StringData;
 
 typedef struct
 {
-	const char* name;
-	int _len;
+	identifier name;
 } VarData;
 
 typedef struct
@@ -251,8 +274,7 @@ typedef struct
 typedef struct
 {
 	Term* term;
-	char* member;
-	int _len;
+	identifier member;
 } AccessData;
 
 typedef struct
@@ -277,17 +299,16 @@ typedef struct
 
 typedef struct
 {
-	const char* name;
-	int _len;
+	identifier name;
 	Type* type; // nullable
 } Formal;
 
 typedef struct
 {
-	const char* recBinder; // nullable
-	int _recBinderLength;
+	identifier recBinder;
 	Formal* formals;
-	int _formalCount;
+	size _formalCount;
+	Type* retType; // nullable
 	Term* body;
 } FunctionData;
 
@@ -300,7 +321,7 @@ typedef struct
 typedef struct
 {
 	Statement* stmts;
-	int _stmtCount;
+	size _stmtCount;
 	Term* exp; // nullable
 } BlockData;
 
@@ -345,8 +366,7 @@ struct Term
 
 typedef struct
 {
-	const char* name;
-	int _len;
+	identifier name;
 	Type* type; // nullable
 	bool mutable;
 	Term* exp; // nullable
@@ -368,7 +388,7 @@ struct Statement
 typedef struct
 {
 	DeclarationData* decls;
-	int _declCount;
+	size _declCount;
 } Program;
 
 // Allocation
@@ -402,6 +422,61 @@ void printDeclaration(const DeclarationData* d);
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+identifier newIdent(void)
+{
+	static u64 identCount = 0;
+	identifier ident = (identifier){true, {.intData = identCount++}};
+	return ident;
+}
+
+identifier makeIdent(const char* content, size_t length)
+{
+	identifier id = {false, {.stringData = {content, length}}};
+	return id;
+}
+
+bool isEqualIdent(const identifier* id1, const identifier* id2)
+{
+	if (id1->isAuto != id2->isAuto)
+	{
+		return false;
+	}
+	if (id1->isAuto)
+	{
+		return id1->data.intData == id2->data.intData;
+	}
+	else
+	{
+		if (id1->data.stringData.length != id2->data.stringData.length)
+		{
+			return false;
+		}
+		return memcmp(
+		           id1->data.stringData.charData, id2->data.stringData.charData, id1->data.stringData.length
+		       ) == 0;
+	}
+}
+
+u64 toAutoID(const identifier* id) { return id->data.intData; }
+
+string toString(const identifier* id)
+{
+	return (string){id->data.stringData.charData, id->data.stringData.length};
+}
+
+void printIdent(identifier ident)
+{
+	if (ident.isAuto)
+	{
+		printf("auto#%" PRIuPTR, (uintptr_t)ident.data.intData);
+	}
+	else
+	{
+		printf("%.*s", (int)ident.data.stringData.length, ident.data.stringData.charData);
+	}
+}
 
 void printType(const Type* t)
 {
@@ -440,11 +515,11 @@ void printType(const Type* t)
 	case ARRAY_TYPE:
 		printf("(ARRAY_TYPE ");
 		printType(t->data.arr.elemType);
-		printf("of size %i)", *t->data.arr.elemCount);
+		printf("of size %" PRIuPTR ")", *t->data.arr.elemCount);
 		break;
 	case FUN_TYPE:
 		printf("(FUN_TYPE ");
-		for (int i = 0; i < t->data.fun._paramCount; i++)
+		for (size i = 0; i < t->data.fun._paramCount; i++)
 		{
 			printType(&t->data.fun.paramTypes[i]);
 			printf(" ");
@@ -453,6 +528,23 @@ void printType(const Type* t)
 		printType(t->data.fun.retType);
 		printf(")");
 		break;
+	case STRUCT_TYPE:
+		if (t->data.structure.isUnion)
+		{
+			printf("(UNION ");
+		}
+		else
+		{
+			printf("(STRUCT ");
+		}
+		for (size i = 0; i < t->data.structure._memberCount; i++)
+		{
+			MemberType m = t->data.structure.memberTypes[i];
+			printIdent(m.name);
+			printf(": ");
+			printType(m.type);
+		}
+		printf(")");
 	}
 }
 
@@ -499,7 +591,7 @@ void printConstant(const ConstantData* t)
 void printArray(const ArrayData* a)
 {
 	printf("(ARRAY ");
-	for (int i = 0; i < a->_constantsCount; i++)
+	for (size i = 0; i < a->_constantsCount; i++)
 	{
 		printConstant(&a->constants[i]);
 	}
@@ -516,18 +608,24 @@ void printStructure(const StructData* s)
 	{
 		printf("(STRUCT ");
 	}
-	for (int i = 0; i < s->memberCount; i++)
+	for (size i = 0; i < s->memberCount; i++)
 	{
 		Member m = s->members[i];
-		printf("%.*s: ", m._len, m.name);
+		printIdent(m.name);
+		printf(": ");
 		printTerm(m.term);
 	}
 	printf(")");
 }
 
-void printString(const StringData* s) { printf("\"%.*s\"", s->_len, s->string); }
+void printString(const StringData* s)
+{
+	printf("\"");
+	printIdent(s->string);
+	printf("\"");
+}
 
-void printVar(const VarData* s) { printf("%.*s", s->_len, s->name); }
+void printVar(const VarData* s) { printIdent(s->name); }
 
 void printCast(const CastData* c)
 {
@@ -597,7 +695,7 @@ void printBinaryOp(const BinOpData* b)
 
 void printBinaryOpAssign(const BinOpAssignData* b)
 {
-	printf("(%sASSIGN ", binOpToString(b->kind));
+	printf("(%s-ASSIGN ", binOpToString(b->kind));
 	printTerm(b->a);
 	printf(" ");
 	printTerm(b->value);
@@ -630,6 +728,7 @@ void printUnaryOp(const UnOpData* u)
 	case NEG:
 		printf("-");
 	}
+	printf(" ");
 	printTerm(u->t);
 	printf(")");
 }
@@ -649,12 +748,13 @@ void printApplication(const ApplicationData* a)
 
 void printFunction(const FunctionData* f)
 {
-	printf("(FUNCTION %.*s", f->_recBinderLength, f->recBinder);
+	printf("(FUNCTION ");
+	printIdent(f->recBinder);
 	printf("(");
-	for (int i = 0; i < f->_formalCount; i++)
+	for (size i = 0; i < f->_formalCount; i++)
 	{
 		Formal form = f->formals[i];
-		printf("%.*s", form._len, form.name);
+		printIdent(form.name);
 		if (form.type)
 		{
 			printf(": ");
@@ -666,6 +766,11 @@ void printFunction(const FunctionData* f)
 		}
 	}
 	printf(") ");
+	if (f->retType != NULL)
+	{
+		printType(f->retType);
+	}
+	printf(" -> ");
 	printTerm(f->body);
 	printf(")");
 }
@@ -682,7 +787,7 @@ void printAssignment(const AssignmentData* a)
 void printBlock(const BlockData* b)
 {
 	printf("(BLOCK \n");
-	for (int i = 0; i < b->_stmtCount; i++)
+	for (size i = 0; i < b->_stmtCount; i++)
 	{
 		printf("    ");
 		printStatement(&b->stmts[i]);
@@ -758,6 +863,19 @@ void printTerm(const Term* t)
 	case BLOCK:
 		printBlock(&t->data.block);
 		break;
+	// TODO: Still have to add a few cases, hopefully the last ones
+	case SUBSCRIPT:
+		printf("(TODO SUBSCRIPT)");
+		break;
+	case ACCESS:
+		printf("(TODO ACCESS)");
+		break;
+	case CONDITIONAL:
+		printf("(TODO CONDITIONAL)");
+		break;
+	case LOOP:
+		printf("(TODO LOOP)");
+		break;
 	}
 }
 
@@ -765,12 +883,13 @@ void printDeclaration(const DeclarationData* d)
 {
 	if (d->mutable)
 	{
-		printf("(VAR %.*s", d->_len, d->name);
+		printf("(VAR ");
 	}
 	else
 	{
-		printf("(VAR %.*s", d->_len, d->name);
+		printf("(VAR ");
 	}
+	printIdent(d->name);
 	if (d->type)
 	{
 		printf(" : ");
@@ -799,7 +918,7 @@ void printStatement(const Statement* stmt)
 
 void printProgram(const Program* p)
 {
-	for (int i = 0; i < p->_declCount; i++)
+	for (size i = 0; i < p->_declCount; i++)
 	{
 		printDeclaration(&p->decls[i]);
 		printf("\n");

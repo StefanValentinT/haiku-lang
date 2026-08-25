@@ -119,8 +119,8 @@ control-flow: logical
 	| '{' statement-list ';' '}'
 	| '{' term '}'
 	| '{' statement-list ';' term '}'
-	| "fun" '(' ')' "->" term
-	| "fun" '(' formals-list ')' "->" term
+	| "fun" identifier_opt '(' ')' "->" type_opt term
+	| "fun" identifier_opt '(' formals-list ')' type_opt "->" term
 	;
 	
 formal: identifier

@@ -5,16 +5,16 @@
 
 typedef struct
 {
-	size_t count;
-	size_t capacity;
-	size_t elemSize;
+	size count;
+	size capacity;
+	size elemSize;
 	void* items;
 } DynArray;
 
-DynArray initArray(int capac, size_t elemSize);
+DynArray initArray(size capac, size elemSize);
 void freeArray(DynArray* arr);
 void appendArray(DynArray* arr, void* value);
-void* getArray(DynArray* arr, int index);
+void* getArray(DynArray* arr, size index);
 
 #endif
 #if __INCLUDE_LEVEL__ == 0
@@ -25,12 +25,10 @@ void* getArray(DynArray* arr, int index);
 
 #define GROWTH_FACTOR 2
 
-DynArray initArray(int capacity, size_t elemSize)
+DynArray initArray(size capacity, size elemSize)
 {
-	return (DynArray){.count = 0,
-	                  .capacity = (size_t)capacity,
-	                  .elemSize = elemSize,
-	                  .items = (void*)malloc((size_t)capacity * elemSize)};
+	return (DynArray
+	){.count = 0, .capacity = capacity, .elemSize = elemSize, .items = (void*)malloc(capacity * elemSize)};
 }
 
 void appendArray(DynArray* arr, void* value)
@@ -50,7 +48,7 @@ void appendArray(DynArray* arr, void* value)
 	arr->count++;
 }
 
-void* getArray(DynArray* arr, int index) { return (char*)arr->items + ((size_t)index * arr->elemSize); }
+void* getArray(DynArray* arr, size index) { return (char*)arr->items + (index * arr->elemSize); }
 
 void freeArray(DynArray* arr)
 {

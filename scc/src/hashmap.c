@@ -8,7 +8,7 @@
 typedef struct
 {
 	char* key;
-	int _len;
+	size _len;
 	void* value; // can be NULL - but not CAIRO
 } MapEntry;
 
@@ -21,11 +21,11 @@ typedef struct
 
 void mapInit(Map* map);
 void mapFree(Map* map);
-void* mapGet(Map* map, const char* key, int keyLen);
-void mapPut(Map* map, const char* key, int keyLen, void* value);
-bool mapHas(Map* map, const char* key, int keylen);
+void* mapGet(Map* map, const char* key, size keyLen);
+void mapPut(Map* map, const char* key, size keyLen, void* value);
+bool mapHas(Map* map, const char* key, size keylen);
 void mapPrint(Map* map, void (*printFun)(void* value));
-void mapRemove(Map* map, const char* key, int keyLen);
+void mapRemove(Map* map, const char* key, size keyLen);
 
 #endif
 #if __INCLUDE_LEVEL__ == 0
@@ -66,10 +66,10 @@ void mapFree(Map* map)
 
 // Adapted from Jenkin's hash function 'One at a time'
 // see https://www.burtleburtle.net/bob/hash/doobs.html
-size_t hashKey(const char* key, int keyLen)
+size_t hashKey(const char* key, size keyLen)
 {
 	size_t hash = 0;
-	for (int i = 0; i < keyLen; i++)
+	for (size i = 0; i < keyLen; i++)
 	{
 		hash += (size_t)key[i];
 		hash += (hash << 10);
@@ -81,7 +81,7 @@ size_t hashKey(const char* key, int keyLen)
 	return hash;
 }
 
-MapEntry* findEntry(MapEntry* entries, size_t capacity, const char* key, int keyLen)
+MapEntry* findEntry(MapEntry* entries, size capacity, const char* key, size keyLen)
 {
 	size_t index = hashKey(key, keyLen) & (capacity - 1);
 	MapEntry* tombstone = NULL;
@@ -125,7 +125,7 @@ MapEntry* findEntry(MapEntry* entries, size_t capacity, const char* key, int key
 	}
 }
 
-static void increaseCapacity(Map* map, size_t capacity)
+static void increaseCapacity(Map* map, size capacity)
 {
 	MapEntry* entries = calloc(capacity, sizeof(MapEntry));
 	if (entries == NULL)
@@ -151,7 +151,7 @@ static void increaseCapacity(Map* map, size_t capacity)
 	map->capacity = capacity;
 }
 
-void* mapGet(Map* map, const char* key, int keyLen)
+void* mapGet(Map* map, const char* key, size keyLen)
 {
 	if (map->count == 0 || key == NULL)
 		return NULL;
@@ -164,9 +164,9 @@ void* mapGet(Map* map, const char* key, int keyLen)
 	return entry->value;
 }
 
-bool mapHas(Map* map, const char* key, int keyLen) { return mapGet(map, key, keyLen) != NULL; }
+bool mapHas(Map* map, const char* key, size keyLen) { return mapGet(map, key, keyLen) != NULL; }
 
-void mapPut(Map* map, const char* key, int keyLen, void* value)
+void mapPut(Map* map, const char* key, size keyLen, void* value)
 {
 	if (key == NULL)
 	{
@@ -190,7 +190,7 @@ void mapPut(Map* map, const char* key, int keyLen, void* value)
 	entry->value = value;
 }
 
-void mapRemove(Map* map, const char* key, int keyLen)
+void mapRemove(Map* map, const char* key, size keyLen)
 {
 	if (map->count == 0)
 		return;
@@ -214,7 +214,7 @@ void mapPrint(Map* map, void (*printFun)(void* value))
 		if (entryPtr->key == NULL || entryPtr->value == CAIRO)
 			continue;
 
-		printf("%.*s: ", entryPtr->_len, entryPtr->key);
+		printf("%.*s: ", (int)entryPtr->_len, entryPtr->key);
 		(*printFun)(entryPtr->value);
 		printf("\n");
 	}

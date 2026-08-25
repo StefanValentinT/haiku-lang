@@ -65,7 +65,7 @@ typedef struct
 {
 	TokenKind kind;
 	char* start;
-	int len;
+	size len;
 	int line;
 
 	// for floating-point constants
@@ -110,7 +110,7 @@ Token makeToken(TokenKind t)
 	Token token;
 	token.kind = t;
 	token.start = (char*)lexer.start;
-	token.len = (int)(lexer.current - lexer.start);
+	token.len = (size)(lexer.current - lexer.start);
 	token.line = lexer.line;
 	token.hasDot = false;
 	return token;
@@ -235,6 +235,8 @@ bool isDigit(char c)
 	}
 }
 
+bool isLetter(char c) { return isalpha(c) || c == '_'; }
+
 // in the lexer a lot more is allowed
 // the number validation happens in the parser
 Token lexNumber(void)
@@ -345,7 +347,7 @@ TokenKind classifyIdent(void)
 Token lexIdentifier(void)
 {
 	char p = peek();
-	while (isalpha(p) || isDigit(p))
+	while (isLetter(p) || isDigit(p))
 	{
 		advance();
 		p = peek();
@@ -356,7 +358,7 @@ Token lexIdentifier(void)
 Token lexBuiltin(void)
 {
 	char p = peek();
-	while (isalpha(p) || isDigit(p))
+	while (isLetter(p) || isDigit(p))
 	{
 		advance();
 		p = peek();
@@ -390,7 +392,7 @@ Token nextToken(void)
 		return makeToken(TOK_EOF);
 	}
 	char next = advance();
-	if (isalpha(next))
+	if (isLetter(next))
 		return lexIdentifier();
 	if (isDigit(next))
 		return lexNumber();
@@ -491,7 +493,7 @@ Token nextToken(void)
 		return lexString();
 	}
 
-	logFatal("Input can not be tokenized.");
+	logFatal("Input '%c' can not be tokenized.", next);
 }
 
 #endif
